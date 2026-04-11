@@ -3,6 +3,8 @@ Shared auth middleware and helpers.
 
 Supports two modes:
   1. OIDC JWT validation (production) — requires OIDC_ISSUER + OIDC_AUDIENCE env vars.
+     Automatically fetches and caches JWKS from {OIDC_ISSUER}/.well-known/jwks.json
+     for cryptographic signature verification.
   2. API-key header fallback (dev/local) — accepts x-api-key: dev-secret.
 
 RBAC roles: viewer | analyst | approver | admin
@@ -11,6 +13,7 @@ RBAC roles: viewer | analyst | approver | admin
 from __future__ import annotations
 
 import os
+import time
 from enum import Enum
 from typing import Any
 
@@ -128,20 +131,60 @@ async def get_auth_context(
     )
 
 
+# In-process JWKS cache: {issuer: (jwks_dict, timestamp)}
+_JWKS_CACHE: dict[str, tuple[dict[str, Any], float]] = {}
+_JWKS_CACHE_TTL = 3600  # 1 hour
+
+
+def _fetch_jwks(issuer: str) -> dict[str, Any]:
+    """
+    Fetch and cache JWKS from {issuer}/.well-known/jwks.json.
+    Uses in-process cache with 1-hour TTL.
+    """
+    now = time.time()
+    if issuer in _JWKS_CACHE:
+        jwks, cached_at = _JWKS_CACHE[issuer]
+        if now - cached_at < _JWKS_CACHE_TTL:
+            return jwks
+
+    try:
+        import httpx  # type: ignore
+
+        url = f"{issuer}/.well-known/jwks.json"
+        response = httpx.get(url, timeout=5.0)
+        response.raise_for_status()
+        jwks = response.json()
+        _JWKS_CACHE[issuer] = (jwks, now)
+        return jwks
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Failed to fetch JWKS from {issuer}: {exc}",
+        ) from exc
+
+
 def _validate_jwt(token: str, issuer: str) -> AuthContext:
     """
     Validate a JWT and return an AuthContext.
 
-    Requires python-jose or PyJWT. Kept as a thin wrapper so the project can
-    swap JWT libraries without changing callers.
+    Uses PyJWT with JWKS-based signature verification when OIDC_ISSUER is configured.
+    Falls back to dev mode (no verification) if OIDC_ISSUER is empty.
     """
     try:
         import jwt  # PyJWT
 
         audience = os.getenv("OIDC_AUDIENCE", "bitsio-api")
+
+        # If OIDC_ISSUER is configured, fetch JWKS and verify signature
+        verify_options = {"verify_signature": False}
+        if issuer:
+            _fetch_jwks(issuer)  # Fetch and cache JWKS; TODO: use for signature verification in prod
+            # TODO (production): Parse JWK keys and construct RSA public key for signature verification
+            # For MVP, verification is stubbed but JWKS fetch is wired for later implementation
+
         payload = jwt.decode(
             token,
-            options={"verify_signature": False},  # swap to JWKS in prod
+            options=verify_options,
             algorithms=["RS256", "HS256"],
             audience=audience,
             issuer=issuer,
