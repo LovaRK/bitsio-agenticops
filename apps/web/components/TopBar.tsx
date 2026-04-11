@@ -1,35 +1,37 @@
 "use client";
 
+import Link from "next/link";
+
 export function TopBar() {
   return (
     <header className="fixed top-0 right-0 left-64 h-16 bg-surface/60 backdrop-blur-xl flex justify-between items-center px-8 w-full border-b border-outline-variant/15 z-40">
       <div className="flex items-center gap-8">
         <div className="text-lg font-bold text-on-surface font-headline">AgenticOps</div>
         <nav className="flex gap-6">
-          <a
+          <Link
             className="text-on-surface-variant hover:text-on-surface transition-opacity text-sm font-medium"
-            href="#"
+            href="/"
           >
             Timeline
-          </a>
-          <a
+          </Link>
+          <Link
             className="text-on-surface-variant hover:text-on-surface transition-opacity text-sm font-medium"
-            href="#"
+            href="/monitoring"
           >
             Logs
-          </a>
-          <a
+          </Link>
+          <Link
             className="text-on-surface-variant hover:text-on-surface transition-opacity text-sm font-medium"
-            href="#"
+            href="/incidents"
           >
             Traces
-          </a>
-          <a
+          </Link>
+          <Link
             className="text-on-surface-variant hover:text-on-surface transition-opacity text-sm font-medium"
-            href="#"
+            href="/monitoring"
           >
             Metrics
-          </a>
+          </Link>
         </nav>
       </div>
       <div className="flex items-center gap-4">

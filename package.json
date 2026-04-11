@@ -1,0 +1,11 @@
+{
+  "name": "bitsio-agenticops",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.5.2",
+  "scripts": {
+    "lint": "pnpm -r lint",
+    "test:e2e": "pnpm --filter web test:e2e",
+    "test:web": "pnpm --filter web test"
+  }
+}

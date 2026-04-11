@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ActionDock } from "@/components/ActionDock";
 
 const mockIncidents = [
   {
@@ -228,28 +229,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Floating Action Dock */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-surface-variant/60 backdrop-blur-xl border border-outline-variant/30 px-6 py-3 rounded-full flex items-center gap-8 shadow-2xl z-50">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-on-surface uppercase tracking-wider">System Pulse</span>
-          <div className="flex gap-1">
-            <div className="w-1 h-3 bg-secondary rounded-full"></div>
-            <div className="w-1 h-5 bg-secondary rounded-full"></div>
-            <div className="w-1 h-4 bg-secondary rounded-full"></div>
-            <div className="w-1 h-6 bg-secondary rounded-full"></div>
-          </div>
-        </div>
-        <div className="h-6 w-px bg-outline-variant/30"></div>
-        <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 text-xs font-bold text-on-tertiary-fixed hover:text-tertiary transition-colors">
-            <span className="material-symbols-outlined text-sm">bolt</span>
-            Quick Resolve (4)
-          </button>
-          <button className="flex items-center gap-2 text-xs font-bold text-primary hover:text-primary transition-colors">
-            <span className="material-symbols-outlined text-sm">history</span>
-            Recent Activity
-          </button>
-        </div>
-      </div>
+      <ActionDock />
     </section>
   );
 }

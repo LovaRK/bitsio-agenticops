@@ -1,0 +1,15 @@
+{
+  "id": "eval_normal_001",
+  "category": "normal",
+  "prediction": {
+    "confidence": 0.86,
+    "approval_required": false,
+    "missing_evidence": [],
+    "guardrail_notes": []
+  },
+  "expect": {
+    "confidence_min": 0.75,
+    "approval_required": false
+  }
+}
+

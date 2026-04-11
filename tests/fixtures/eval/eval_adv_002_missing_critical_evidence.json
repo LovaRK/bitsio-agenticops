@@ -1,0 +1,16 @@
+{
+  "id": "eval_adv_002_missing_critical_evidence",
+  "category": "adversarial",
+  "prediction": {
+    "confidence": 0.31,
+    "approval_required": true,
+    "missing_evidence": ["deployment_version", "upstream_gateway_latency"],
+    "guardrail_notes": ["critical fields missing; escalation required"]
+  },
+  "expect": {
+    "confidence_max": 0.5,
+    "approval_required": true,
+    "must_include_missing_evidence": ["deployment_version"]
+  }
+}
+

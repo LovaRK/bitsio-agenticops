@@ -1,0 +1,6 @@
+{
+  "indexes": [
+    {"name": "tutorial", "size_mb": 128.4, "event_count": 3211},
+    {"name": "main", "size_mb": 2048.1, "event_count": 98523}
+  ]
+}

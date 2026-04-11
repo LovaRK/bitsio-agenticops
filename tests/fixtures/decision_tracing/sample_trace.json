@@ -1,0 +1,26 @@
+{
+  "workflow_id": "wf_20260408_0001",
+  "incident_id": "inc_20260408_42",
+  "graph_name": "telemetry_value_agent",
+  "graph_version": "v1.0.0",
+  "started_at": "2026-04-08T00:12:34Z",
+  "completed_at": "2026-04-08T00:12:58Z",
+  "actor_type": "agent",
+  "model_provider": "anthropic",
+  "model_name": "claude",
+  "prompt_version": "v1.2.0",
+  "node_runs": [
+    {
+      "node_name": "evidence_retrieval",
+      "started_at": "2026-04-08T00:12:35Z",
+      "status": "success",
+      "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "output_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "tool_calls": [{"tool_name": "run_search", "status": "success"}],
+      "policy_checks": []
+    }
+  ],
+  "final_assessment": "low_value_telemetry_identified",
+  "confidence": 0.87,
+  "approval_required": false
+}

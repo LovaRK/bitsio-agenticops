@@ -1,0 +1,9 @@
+{
+  "results": [
+    {"host": "payments-api-1", "message": "timeout", "status": "error"},
+    {"host": "payments-api-1", "message": "retry", "status": "warn"},
+    {"host": "payments-api-2", "message": "timeout", "status": "error"}
+  ],
+  "messages": ["ok"],
+  "done": true
+}
