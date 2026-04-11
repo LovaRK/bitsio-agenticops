@@ -1,0 +1,47 @@
+{
+  "workflow_id": "wf_20260408_0002",
+  "incident_id": "inc_20260408_43",
+  "title": "Checkout retry storm",
+  "severity": "medium",
+  "timestamp": "2026-04-08T10:08:00Z",
+  "source_index": "tutorial",
+  "status": "resolved",
+  "graph_version": "v1.0.0",
+  "assigned_agent": "telemetry_value_agent",
+  "summary": "Retry amplification was traced to transient gateway saturation and self-recovered.",
+  "probable_cause": "gateway saturation during cache warmup window",
+  "confidence": 0.91,
+  "approval_required": false,
+  "evidence_refs": [
+    "https://splunk.local/app/search/search?q=gateway_latency",
+    "https://splunk.local/app/search/search?q=retry_rate"
+  ],
+  "missing_evidence": [],
+  "node_runs": [
+    {
+      "node_name": "incident_ingest",
+      "status": "success",
+      "started_at": "2026-04-08T00:08:34Z",
+      "duration_ms": 40,
+      "tool_calls": [],
+      "policy_checks": []
+    },
+    {
+      "node_name": "evidence_retrieval",
+      "status": "success",
+      "started_at": "2026-04-08T00:08:35Z",
+      "duration_ms": 180,
+      "tool_calls": [{ "tool_name": "run_search", "status": "success" }],
+      "policy_checks": []
+    },
+    {
+      "node_name": "approval_check",
+      "status": "success",
+      "started_at": "2026-04-08T00:08:58Z",
+      "duration_ms": 20,
+      "tool_calls": [],
+      "policy_checks": [{ "rule_id": "env-prod-approval", "matched": false, "action": "continue" }]
+    }
+  ]
+}
+
