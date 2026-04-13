@@ -5,7 +5,7 @@ from pathlib import Path
 from agent_core.models.adapter import ModelAdapter
 from agent_core.state.telemetry_state import TelemetryAgentState
 
-PROMPT_PATH = Path("packages/prompts/graph-nodes/reasoning_draft.txt")
+PROMPT_PATH = Path(__file__).parent.parent.parent.parent.parent / "prompts" / "graph-nodes" / "reasoning_draft.txt"
 
 
 def reasoning_draft(state: TelemetryAgentState, model: ModelAdapter) -> TelemetryAgentState:

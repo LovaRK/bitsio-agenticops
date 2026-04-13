@@ -5,17 +5,19 @@ from pathlib import Path
 from agent_core.policies.evaluator import PolicyEvaluator
 from agent_core.state.telemetry_state import TelemetryAgentState
 
-RULES_DIR = Path("packages/agent-core/src/agent_core/policies/rules")
+RULES_DIR = Path(__file__).parent.parent / "policies" / "rules"
 
 
 def approval_check(
     state: TelemetryAgentState,
     *,
+    evaluator: PolicyEvaluator | None = None,
     environment: str = "dev",
     action_type: str = "read",
 ) -> TelemetryAgentState:
     next_state = state.model_copy(deep=True)
-    evaluator = PolicyEvaluator(RULES_DIR)
+    if evaluator is None:
+        evaluator = PolicyEvaluator(RULES_DIR)
 
     checks = evaluator.evaluate(
         {

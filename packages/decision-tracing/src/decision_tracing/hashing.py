@@ -33,3 +33,6 @@ def canonical_json(obj: Any) -> str:
 
 def sha256_hex(obj: Any) -> str:
     return hashlib.sha256(canonical_json(obj).encode("utf-8")).hexdigest()
+
+
+hash_content = sha256_hex

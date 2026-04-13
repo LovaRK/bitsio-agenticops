@@ -28,8 +28,14 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(default="http://127.0.0.1:11434", alias="OLLAMA_BASE_URL")
 
     # ── Splunk MCP ────────────────────────────────────────────────────────────
-    splunk_mcp_url: str = Field(default="http://localhost:8081", alias="SPLUNK_MCP_URL")
+    splunk_mcp_base_url: str = Field(default="http://localhost:8081", alias="SPLUNK_MCP_BASE_URL")
     splunk_mcp_token: str = Field(default="", alias="SPLUNK_MCP_TOKEN")
+    splunk_mcp_role: str = Field(default="read_only", alias="SPLUNK_MCP_ROLE")
+    splunk_mcp_ssl_verify: bool = Field(default=True, alias="SPLUNK_MCP_SSL_VERIFY")
+    splunk_auth_scheme: str = Field(default="Bearer", alias="SPLUNK_AUTH_SCHEME")
+    splunk_adapter_mode: str = Field(default="auto", alias="SPLUNK_ADAPTER_MODE")
+    splunk_web_base_url: str = Field(default="", alias="SPLUNK_WEB_BASE_URL")
+    splunk_live_mode: bool = Field(default=False, alias="SPLUNK_LIVE_MODE")
 
     # ── Auth / OIDC ───────────────────────────────────────────────────────────
     oidc_issuer: str = Field(default="", alias="OIDC_ISSUER")
@@ -45,6 +51,11 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     graph_name: str = "telemetry_value_agent"
     graph_version: str = "v1.0.0"
+    web_base_url: str = Field(default="http://localhost:3000", alias="WEB_BASE_URL")
+    rate_limit_per_minute: int = Field(default=100, alias="RATE_LIMIT_PER_MINUTE")
+    tenant_safe_id: str = Field(default="tenant_demo", alias="TENANT_SAFE_ID")
+    app_timezone: str = Field(default="UTC", alias="APP_TIMEZONE")
+    model_mock_mode: bool = Field(default=False, alias="MODEL_MOCK_MODE")
 
     @field_validator("environment")
     @classmethod

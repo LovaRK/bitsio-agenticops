@@ -11,6 +11,7 @@ from agent_core.nodes.evidence_retrieval import evidence_retrieval
 from agent_core.nodes.final_response import final_response
 from agent_core.nodes.incident_ingest import incident_ingest
 from agent_core.nodes.reasoning_draft import reasoning_draft
+from agent_core.policies.evaluator import PolicyEvaluator
 from agent_core.state.telemetry_state import TelemetryAgentState
 from agent_core.telemetry import node_span
 from splunk_mcp.adapter import SplunkMCPAdapter
@@ -23,6 +24,7 @@ _GRAPH_VERSION = "v1.0.0"
 class TelemetryValueAgentGraph:
     splunk_adapter: SplunkMCPAdapter
     model_adapter: ModelAdapter = field(default_factory=StubModelAdapter)
+    policy_evaluator: PolicyEvaluator | None = None
 
     def run(
         self,
@@ -64,7 +66,12 @@ class TelemetryValueAgentGraph:
             current = confidence_score(current)
 
         with node_span("approval_check", **span_kwargs):
-            current = approval_check(current, environment=environment, action_type=action_type)
+            current = approval_check(
+                current,
+                evaluator=self.policy_evaluator,
+                environment=environment,
+                action_type=action_type,
+            )
 
         with node_span("final_response", **span_kwargs):
             current = final_response(current)

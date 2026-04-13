@@ -172,25 +172,30 @@ def _validate_jwt(token: str, issuer: str) -> AuthContext:
     """
     try:
         import jwt  # PyJWT
+        from jwt import PyJWKClient
 
         audience = os.getenv("OIDC_AUDIENCE", "bitsio-api")
 
         # If OIDC_ISSUER is configured, fetch JWKS and verify signature
-        verify_options = {"verify_signature": False}
         if issuer:
-            _fetch_jwks(
-                issuer
-            )  # Fetch and cache JWKS; TODO: use for signature verification in prod
-            # TODO (production): Parse JWK keys and construct RSA public key for signature verification
-            # For MVP, verification is stubbed but JWKS fetch is wired for later implementation
+            jwks_url = f"{issuer}/.well-known/jwks.json"
+            jwks_client = PyJWKClient(jwks_url, cache_keys=True)
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+            payload = jwt.decode(
+                token,
+                signing_key.key,
+                algorithms=["RS256", "HS256"],
+                audience=audience,
+                issuer=issuer,
+            )
+        else:
+            # No issuer configured — no signature verification (dev only)
+            payload = jwt.decode(
+                token,
+                options={"verify_signature": False},
+                algorithms=["RS256", "HS256"],
+            )
 
-        payload = jwt.decode(
-            token,
-            options=verify_options,
-            algorithms=["RS256", "HS256"],
-            audience=audience,
-            issuer=issuer,
-        )
         user_id: str = payload.get("sub", "unknown")
         role_str: str = payload.get("role", "viewer")
         try:

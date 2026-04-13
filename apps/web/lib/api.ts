@@ -8,9 +8,10 @@ const API_BASE_URL = typeof window === "undefined" ? INTERNAL_API_BASE_URL : PUB
 
 const USE_MOCK_FALLBACK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 const REQUIRE_LIVE_API = process.env.NEXT_PUBLIC_REQUIRE_LIVE_API === "true";
-const DEV_ANALYST_KEY = process.env.NEXT_PUBLIC_DEV_API_KEY_ANALYST ?? "dev-analyst";
-const DEV_APPROVER_KEY = process.env.NEXT_PUBLIC_DEV_API_KEY_APPROVER ?? "dev-approver";
 const ACTION_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_ACTION_TIMEOUT_MS ?? "3000");
+
+// API keys are never exposed to browser — always set via server-side env vars only
+const DEV_ANALYST_KEY = process.env.DEV_ANALYST_KEY ?? "dev-analyst";
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -187,7 +188,7 @@ export async function submitApproval(workflowId: string, payload: ApprovalPayloa
   };
 
   if (process.env.NODE_ENV !== "production") {
-    headers["x-api-key"] = DEV_APPROVER_KEY;
+    headers["x-api-key"] = DEV_ANALYST_KEY;
   }
 
   if (USE_MOCK_FALLBACK) {
