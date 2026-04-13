@@ -35,3 +35,38 @@
 ### Verification Executed
 - `make test` (39 passed)
 - `make eval` (100% pass rate, threshold >=90%)
+
+## 2026-04-13
+- Added dual Splunk adapter support:
+  - `native` mode for `/services/search/jobs/export`
+  - `mcp` mode for `/services/mcp/*`
+  - `auto` mode resolution from base URL
+- Wired live adapter factory into API dependencies.
+- Added native adapter contract tests.
+- Fixed live browser approve/reject issue by enabling CORS middleware in API (OPTIONS preflight now `200`).
+- Added live run helper scripts:
+  - `scripts/run_live_api.py`
+  - `scripts/seed_live_splunk_demo.py`
+  - `scripts/verify_live_flow.py`
+- Added Make targets:
+  - `live-api`, `live-web`, `live-seed`, `live-verify`
+- Updated runbooks for:
+  - live production run
+  - SSH/Vultr tunnel setup
+  - showcase flow
+  - system design flow
+  - live persona scenario matrix
+  - AI/dev onboarding
+
+### Verification Executed
+- `make lint`
+- `uv run pytest -q` (55 passed)
+- `pnpm --filter web test:e2e` (8 passed)
+- Live adapter checks against `https://localhost:8089`:
+  - `get_server_info()` OK
+  - `list_indexes()` OK
+  - `run_search()` OK
+- Live API checks:
+  - `GET /api/v1/incidents` returns real incidents from `tutorial`
+  - `GET /api/v1/decision-traces/{id}` returns live trace
+  - approve + reject endpoints return `200`

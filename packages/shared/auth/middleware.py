@@ -14,13 +14,13 @@ from __future__ import annotations
 
 import os
 import time
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from fastapi import Depends, Header, HTTPException, status
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     VIEWER = "viewer"
     ANALYST = "analyst"
     APPROVER = "approver"
@@ -178,7 +178,9 @@ def _validate_jwt(token: str, issuer: str) -> AuthContext:
         # If OIDC_ISSUER is configured, fetch JWKS and verify signature
         verify_options = {"verify_signature": False}
         if issuer:
-            _fetch_jwks(issuer)  # Fetch and cache JWKS; TODO: use for signature verification in prod
+            _fetch_jwks(
+                issuer
+            )  # Fetch and cache JWKS; TODO: use for signature verification in prod
             # TODO (production): Parse JWK keys and construct RSA public key for signature verification
             # For MVP, verification is stubbed but JWKS fetch is wired for later implementation
 

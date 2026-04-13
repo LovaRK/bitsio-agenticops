@@ -1,222 +1,156 @@
-# Live Splunk MCP Mode Setup
+# Live Splunk Production Runbook
 
-This document guides you through connecting BitsIO AgenticOps to a **live Splunk instance** via the MCP adapter.
+This runbook is the canonical guide to run BitsIO AgenticOps with real Splunk data.
 
-## Current Status
+## What This Verifies
 
-✅ **Code Ready**: Live Splunk mode implemented and tested
-⏳ **Network Ready**: SSH tunnel needed for 8089 connectivity
+- Real incident list from Splunk (`index=tutorial`)
+- Real incident detail generation from live logs
+- Approval and rejection APIs from browser
+- No mock fallback in UI
 
-## Quick Start (with SSH Tunnel)
+## Prerequisites
 
-### 1. Start the SSH Tunnel
+- Working SSH access to `root@144.202.48.85`
+- Active Splunk JWT token in `.env`:
+  - `SPLUNK_MCP_TOKEN=...`
+- Local dependencies installed:
+  - `make bootstrap`
+
+## Required Environment
+
+Set these values in `/Users/ramakrishna/Desktop/OfficeWork/bitsio-agenticops/.env`:
+
 ```bash
+SPLUNK_LIVE_MODE=true
+SPLUNK_ADAPTER_MODE=native
+SPLUNK_MCP_BASE_URL=https://localhost:8089
+SPLUNK_MCP_SSL_VERIFY=false
+SPLUNK_AUTH_SCHEME=Bearer
+SPLUNK_WEB_BASE_URL=http://144.202.48.85:8000
+
+NEXT_PUBLIC_USE_MOCK=false
+NEXT_PUBLIC_REQUIRE_LIVE_API=true
+```
+
+## Startup (3 Terminals)
+
+### Terminal A (Tunnel)
+
+```bash
+cd /Users/ramakrishna/Desktop/OfficeWork/bitsio-agenticops
 make tunnel-start
-```
-
-This creates a secure tunnel:
-```
-localhost:8089 → 144.202.48.85:8089 (Splunk MCP)
-```
-
-### 2. Verify Tunnel is Active
-```bash
 make tunnel-status
 ```
 
-Expected output:
-```
-✅ Tunnel active (PID: 12345)
-```
-
-### 3. Start the Dev Stack
-```bash
-make dev
-```
-
-Wait for all services to be "Up":
-```
-bitsio-agenticops-api-1          ✅ Up
-bitsio-agenticops-web-1          ✅ Up
-bitsio-agenticops-postgres-1     ✅ Up
-...
-```
-
-### 4. Test Live Splunk Connectivity
-
-**API health check:**
-```bash
-curl -s http://localhost:8001/health | jq .
-```
-
-**List incidents from live Splunk:**
-```bash
-curl -s http://localhost:8001/api/v1/incidents | jq '.items[0]'
-```
-
-Expected: Incident data from your live Splunk instance (not mock data).
-
-**Web UI:**
-- Open http://localhost:3000
-- Navigate to an incident
-- Verify evidence comes from live Splunk (not mock data)
-
-## Environment Variables
-
-Located in `.env`:
+### Terminal B (API)
 
 ```bash
-# Live mode flags
-SPLUNK_LIVE_MODE=true                                    # Use live Splunk MCP
-NEXT_PUBLIC_USE_MOCK=false                              # No mock fallback
-NEXT_PUBLIC_REQUIRE_LIVE_API=true                       # Enforce live API
-
-# Splunk MCP endpoint (with SSH tunnel)
-SPLUNK_MCP_BASE_URL=https://localhost:8089/services/mcp # Tunnel endpoint
-SPLUNK_MCP_TOKEN=<your-read-only-token>                 # Read-only auth
-SPLUNK_MCP_ROLE=read_only                               # Role constraint
-
-# LLM
-ANTHROPIC_API_KEY=sk-ant-api03-...                      # For live reasoning
+cd /Users/ramakrishna/Desktop/OfficeWork/bitsio-agenticops
+make live-api
 ```
 
-### Switching Between Tunnel and Direct Access
+### Terminal C (Web)
 
-**With SSH tunnel (default):**
 ```bash
-SPLUNK_MCP_BASE_URL=https://localhost:8089/services/mcp
-make tunnel-start
-make dev
+cd /Users/ramakrishna/Desktop/OfficeWork/bitsio-agenticops
+make live-web
 ```
 
-**Direct (if 8089 is publicly accessible):**
+Open browser:
+
+- `http://127.0.0.1:3000/incidents`
+
+## If Tutorial Data Is Missing
+
+Seed realistic demo records into Splunk:
+
 ```bash
-SPLUNK_MCP_BASE_URL=https://144.202.48.85:8089/services/mcp
-make dev  # No tunnel needed
+cd /Users/ramakrishna/Desktop/OfficeWork/bitsio-agenticops
+make live-seed
 ```
 
-## Architecture
+Then refresh `/incidents`.
 
-```
-┌─────────────────┐
-│  Web Browser    │
-│   localhost:3000│
-└────────┬────────┘
-         │
-         v
-┌─────────────────────────────────┐
-│  Next.js (localhost:3000)       │
-│  ├─ Fetch incidents from API    │
-│  └─ No mock fallback            │
-└────────┬────────────────────────┘
-         │
-         v
-┌─────────────────────────────────┐
-│  FastAPI (localhost:8001)       │
-│  ├─ splunk_live.py (live mode)  │
-│  ├─ SplunkMCPAdapter            │
-│  └─ Decision trace storage      │
-└────────┬────────────────────────┘
-         │
-         v
-┌──────────────────────────────────┐
-│  SSH Tunnel                      │
-│  localhost:8089 → 144.202.48.85  │
-└────────┬─────────────────────────┘
-         │
-         v
-┌──────────────────────────────────┐
-│  Splunk MCP Server               │
-│  (144.202.48.85:8089)            │
-│  ├─ list_indexes()               │
-│  ├─ run_search()                 │
-│  └─ get_server_info()            │
-└──────────────────────────────────┘
+## API Verification
+
+Run full live API checks:
+
+```bash
+cd /Users/ramakrishna/Desktop/OfficeWork/bitsio-agenticops
+make live-verify
 ```
 
-## Verification Checklist
+Expected:
 
-- [ ] SSH tunnel is running (`make tunnel-status`)
-- [ ] `.env` has `SPLUNK_LIVE_MODE=true`
-- [ ] `.env` has `SPLUNK_MCP_BASE_URL=https://localhost:8089/services/mcp`
-- [ ] `.env` has valid `SPLUNK_MCP_TOKEN` (read-only)
-- [ ] Docker stack is up (`docker compose ps`)
-- [ ] API responds with live data (`curl http://localhost:8001/api/v1/incidents`)
-- [ ] Web UI loads at http://localhost:3000
-- [ ] Incidents show real Splunk data (not mock)
+- `/health` passes
+- `/api/v1/incidents` returns items
+- `/api/v1/decision-traces/{id}` returns live trace
+- approve + reject calls return `200`
+- approval list reflects latest decisions
+
+## Browser Verification Checklist
+
+1. `/incidents` page loads with no runtime error.
+2. At least one incident row is visible.
+3. Click `Details` for first row.
+4. Detail page shows:
+   - `Final Assessment`
+   - `Reasoning Timeline`
+   - `Decision Gate` (for high/medium severity)
+5. Enter comment and click `Approve`:
+   - success message appears.
+6. Reload page, click `Reject`:
+   - rejection message appears.
+7. Navigate side menu links:
+   - Dashboard, Incidents, Approvals, Monitoring, Settings, Support.
+
+## Switching Between Mock and Live (No Restart)
+
+From `Settings -> Runtime Control`:
+
+- Select `Runtime Profile`:
+  - `Local Dev` for safe demo defaults.
+  - `Cloud Live` for production-like defaults.
+- `Use Live Splunk Data = ON`:
+  - API serves incidents and traces from Splunk.
+- `Use Live Splunk Data = OFF`:
+  - API serves local seeded incidents for deterministic demos.
+- Use `Test Connections` to validate both:
+  - model runtime path
+  - Splunk adapter connectivity
+
+Keep `Splunk Adapter Mode` aligned with your backend:
+- `mcp` -> `/services/mcp/*`
+- `native` -> `/services/search/jobs/export`
+- `auto` -> infer by URL
 
 ## Troubleshooting
 
-### "Connection refused" on 8089
+### 401 Unauthorized from Splunk
 
-**Cause**: SSH tunnel not running.
+- Token expired or wrong audience/scope.
+- Regenerate token and update `.env`.
 
-**Fix**:
-```bash
-make tunnel-start
-make tunnel-status
-```
+### No incidents shown
 
-### "ModuleNotFoundError: splunk_mcp" in API logs
+- Verify tunnel is active (`make tunnel-status`).
+- Run `make live-seed`.
+- Confirm API log does not show 502 from Splunk.
 
-**Cause**: Docker image wasn't rebuilt with fixed `PYTHONPATH`.
+### Approve/Reject fails in browser
 
-**Fix**:
-```bash
-docker compose down
-docker compose build --no-cache api
-docker compose up
-```
+- Ensure API started via `make live-api` (includes CORS middleware).
+- Ensure web started via `make live-web` with `NEXT_PUBLIC_REQUIRE_LIVE_API=true`.
 
-### Mock data still showing instead of live Splunk
+### Tunnel not working
 
-**Cause**: `SPLUNK_LIVE_MODE` not set, or fallback enabled.
+- Stop and restart:
+  - `make tunnel-stop`
+  - `make tunnel-start`
 
-**Fix**:
-```bash
-# In .env:
-SPLUNK_LIVE_MODE=true
-NEXT_PUBLIC_USE_MOCK=false
-NEXT_PUBLIC_REQUIRE_LIVE_API=true
-
-# Restart:
-docker compose restart api web
-```
-
-### "Invalid token" or "Unauthorized" from Splunk MCP
-
-**Cause**: `SPLUNK_MCP_TOKEN` is invalid or expired.
-
-**Fix**:
-1. SSH to 144.202.48.85
-2. Regenerate read-only token in Splunk Admin UI
-3. Update `.env` with new token
-4. Restart Docker stack
-
-## Running Tests
-
-All tests pass with live mode enabled:
+## Shutdown
 
 ```bash
-make test          # 42 unit tests + live mode
-make api-smoke     # API smoke test (requires tunnel)
-pnpm --filter web test:e2e  # E2E tests with live API
-make verify-local  # Full verification suite
+make tunnel-stop
 ```
-
-## Next Steps
-
-1. ✅ Code is ready for production Splunk mode
-2. ⏳ Verify Splunk MCP endpoint is reachable (use SSH tunnel or firewall rules)
-3. 📋 Proceed to Phase 8 hardening:
-   - RBAC middleware integration
-   - Load testing against live Splunk
-   - Release gate workflows
-   - Threat model deep dive
-
-## Reference
-
-- **Splunk MCP Adapter**: `packages/connectors/splunk-mcp/`
-- **Live Service**: `apps/api/app/services/splunk_live.py`
-- **API Routes**: `apps/api/app/main.py`
-- **Web Integration**: `apps/web/lib/api.ts`

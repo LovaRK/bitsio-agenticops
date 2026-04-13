@@ -9,7 +9,9 @@ from locust import HttpUser, between, task
 
 
 def _load_trace_fixture() -> dict:
-    fixture_path = Path(__file__).resolve().parents[1] / "fixtures" / "decision_tracing" / "sample_trace.json"
+    fixture_path = (
+        Path(__file__).resolve().parents[1] / "fixtures" / "decision_tracing" / "sample_trace.json"
+    )
     return json.loads(fixture_path.read_text(encoding="utf-8"))
 
 

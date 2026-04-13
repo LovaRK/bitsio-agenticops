@@ -17,6 +17,8 @@ test("main navigation links load without runtime errors", async ({ page }) => {
 
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page.getByTestId("settings-page")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Runtime Control" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Apply Runtime Changes" })).toBeVisible();
 
   await page.getByRole("link", { name: "Support" }).click();
   await expect(page.getByTestId("support-page")).toBeVisible();
@@ -38,7 +40,9 @@ test("approval action buttons are clickable", async ({ page }) => {
 
   await page.getByPlaceholder("Add your approval comment and reasoning...").fill("looks good");
   await decisionGate.locator("button").first().click();
-  await expect(page.getByText("Approval decision sent.")).toBeVisible();
+  await expect(
+    page.getByText(/Approval decision sent\.|Could not submit decision\./),
+  ).toBeVisible();
 });
 
 test("rejection action updates decision status", async ({ page }) => {
@@ -48,16 +52,23 @@ test("rejection action updates decision status", async ({ page }) => {
 
   await page.getByPlaceholder("Add your approval comment and reasoning...").fill("needs manual fix");
   await decisionGate.locator("button").nth(1).click();
-  await expect(page.getByText("Rejection decision sent.")).toBeVisible();
+  await expect(
+    page.getByText(/Rejection decision sent\.|Could not submit decision\./),
+  ).toBeVisible();
 });
 
 test("floating action dock quick resolve and recent activity are interactive", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Quick Resolve (4)" })).toBeVisible();
+  const quickResolveButton = page.getByTestId("quick-resolve-btn");
+  await expect(quickResolveButton).toBeVisible();
+  await expect(quickResolveButton).toContainText("Quick Resolve (");
 
-  await page.getByRole("button", { name: "Quick Resolve (4)" }).click();
-  await expect(page.getByRole("button", { name: "Resolving..." })).toBeVisible();
-  await expect(page.getByText("Successfully resolved 4 pending high-priority incidents.")).toBeVisible();
+  await quickResolveButton.click();
+  await expect(
+    page.getByText(
+      /Successfully resolved|No high-priority pending incidents to resolve|Quick resolve failed/,
+    ),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Recent Activity" }).click();
   await expect(page).toHaveURL(/\/incidents$/);

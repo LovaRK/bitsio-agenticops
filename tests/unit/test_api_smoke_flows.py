@@ -20,7 +20,11 @@ def test_smoke_flow_rbac_rate_limit_and_lifecycle() -> None:
     client = TestClient(app)
 
     payload = _payload()
-    analyst_headers = {"x-api-key": "dev-analyst", "x-user-id": "smoke-analyst", "x-tenant-id": "tenant_smoke"}
+    analyst_headers = {
+        "x-api-key": "dev-analyst",
+        "x-user-id": "smoke-analyst",
+        "x-tenant-id": "tenant_smoke",
+    }
     approver_headers = {
         "x-api-key": "dev-approver",
         "x-user-id": "smoke-approver",
@@ -48,7 +52,9 @@ def test_smoke_flow_rbac_rate_limit_and_lifecycle() -> None:
     )
     assert approved.status_code == 200
 
-    listed = client.get("/api/v1/decision-traces/wf_smoke_test_unit/approvals", headers=analyst_headers)
+    listed = client.get(
+        "/api/v1/decision-traces/wf_smoke_test_unit/approvals", headers=analyst_headers
+    )
     assert listed.status_code == 200
     assert len(listed.json()["items"]) >= 1
 
@@ -77,4 +83,3 @@ def test_smoke_flow_rbac_rate_limit_and_lifecycle() -> None:
         },
     )
     assert isolated.status_code == 200
-

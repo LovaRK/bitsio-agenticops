@@ -1,3 +1,8 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import type { NodeRun } from "@/types/decision-trace";
 
 function getStatusStyles(status: NodeRun["status"]) {
@@ -27,6 +32,10 @@ function getStatusStyles(status: NodeRun["status"]) {
 }
 
 export function ReasoningTimeline({ nodeRuns }: { nodeRuns: NodeRun[] }) {
+  const router = useRouter();
+  const [dockVisible, setDockVisible] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Mock data for tool calls display (in evidence_retrieval node)
   const toolCallsData: Record<string, { tool: string; icon: string }[]> = {
     evidence_retrieval: [
@@ -35,13 +44,30 @@ export function ReasoningTimeline({ nodeRuns }: { nodeRuns: NodeRun[] }) {
     ]
   };
 
+  const memoryUsage = useMemo(() => {
+    const pending = nodeRuns.filter((run) => run.status === "pending").length;
+    const computed = 32 + nodeRuns.length * 2 + pending * 4;
+    return Math.max(24, Math.min(92, computed));
+  }, [nodeRuns]);
+
   const formatTime = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      return date.toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
     } catch {
       return dateString;
     }
+  };
+
+  const onRefresh = () => {
+    setIsRefreshing(true);
+    router.refresh();
+    window.setTimeout(() => setIsRefreshing(false), 650);
   };
 
   return (
@@ -61,7 +87,7 @@ export function ReasoningTimeline({ nodeRuns }: { nodeRuns: NodeRun[] }) {
 
       {/* Timeline Container */}
       <div className="relative pl-8 border-l border-outline-variant/20 space-y-12">
-        {nodeRuns.map((node, index) => {
+        {nodeRuns.map((node) => {
           const styles = getStatusStyles(node.status);
           const toolCalls = toolCallsData[node.node_name] || [];
           const isLocked = node.status === "fail";
@@ -112,7 +138,7 @@ export function ReasoningTimeline({ nodeRuns }: { nodeRuns: NodeRun[] }) {
                       )}
                       {node.node_name === "correlation" &&
                         "Vector search identifies similarity between current spike and INC-4410 (Redis connection pool exhaustion)."}
-                      {!["incident_ingest", "evidence_retrieval", "correlation"].includes(node.node_name) &&
+                      {! ["incident_ingest", "evidence_retrieval", "correlation"].includes(node.node_name) &&
                         `Processed in ${node.duration_ms}ms with ${node.tool_calls.length} tool calls.`}
                     </p>
 
@@ -136,28 +162,44 @@ export function ReasoningTimeline({ nodeRuns }: { nodeRuns: NodeRun[] }) {
       </div>
 
       {/* Footer Status Dock */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-fit px-8 py-3 glass-panel rounded-full border border-outline-variant/20 shadow-2xl flex items-center gap-8 z-50">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-secondary glow-success"></div>
-          <span className="text-xs font-bold tracking-tight text-on-surface">
-            Agent: <span className="text-on-surface-variant">Observer-Prime</span>
-          </span>
+      {dockVisible ? (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-fit px-8 py-3 glass-panel rounded-full border border-outline-variant/20 shadow-2xl flex items-center gap-8 z-50" data-testid="timeline-status-dock">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-secondary glow-success"></div>
+            <span className="text-xs font-bold tracking-tight text-on-surface">
+              Agent: <span className="text-on-surface-variant">Observer-Prime</span>
+            </span>
+          </div>
+          <div className="h-4 w-px bg-outline-variant/30"></div>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm text-on-surface-variant">memory</span>
+            <span className="text-xs font-mono text-on-surface-variant">Memory Usage: {memoryUsage}%</span>
+          </div>
+          <div className="h-4 w-px bg-outline-variant/30"></div>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              aria-label="Refresh timeline"
+              onClick={onRefresh}
+              className="material-symbols-outlined text-sm text-primary cursor-pointer hover:scale-110 transition-transform"
+              data-testid="timeline-refresh-btn"
+            >
+              <span className={isRefreshing ? "animate-spin inline-block" : "inline-block"}>
+                {isRefreshing ? "progress_activity" : "refresh"}
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-label="Close status dock"
+              onClick={() => setDockVisible(false)}
+              className="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer hover:scale-110 transition-transform"
+              data-testid="timeline-close-btn"
+            >
+              close
+            </button>
+          </div>
         </div>
-        <div className="h-4 w-px bg-outline-variant/30"></div>
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-sm text-on-surface-variant">memory</span>
-          <span className="text-xs font-mono text-on-surface-variant">Memory Usage: 42%</span>
-        </div>
-        <div className="h-4 w-px bg-outline-variant/30"></div>
-        <div className="flex items-center gap-4">
-          <span className="material-symbols-outlined text-sm text-primary cursor-pointer hover:scale-110 transition-transform">
-            refresh
-          </span>
-          <span className="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer hover:scale-110 transition-transform">
-            close
-          </span>
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 # MASTER_ROADMAP
 
 ## Active Target
-Pro Core+UI (Phases 0-7), Local Docker First, Mock-First Splunk, strict phase gates.
+Pro Core+UI + Phase 8 hardening complete, with dual Splunk adapter modes (`native` and `mcp`) and strict phase gates.
 
 ## Phase Status
 - Phase 0: Done (ADRs + MVP contract)
@@ -13,10 +13,11 @@ Pro Core+UI (Phases 0-7), Local Docker First, Mock-First Splunk, strict phase ga
 - Phase 6: Done (approval endpoints + policy evaluator)
 - Phase 7: Done (incident detail UI + timeline/evidence/approval + e2e)
 - Phase 8: Done (RBAC wiring + tenant rate limiting + eval harness/release gate + load tests + threat model)
+- Live Integration: Done (native Splunk REST mode via SSH tunnel + browser approve/reject flow)
 
 ## Gate Checklist
 - [x] bootstrap passes (`uv sync --all-groups` + `pnpm install`)
-- [ ] lint passes (`make lint`)
+- [x] lint passes (`make lint`)
 - [x] unit + contract tests pass (`make test`)
 - [x] schema validation passes (`uv run python infra/scripts/validate_schemas.py`)
 - [x] web e2e pass on updated UI contract (`pnpm --filter web test:e2e`)

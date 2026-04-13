@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set timeout 10
+set password {M)9fN4g@jF$$pvGo}
+spawn ssh -o StrictHostKeyChecking=no root@144.202.48.85
+expect "password:"
+send "$password\r"
+expect "#"
+send "/opt/splunk/bin/splunk search \"| rest /services/authorization/tokens | table title author token\" -auth admin:admin123\r"
+expect "#"
+send "exit\r"

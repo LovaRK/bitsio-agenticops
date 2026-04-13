@@ -5,21 +5,25 @@ from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import quote_plus
 
-from splunk_mcp.adapter import SplunkMCPAdapter
+from splunk_mcp.adapter import SplunkAdapter
 
 
 class SplunkIncidentService:
-    def __init__(self, adapter: SplunkMCPAdapter, splunk_web_base_url: str | None = None) -> None:
+    def __init__(self, adapter: SplunkAdapter, splunk_web_base_url: str | None = None) -> None:
         self.adapter = adapter
         self.splunk_web_base_url = splunk_web_base_url.rstrip("/") if splunk_web_base_url else None
 
     def list_incidents(self, *, limit: int = 25) -> list[dict[str, Any]]:
         query = (
             "search index=tutorial "
+            '| rex field=_raw "incident_id=(?<incident_id>[^\\s,]+)" '
+            '| rex field=_raw "severity=(?<severity>[^\\s,]+)" '
+            '| rex field=_raw "status=(?<status>[^\\s,]+)" '
+            '| rex field=_raw "title=(?<title>[^\\s,]+)" '
             "| eval incident_id=coalesce(incident_id, tostring(id), tostring(correlation_id), tostring(_cd)) "
-            "| eval severity=coalesce(severity, level, log_level, \"medium\") "
-            "| eval title=coalesce(title, message, source, sourcetype, \"Telemetry incident\") "
-            "| eval status=coalesce(status, \"triaging\") "
+            '| eval severity=coalesce(severity, level, log_level, "medium") '
+            '| eval title=coalesce(title, message, source, sourcetype, "Telemetry incident") '
+            '| eval status=coalesce(status, "triaging") '
             "| stats latest(_time) as latest_time values(title) as title values(severity) as severity "
             "values(status) as status values(index) as source_index count as event_count by incident_id "
             "| sort - latest_time "
@@ -50,7 +54,15 @@ class SplunkIncidentService:
         incident_id = _normalize_incident_id(incident_ref)
         source_index = "tutorial"
         search_query = (
-            f"search index={source_index} (incident_id=\"{incident_id}\" OR \"{incident_id}\") "
+            f'search index={source_index} (incident_id="{incident_id}" OR "{incident_id}") '
+            '| rex field=_raw "incident_id=(?<incident_id>[^\\s,]+)" '
+            '| rex field=_raw "severity=(?<severity>[^\\s,]+)" '
+            '| rex field=_raw "status=(?<status>[^\\s,]+)" '
+            '| rex field=_raw "title=(?<title>[^\\s,]+)" '
+            "| eval incident_id=coalesce(incident_id, tostring(id), tostring(correlation_id), tostring(_cd)) "
+            '| eval severity=coalesce(severity, level, log_level, "medium") '
+            '| eval status=coalesce(status, "triaging") '
+            '| eval title=coalesce(title, message, source, sourcetype, "Telemetry incident") '
             "| head 200"
         )
         result = self.adapter.run_search(query=search_query, earliest="-24h", latest="now")
@@ -102,7 +114,9 @@ class SplunkIncidentService:
         search = quote_plus(f"search index={source_index} incident_id={incident_id}")
         if self.splunk_web_base_url:
             return [f"{self.splunk_web_base_url}/en-US/app/search/search?q={search}"]
-        return [f"splunk://search?query=search%20index%3D{source_index}%20incident_id%3D{incident_id}"]
+        return [
+            f"splunk://search?query=search%20index%3D{source_index}%20incident_id%3D{incident_id}"
+        ]
 
     @staticmethod
     def _node_runs_from_results(*, result_count: int) -> list[dict[str, Any]]:

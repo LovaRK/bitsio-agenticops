@@ -28,9 +28,24 @@ class _FakeAdapter:
         return SearchResultDTO(
             done=True,
             results=[
-                {"_time": "1712800010", "incident_id": "inc_99231", "severity": "high", "host": "api-1"},
-                {"_time": "1712800011", "incident_id": "inc_99231", "severity": "high", "host": "api-1"},
-                {"_time": "1712800013", "incident_id": "inc_99231", "severity": "high", "host": "api-2"},
+                {
+                    "_time": "1712800010",
+                    "incident_id": "inc_99231",
+                    "severity": "high",
+                    "host": "api-1",
+                },
+                {
+                    "_time": "1712800011",
+                    "incident_id": "inc_99231",
+                    "severity": "high",
+                    "host": "api-1",
+                },
+                {
+                    "_time": "1712800013",
+                    "incident_id": "inc_99231",
+                    "severity": "high",
+                    "host": "api-2",
+                },
             ],
         )
 
@@ -46,7 +61,9 @@ def test_list_incidents_from_splunk_rows() -> None:
 
 
 def test_decision_trace_shape_from_live_results() -> None:
-    service = SplunkIncidentService(adapter=_FakeAdapter(), splunk_web_base_url="http://144.202.48.85:8000")
+    service = SplunkIncidentService(
+        adapter=_FakeAdapter(), splunk_web_base_url="http://144.202.48.85:8000"
+    )
     trace = service.get_decision_trace("99231")
 
     assert trace["incident_id"] == "inc_99231"

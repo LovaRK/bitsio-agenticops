@@ -6,9 +6,9 @@ export default defineConfig({
     baseURL: "http://localhost:3000"
   },
   webServer: {
-    command: "pnpm dev",
+    command: "NEXT_PUBLIC_REQUIRE_LIVE_API=false pnpm dev",
     url: "http://localhost:3000",
     cwd: __dirname,
-    reuseExistingServer: true
+    reuseExistingServer: false
   }
 });

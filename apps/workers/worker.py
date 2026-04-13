@@ -20,7 +20,6 @@ import json
 import logging
 import os
 import signal
-import sys
 import time
 from typing import Any
 
@@ -58,19 +57,19 @@ signal.signal(signal.SIGINT, _handle_signal)
 # Job handlers
 # ---------------------------------------------------------------------------
 
+
 def handle_run_agent(payload: dict[str, Any], workflow_id: str) -> None:
     """Run TelemetryValueAgentGraph for an incident from a queue job."""
     from agent_core.graphs.telemetry_value_agent import TelemetryValueAgentGraph
-    from agent_core.models.adapter import AnthropicModelAdapter, StubModelAdapter
+    from agent_core.models.adapter import resolve_model_adapter
     from agent_core.state.telemetry_state import TelemetryAgentState
     from splunk_mcp.adapter import SplunkMCPAdapter
 
     splunk_url = os.getenv("SPLUNK_MCP_URL", "http://localhost:8081")
     splunk_token = os.getenv("SPLUNK_MCP_TOKEN", "")
-    api_key = os.getenv("ANTHROPIC_API_KEY", "")
 
     splunk = SplunkMCPAdapter(base_url=splunk_url, token=splunk_token)
-    model = AnthropicModelAdapter() if api_key else StubModelAdapter()
+    model = resolve_model_adapter()
     graph = TelemetryValueAgentGraph(splunk_adapter=splunk, model_adapter=model)
 
     state = TelemetryAgentState(
@@ -105,6 +104,7 @@ HANDLERS: dict[str, Any] = {
 # Worker loop
 # ---------------------------------------------------------------------------
 
+
 def process_job(raw: str) -> None:
     try:
         job: dict[str, Any] = json.loads(raw)
@@ -132,6 +132,7 @@ def process_job(raw: str) -> None:
 def run() -> None:
     try:
         import redis as redis_lib
+
         r = redis_lib.Redis.from_url(REDIS_URL, decode_responses=True)
         r.ping()
         log.info("Connected to Redis at %s", REDIS_URL)

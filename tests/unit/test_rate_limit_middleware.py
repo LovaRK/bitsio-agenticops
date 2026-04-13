@@ -47,4 +47,3 @@ def test_rate_limit_isolated_per_tenant() -> None:
 
     # A separate tenant should still have its own capacity.
     assert client.get("/probe", headers={"x-tenant-id": "tenant_b"}).status_code == 200
-

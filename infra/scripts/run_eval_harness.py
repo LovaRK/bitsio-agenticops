@@ -70,7 +70,9 @@ def run(fixtures_dir: Path, min_pass_rate: float) -> int:
     total = len(results)
     pass_rate = (passed / total) * 100.0
 
-    print(f"[eval] total={total} passed={passed} failed={total - passed} pass_rate={pass_rate:.2f}%")
+    print(
+        f"[eval] total={total} passed={passed} failed={total - passed} pass_rate={pass_rate:.2f}%"
+    )
     for result in results:
         if not result.passed:
             print(f"[eval] FAIL {result.case_id}")
@@ -107,4 +109,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

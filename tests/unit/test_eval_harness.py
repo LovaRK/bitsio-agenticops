@@ -34,4 +34,3 @@ def test_eval_harness_fails_when_pass_rate_below_threshold(tmp_path: Path) -> No
     }
     (tmp_path / "case.json").write_text(json.dumps(fixture), encoding="utf-8")
     assert run(tmp_path, min_pass_rate=90.0) == 1
-

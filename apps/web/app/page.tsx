@@ -1,128 +1,103 @@
 import Link from "next/link";
+
 import { ActionDock } from "@/components/ActionDock";
+import { getDashboardSummary, getSettingsSnapshot } from "@/lib/api";
 
-const mockIncidents = [
-  {
-    id: "INC-99230-AX",
-    name: "Memory Leak: VectorDB-Node-04",
-    severity: "critical" as const,
-    agentStatus: "Waiting for Approval",
-    timeDetected: "14:22:09 (2m ago)",
-    owner: { initials: "JD", name: "John Doe" },
-    action: "Review"
-  },
-  {
-    id: "INC-99231-BF",
-    name: "Anomalous API Latency: Stripe-Auth",
-    severity: "high" as const,
-    agentStatus: "Agent Running...",
-    timeDetected: "14:15:44 (9m ago)",
-    owner: { initials: "SA", name: "Sarah A." },
-    action: "Trace"
-  },
-  {
-    id: "INC-99234-ZY",
-    name: "Stale Cache: Product-Catalog-S3",
-    severity: "low" as const,
-    agentStatus: "Completed",
-    timeDetected: "13:58:12 (26m ago)",
-    owner: { initials: "BT", name: "AutoBot" },
-    action: "Archive"
-  },
-  {
-    id: "SEC-1102-DF",
-    name: "Data Exfiltration Warning: Edge-Node-UK",
-    severity: "critical" as const,
-    agentStatus: "Intervention Required",
-    timeDetected: "13:42:01 (42m ago)",
-    owner: { initials: "SR", name: "SecOps" },
-    action: "LOCK DOWN"
+function getSeverityStyles(severity: string) {
+  const normalized = severity.toLowerCase();
+  if (normalized === "high" || normalized === "critical") {
+    return { dot: "bg-error status-glow-error", badge: "text-error border-error/30" };
   }
-];
-
-function getSeverityStyles(severity: "critical" | "high" | "low") {
-  if (severity === "critical") {
-    return { dot: "bg-error status-glow-error", text: "text-error", badge: "text-error uppercase" };
+  if (normalized === "medium") {
+    return { dot: "bg-tertiary status-glow-warning", badge: "text-tertiary border-tertiary/30" };
   }
-  if (severity === "high") {
-    return { dot: "bg-tertiary status-glow-warning", text: "text-tertiary", badge: "text-tertiary uppercase" };
-  }
-  return { dot: "bg-secondary status-glow-success", text: "text-secondary", badge: "text-secondary uppercase" };
+  return { dot: "bg-secondary status-glow-success", badge: "text-secondary border-secondary/30" };
 }
 
-function getAgentStatusStyles(status: string) {
-  if (status.includes("Waiting")) {
-    return "flex items-center gap-2 text-tertiary";
-  }
-  if (status.includes("Running")) {
-    return "flex items-center gap-2 text-secondary";
-  }
-  if (status.includes("Completed")) {
-    return "flex items-center gap-2 text-on-surface-variant";
-  }
-  return "flex items-center gap-2 text-tertiary";
-}
+export default async function DashboardPage() {
+  const [summary, settings] = await Promise.all([getDashboardSummary(), getSettingsSnapshot()]);
+  const recent = summary.items.slice(0, 8);
+  const lastUpdated = new Date(summary.stats.last_updated).toLocaleString();
 
-export default function DashboardPage() {
   const stats = [
-    { label: "Active Incidents", value: "12", trend: "+2 since last hour", icon: "warning", color: "bg-error" },
-    { label: "Pending Approvals", value: "08", trend: "4 Urgent Actions", icon: "pending_actions", color: "bg-tertiary" },
-    { label: "Avg Resolution Time", value: "14m", trend: "-3m improvement", icon: "timer", color: "bg-secondary" }
+    {
+      label: "Active Incidents",
+      value: String(summary.stats.active_incidents),
+      sub: `${summary.stats.source_indexes.length} source indexes`,
+      icon: "warning",
+      color: "bg-error",
+    },
+    {
+      label: "Pending Approvals",
+      value: String(summary.stats.pending_approvals),
+      sub: "Human review required",
+      icon: "pending_actions",
+      color: "bg-tertiary",
+    },
+    {
+      label: "Avg Confidence",
+      value: `${Math.round(summary.stats.avg_confidence * 100)}%`,
+      sub: `Updated ${lastUpdated}`,
+      icon: "monitoring",
+      color: "bg-secondary",
+    },
   ];
 
   return (
     <section className="pt-6 pb-12 px-8" data-testid="dashboard-page">
-      {/* Summary Header */}
       <div className="mb-10">
         <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight mb-2">
           Incident Dashboard
         </h2>
         <p className="text-on-surface-variant text-sm">
-          Real-time surveillance of autonomous agent operations and system health.
+          Live view from Splunk incidents, approval queues, and graph outcomes.
         </p>
       </div>
 
-      {/* KPI Bento Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {stats.map((stat) => (
-          <div
+          <article
             key={stat.label}
-            className="bg-surface-container border border-outline-variant/10 p-6 rounded-xl relative overflow-hidden group"
+            className="bg-surface-container border border-outline-variant/10 p-6 rounded-xl"
           >
-            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform duration-700">
-              <span className="material-symbols-outlined text-8xl">{stat.icon}</span>
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-xs font-bold text-outline uppercase tracking-widest">{stat.label}</p>
+              <span className="material-symbols-outlined text-on-surface-variant text-lg">{stat.icon}</span>
             </div>
-            <p className="text-xs font-bold text-outline uppercase tracking-widest mb-1">
-              {stat.label}
-            </p>
-            <div className="flex items-baseline gap-3">
-              <h3 className="text-4xl font-headline font-black" style={{ color: `var(--color-${stat.color})` }}>
-                {stat.value}
-              </h3>
-              <span className="text-xs opacity-60 font-medium">{stat.trend}</span>
-            </div>
+            <p className="text-4xl font-headline font-black text-on-surface">{stat.value}</p>
+            <p className="text-xs text-on-surface-variant mt-2">{stat.sub}</p>
             <div className="mt-4 w-full bg-surface-container-lowest h-1 rounded-full overflow-hidden">
-              <div className={`${stat.color} h-full w-2/3`}></div>
+              <div className={`${stat.color} h-full w-2/3`} />
             </div>
-          </div>
+          </article>
         ))}
       </div>
 
-      {/* High-Density Incident Table */}
+      <div className="mb-8 rounded-xl border border-outline-variant/15 bg-surface-container-low px-5 py-4 flex flex-wrap items-center gap-3">
+        <span className="text-xs uppercase tracking-widest text-outline font-bold">Model Runtime</span>
+        <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-3 py-1 text-xs text-on-surface">
+          <span className="material-symbols-outlined text-sm">
+            {settings.model.runtime === "local" ? "memory" : "cloud"}
+          </span>
+          {settings.model.runtime}
+        </span>
+        <span className="inline-flex items-center rounded-full border border-outline-variant/30 bg-surface-container-high px-3 py-1 text-xs font-mono text-on-surface">
+          {settings.model.provider}:{settings.model.name}
+        </span>
+      </div>
+
       <div
         className="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/15"
         data-testid="incident-stream"
       >
         <div className="px-6 py-4 bg-surface-container border-b border-outline-variant/15 flex justify-between items-center">
           <h3 className="font-headline font-bold text-on-surface">Active Incident Stream</h3>
-          <div className="flex gap-2">
-            <button className="text-xs font-bold px-3 py-1 bg-surface-container-high rounded text-on-surface-variant hover:text-on-surface transition-colors">
-              Export Logs
-            </button>
-            <button className="text-xs font-bold px-3 py-1 bg-surface-container-high rounded text-on-surface-variant hover:text-on-surface transition-colors">
-              Filters
-            </button>
-          </div>
+          <Link
+            href="/incidents"
+            className="text-xs font-bold px-3 py-1 bg-surface-container-high rounded text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            Open Explorer
+          </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -132,93 +107,49 @@ export default function DashboardPage() {
                   Severity
                 </th>
                 <th className="px-6 py-3 text-[10px] font-black text-outline uppercase tracking-widest">
-                  Incident Name
+                  Incident
                 </th>
                 <th className="px-6 py-3 text-[10px] font-black text-outline uppercase tracking-widest">
-                  Agent Status
+                  Status
                 </th>
                 <th className="px-6 py-3 text-[10px] font-black text-outline uppercase tracking-widest">
-                  Time Detected
-                </th>
-                <th className="px-6 py-3 text-[10px] font-black text-outline uppercase tracking-widest">
-                  Owner
+                  Timestamp
                 </th>
                 <th className="px-6 py-3 text-[10px] font-black text-outline uppercase tracking-widest text-right">
-                  Actions
+                  Action
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/5">
-              {mockIncidents.map((incident) => {
-                const severityStyle = getSeverityStyles(incident.severity);
-                const agentStatusStyle = getAgentStatusStyles(incident.agentStatus);
-                const isErrorAction = incident.action === "LOCK DOWN";
-
+              {recent.map((incident) => {
+                const styles = getSeverityStyles(incident.severity);
                 return (
-                  <tr key={incident.id} className="hover:bg-surface-container/40 transition-colors group">
+                  <tr key={incident.id} className="hover:bg-surface-container/40 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${severityStyle.dot}`}></div>
-                        <span className={`text-xs font-bold ${severityStyle.badge}`}>
+                        <span className={`w-2 h-2 rounded-full ${styles.dot}`} />
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${styles.badge}`}
+                        >
                           {incident.severity}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-on-surface">
-                          {incident.name}
-                        </span>
-                        <span className="text-[10px] text-outline font-mono">ID: {incident.id}</span>
-                      </div>
+                      <div className="text-sm font-semibold text-on-surface">{incident.title}</div>
+                      <div className="text-[10px] text-outline font-mono">{incident.id}</div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className={agentStatusStyle}>
-                        {incident.agentStatus.includes("Running") && (
-                          <span className="material-symbols-outlined text-sm animate-pulse">
-                            play_arrow
-                          </span>
-                        )}
-                        {incident.agentStatus.includes("Waiting") && (
-                          <span className="material-symbols-outlined text-sm">pause_circle</span>
-                        )}
-                        {incident.agentStatus.includes("Completed") && (
-                          <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-                            check_circle
-                          </span>
-                        )}
-                        {incident.agentStatus.includes("Intervention") && (
-                          <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>
-                            report
-                          </span>
-                        )}
-                        <span className="text-xs font-medium">{incident.agentStatus}</span>
-                      </div>
-                    </td>
+                    <td className="px-6 py-4 text-xs text-on-surface-variant">{incident.status}</td>
                     <td className="px-6 py-4 text-xs text-on-surface-variant font-mono">
-                      {incident.timeDetected}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-surface-container-high flex items-center justify-center text-[10px] font-bold text-on-surface">
-                          {incident.owner.initials}
-                        </div>
-                        <span className="text-xs text-on-surface">{incident.owner.name}</span>
-                      </div>
+                      {new Date(incident.timestamp).toLocaleString()}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {isErrorAction ? (
-                        <button className="text-error bg-error/10 hover:bg-error/20 px-3 py-1 rounded text-xs font-bold transition-all">
-                          {incident.action}
-                        </button>
-                      ) : (
-                        <Link
-                          href={`/incidents/${incident.id.split("-")[1]}`}
-                          className="text-primary hover:bg-primary/10 px-3 py-1 rounded text-xs font-bold transition-all"
-                        >
-                          {incident.action}
-                        </Link>
-                      )}
+                      <Link
+                        href={`/incidents/${incident.id}`}
+                        className="text-primary hover:bg-primary/10 px-3 py-1 rounded text-xs font-bold transition-all"
+                      >
+                        Details
+                      </Link>
                     </td>
                   </tr>
                 );
@@ -228,7 +159,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Floating Action Dock */}
       <ActionDock />
     </section>
   );

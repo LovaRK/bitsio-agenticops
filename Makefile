@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap dev test lint seed eval load-test api-smoke verify-local tunnel-start tunnel-stop tunnel-status
+.PHONY: bootstrap dev test lint seed eval load-test api-smoke verify-local tunnel-start tunnel-stop tunnel-status live-api live-web live-seed live-verify
 
 bootstrap:
 	uv sync --all-groups
@@ -36,6 +36,18 @@ verify-local:
 	pnpm --filter web test:e2e
 	$(MAKE) test
 	$(MAKE) eval
+
+live-api:
+	uv run python scripts/run_live_api.py
+
+live-web:
+	NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8001 INTERNAL_API_BASE_URL=http://127.0.0.1:8001 NEXT_PUBLIC_USE_MOCK=false NEXT_PUBLIC_REQUIRE_LIVE_API=true pnpm --filter web dev --hostname 127.0.0.1 --port 3000
+
+live-seed:
+	uv run python scripts/seed_live_splunk_demo.py
+
+live-verify:
+	uv run python scripts/verify_live_flow.py
 
 # SSH Tunnel to Splunk MCP (for live mode when 8089 is private)
 tunnel-start:

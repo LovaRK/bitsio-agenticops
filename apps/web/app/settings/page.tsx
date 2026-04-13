@@ -1,29 +1,53 @@
-export default function SettingsPage() {
+import { getSettingsSnapshot } from "@/lib/api";
+import { RuntimeConfigPanel } from "@/components/RuntimeConfigPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
+export default async function SettingsPage() {
+  const settings = await getSettingsSnapshot();
+
   const sections = [
     {
       title: "General Configuration",
       items: [
-        { label: "Platform Name", value: "BitsIO AgenticOps", icon: "badge" },
-        { label: "Deployment Region", value: "us-west-2 (Oregon)", icon: "public" },
-        { label: "Default Timezone", value: "UTC (GMT+0)", icon: "schedule" }
-      ]
+        { label: "Platform Name", value: settings.platform_name, icon: "badge" },
+        { label: "Environment", value: settings.environment, icon: "public" },
+        { label: "Default Timezone", value: settings.timezone, icon: "schedule" },
+      ],
     },
     {
       title: "AI & Reasoning Engine",
       items: [
-        { label: "Primary Logic Model", value: "GPT-4o (Reasoning Specialized)", icon: "psychology" },
-        { label: "Autonomous Intervention", value: "Enabled", icon: "bolt" },
-        { label: "Confidence Threshold", value: "0.85 (High)", icon: "equalizer" }
-      ]
+        { label: "Model Provider", value: settings.model.provider, icon: "psychology" },
+        { label: "Model Name", value: settings.model.name, icon: "smart_toy" },
+        {
+          label: "Runtime",
+          value: settings.model.runtime,
+          icon: settings.model.runtime === "local" ? "memory" : "cloud",
+        },
+        { label: "Endpoint", value: settings.model.base_url, icon: "lan" },
+        {
+          label: "Mock Mode",
+          value: settings.model.mock_mode ? "Enabled" : "Disabled",
+          icon: "precision_manufacturing",
+        },
+      ],
     },
     {
-      title: "Integrations & API",
+      title: "Integrations & Security",
       items: [
-        { label: "Splunk Observability", value: "Connected", icon: "data_object" },
-        { label: "Slack Notifications", value: "Active", icon: "maps_ugc" },
-        { label: "Webhook Endpoint", value: "https://api.bitsio.app/webhook/...", icon: "link" }
-      ]
-    }
+        {
+          label: "Splunk Status",
+          value: settings.splunk.connected ? "Connected" : "Unavailable",
+          icon: "data_object",
+        },
+        { label: "Visible Indexes", value: String(settings.splunk.index_count), icon: "database" },
+        {
+          label: "Rate Limit / min",
+          value: String(settings.security.rate_limit_per_minute),
+          icon: "speed",
+        },
+      ],
+    },
   ];
 
   return (
@@ -33,37 +57,52 @@ export default function SettingsPage() {
           Platform Settings
         </h2>
         <p className="text-on-surface-variant text-sm">
-          Global configuration for autonomous operations and system preferences.
+          Runtime configuration snapshot from the live API environment.
         </p>
       </div>
 
       <div className="max-w-4xl space-y-8">
+        <article className="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
+          <div className="px-6 py-4 bg-surface-container border-b border-outline-variant/10">
+            <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">
+              Appearance
+            </h3>
+          </div>
+          <div className="p-6">
+            <ThemeToggle />
+          </div>
+        </article>
+
+        <RuntimeConfigPanel settings={settings} />
+
         {sections.map((section) => (
-          <div key={section.title} className="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
+          <article
+            key={section.title}
+            className="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden"
+          >
             <div className="px-6 py-4 bg-surface-container border-b border-outline-variant/10">
-              <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">{section.title}</h3>
+              <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">
+                {section.title}
+              </h3>
             </div>
             <div className="divide-y divide-outline-variant/10">
               {section.items.map((item) => (
-                <div key={item.label} className="px-6 py-4 flex items-center justify-between hover:bg-surface-container/20 transition-all group">
+                <div
+                  key={item.label}
+                  className="px-6 py-4 flex items-center justify-between hover:bg-surface-container/20 transition-all group"
+                >
                   <div className="flex items-center gap-4">
-                    <span className="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">{item.icon}</span>
+                    <span className="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">
+                      {item.icon}
+                    </span>
                     <span className="text-sm font-medium text-on-surface-variant">{item.label}</span>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-bold text-on-surface">{item.value}</span>
-                    <button className="text-[10px] font-black uppercase text-primary tracking-widest hover:underline">Edit</button>
-                  </div>
+                  <span className="text-sm font-bold text-on-surface">{item.value}</span>
                 </div>
               ))}
             </div>
-          </div>
+          </article>
         ))}
-
-        <div className="pt-4 flex justify-end gap-3">
-           <button className="px-6 py-2 rounded-lg text-sm font-bold text-on-surface-variant hover:bg-surface-container transition-all">Discard Changes</button>
-           <button className="px-6 py-2 rounded-lg text-sm font-bold bg-primary text-on-primary shadow-lg glow-primary transition-all active:scale-95">Save Configuration</button>
-        </div>
       </div>
     </section>
   );

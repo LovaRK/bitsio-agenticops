@@ -80,7 +80,9 @@ class TenantRateLimitMiddleware:
                 )
             except Exception:  # noqa: BLE001
                 self._redis_limiter = None
-        return await self._fallback.check_and_increment(tenant_id, self._limit, self._window_seconds)
+        return await self._fallback.check_and_increment(
+            tenant_id, self._limit, self._window_seconds
+        )
 
 
 def install_rate_limit_middleware(

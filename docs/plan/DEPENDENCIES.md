@@ -25,11 +25,12 @@
 ## Required From Team / Environment
 - GitHub repository remote for branch/PR workflow.
 - Anthropic API key for live model validation (mock mode works without key).
-- Splunk integration package for live Phase-2 validation:
-  - endpoint
-  - auth mechanism
-  - read-only role
+- Splunk live integration access:
+  - endpoint (`SPLUNK_MCP_BASE_URL`)
+  - token (`SPLUNK_MCP_TOKEN`)
+  - adapter mode (`SPLUNK_ADAPTER_MODE=native|mcp|auto`)
   - index access confirmation (`tutorial`)
+  - SSH tunnel access if 8089 is private
 - Optional remote deployment credentials for non-local validation.
 
 ## Security Rules

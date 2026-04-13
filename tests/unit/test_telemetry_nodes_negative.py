@@ -120,9 +120,7 @@ def test_confidence_is_zero_with_no_evidence_and_missing() -> None:
 def test_confidence_clamped_to_one() -> None:
     """Even with maximum evidence + findings, score must not exceed 1.0."""
     evidence = [
-        EvidenceItem(
-            source="splunk", reference=f"splunk://result/{i}", content={"host": "h"}
-        )
+        EvidenceItem(source="splunk", reference=f"splunk://result/{i}", content={"host": "h"})
         for i in range(10)
     ]
     state = TelemetryAgentState(

@@ -4,7 +4,7 @@ Shared Pydantic base classes and common DTOs used across packages.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _new_id() -> str:
@@ -35,11 +35,11 @@ class APIResponse(BaseModel):
     error: str | None = None
 
     @classmethod
-    def success(cls, data: Any = None) -> "APIResponse":
+    def success(cls, data: Any = None) -> APIResponse:
         return cls(ok=True, data=data)
 
     @classmethod
-    def failure(cls, error: str) -> "APIResponse":
+    def failure(cls, error: str) -> APIResponse:
         return cls(ok=False, error=error)
 
 

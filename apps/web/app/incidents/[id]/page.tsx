@@ -46,6 +46,8 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
         <ReasoningTimeline nodeRuns={detail.node_runs} />
         <ConfidencePanel
           confidence={detail.confidence}
+          workflowId={detail.workflow_id}
+          approvalRequired={detail.approval_required}
           impactedService={detail.source_index}
           responders={[
             { id: "user1", name: "Sarah Chen", isAI: false },

@@ -53,3 +53,47 @@ class AnthropicModelAdapter(ModelAdapter):
 class StubModelAdapter(ModelAdapter):
     def generate(self, prompt: str, *, temperature: float = 0.1) -> str:  # noqa: ARG002
         return f"stub:{prompt[:120]}"
+
+
+class OllamaModelAdapter(ModelAdapter):
+    def __init__(self, model_name: str | None = None, base_url: str | None = None) -> None:
+        self.model_name = model_name or os.getenv("MODEL_NAME", "qwen2.5:14b")
+        self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")).rstrip(
+            "/"
+        )
+
+    def generate(self, prompt: str, *, temperature: float = 0.1) -> str:
+        try:
+            response = httpx.post(
+                f"{self.base_url}/api/generate",
+                json={
+                    "model": self.model_name,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": temperature,
+                    },
+                },
+                timeout=60.0,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            text = str(payload.get("response", "")).strip()
+            return text or f"[no-content] {prompt[:100]}"
+        except Exception as exc:
+            logger.warning(f"Ollama generate failed: {exc}. Returning fallback response.")
+            return f"[fallback] Error: {type(exc).__name__} — {prompt[:200]}"
+
+
+def resolve_model_adapter() -> ModelAdapter:
+    provider = os.getenv("MODEL_PROVIDER", "stub").strip().lower()
+
+    if provider == "ollama":
+        return OllamaModelAdapter()
+
+    if provider == "anthropic":
+        if os.getenv("ANTHROPIC_API_KEY", "").strip():
+            return AnthropicModelAdapter()
+        return StubModelAdapter()
+
+    return StubModelAdapter()

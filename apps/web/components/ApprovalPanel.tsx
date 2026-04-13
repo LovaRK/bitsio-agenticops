@@ -9,11 +9,13 @@ export function ApprovalPanel({ workflowId }: { workflowId: string }) {
   const [status, setStatus] = useState<"idle" | "submitting" | "approved" | "rejected" | "error">(
     "idle"
   );
+  const [activeDecision, setActiveDecision] = useState<"approved" | "rejected" | null>(null);
   const [message, setMessage] = useState("");
 
   const onDecision = async (decision: "approved" | "rejected") => {
     try {
       setStatus("submitting");
+      setActiveDecision(decision);
       setMessage("");
       await submitApproval(workflowId, {
         approver: "analyst1",
@@ -31,6 +33,8 @@ export function ApprovalPanel({ workflowId }: { workflowId: string }) {
       console.error("Decision submission failed", error);
       setStatus("error");
       setMessage("Could not submit decision. Check API connection and retry.");
+    } finally {
+      setActiveDecision(null);
     }
   };
 
@@ -52,20 +56,28 @@ export function ApprovalPanel({ workflowId }: { workflowId: string }) {
           disabled={isSubmitting}
           onClick={() => onDecision("approved")}
         >
-          <span className="material-symbols-outlined text-sm mr-2 inline-block">
-            {isSubmitting ? "progress_activity" : "check_circle"}
+          <span
+            className={`material-symbols-outlined text-sm mr-2 inline-block ${
+              isSubmitting && activeDecision === "approved" ? "animate-spin" : ""
+            }`}
+          >
+            {isSubmitting && activeDecision === "approved" ? "progress_activity" : "check_circle"}
           </span>
-          {isSubmitting ? "Submitting..." : "Approve"}
+          {isSubmitting && activeDecision === "approved" ? "Approving..." : "Approve"}
         </button>
         <button
           className="flex-1 rounded-xl bg-error text-on-error px-4 py-3 text-sm font-bold transition-all active:scale-95 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
           disabled={isSubmitting}
           onClick={() => onDecision("rejected")}
         >
-          <span className="material-symbols-outlined text-sm mr-2 inline-block">
-            {isSubmitting ? "progress_activity" : "cancel"}
+          <span
+            className={`material-symbols-outlined text-sm mr-2 inline-block ${
+              isSubmitting && activeDecision === "rejected" ? "animate-spin" : ""
+            }`}
+          >
+            {isSubmitting && activeDecision === "rejected" ? "progress_activity" : "cancel"}
           </span>
-          {isSubmitting ? "Submitting..." : "Reject"}
+          {isSubmitting && activeDecision === "rejected" ? "Rejecting..." : "Reject"}
         </button>
       </div>
       {status === "approved" && <p className="mt-2 text-xs text-secondary font-medium">✓ {message}</p>}

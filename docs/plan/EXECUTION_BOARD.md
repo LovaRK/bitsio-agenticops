@@ -21,3 +21,7 @@
 | T17 | Eval harness + adversarial fixtures | Codex | DONE | None |
 | T18 | Release gate workflow (>=90% eval pass) | Codex | DONE | None |
 | T19 | Load test implementation + threat model deep dive | Codex | DONE | None |
+| T20 | Native Splunk adapter mode + runtime factory (`auto/native/mcp`) | Codex | DONE | None |
+| T21 | Live browser flow fix (CORS preflight for approvals) | Codex | DONE | None |
+| T22 | Live run helper scripts (`live-api`, `live-seed`, `live-verify`) | Codex | DONE | None |
+| T23 | Live docs + showcase + persona scenario matrix + onboarding pack | Codex | DONE | None |

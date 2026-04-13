@@ -2,24 +2,65 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import {
+  listPendingApprovals,
+  quickResolvePendingApprovals,
+  type PendingApprovalItem,
+} from "@/lib/api";
 
 export function ActionDock() {
   const router = useRouter();
   const [isResolving, setIsResolving] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [pendingItems, setPendingItems] = useState<PendingApprovalItem[]>([]);
 
-  const handleQuickResolve = () => {
+  const highPriorityCount = pendingItems.filter((item) => {
+    const severity = item.severity.toLowerCase();
+    return severity === "high" || severity === "critical";
+  }).length;
+
+  useEffect(() => {
+    async function loadPending() {
+      try {
+        const items = await listPendingApprovals();
+        setPendingItems(items);
+      } catch {
+        setPendingItems([]);
+      }
+    }
+    void loadPending();
+  }, []);
+
+  const handleQuickResolve = async () => {
     setIsResolving(true);
-    // Simulate resolution process
-    setTimeout(() => {
-      setIsResolving(false);
+    try {
+      const resolvedCount = await quickResolvePendingApprovals(pendingItems);
+      if (resolvedCount === 0) {
+        setToastMessage("No high-priority pending incidents to resolve.");
+      } else {
+        setToastMessage(
+          `Successfully resolved ${resolvedCount} pending high-priority incident${resolvedCount > 1 ? "s" : ""}.`,
+        );
+      }
+      const refreshed = await listPendingApprovals();
+      setPendingItems(refreshed);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
-    }, 1500);
+    } catch {
+      setToastMessage("Quick resolve failed. Check API connection and retry.");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } finally {
+      setIsResolving(false);
+    }
   };
 
   const handleRecentActivity = () => {
+    setIsNavigating(true);
     router.push("/incidents");
+    setTimeout(() => setIsNavigating(false), 800);
   };
 
   return (
@@ -28,7 +69,7 @@ export function ActionDock() {
       {showToast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-secondary text-on-secondary px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 z-[60]">
           <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-          <span className="text-sm font-bold">Successfully resolved 4 pending high-priority incidents.</span>
+          <span className="text-sm font-bold">{toastMessage}</span>
         </div>
       )}
 
@@ -58,24 +99,28 @@ export function ActionDock() {
           <button
             onClick={handleQuickResolve}
             disabled={isResolving}
+            data-testid="quick-resolve-btn"
             className={`flex items-center gap-2 text-xs font-bold transition-all active:scale-95 ${
               isResolving 
                 ? "text-outline bg-surface-container py-1.5 px-3 rounded-lg cursor-not-allowed" 
-                : "text-on-tertiary-fixed hover:text-tertiary"
+                : "text-on-surface hover:text-primary"
             }`}
           >
             <span className={`material-symbols-outlined text-sm ${isResolving ? "animate-spin" : ""}`}>
               {isResolving ? "progress_activity" : "bolt"}
             </span>
-            {isResolving ? "Resolving..." : "Quick Resolve (4)"}
+            {isResolving ? "Resolving..." : `Quick Resolve (${highPriorityCount})`}
           </button>
           
           <button
             onClick={handleRecentActivity}
-            className="flex items-center gap-2 text-xs font-bold text-primary hover:text-primary transition-all active:scale-95"
+            disabled={isNavigating}
+            className="flex items-center gap-2 text-xs font-bold text-primary hover:text-primary transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <span className="material-symbols-outlined text-sm">history</span>
-            Recent Activity
+            <span className={`material-symbols-outlined text-sm ${isNavigating ? "animate-spin" : ""}`}>
+              {isNavigating ? "progress_activity" : "history"}
+            </span>
+            {isNavigating ? "Opening..." : "Recent Activity"}
           </button>
         </div>
       </div>

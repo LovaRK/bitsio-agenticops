@@ -22,15 +22,13 @@ class Settings(BaseSettings):
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
 
     # ── LLM ───────────────────────────────────────────────────────────────────
+    model_provider: str = Field(default="ollama", alias="MODEL_PROVIDER")
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
-    model_name: str = Field(
-        default="claude-3-5-sonnet-20241022", alias="MODEL_NAME"
-    )
+    model_name: str = Field(default="qwen2.5:14b", alias="MODEL_NAME")
+    ollama_base_url: str = Field(default="http://127.0.0.1:11434", alias="OLLAMA_BASE_URL")
 
     # ── Splunk MCP ────────────────────────────────────────────────────────────
-    splunk_mcp_url: str = Field(
-        default="http://localhost:8081", alias="SPLUNK_MCP_URL"
-    )
+    splunk_mcp_url: str = Field(default="http://localhost:8081", alias="SPLUNK_MCP_URL")
     splunk_mcp_token: str = Field(default="", alias="SPLUNK_MCP_TOKEN")
 
     # ── Auth / OIDC ───────────────────────────────────────────────────────────

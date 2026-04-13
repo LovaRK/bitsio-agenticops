@@ -1,4 +1,4 @@
-from splunk_mcp.adapter import SplunkMCPAdapter
+from splunk_mcp.adapter import NativeSplunkAdapter, SplunkAdapter, SplunkMCPAdapter
 from splunk_mcp.dtos import (
     IndexDTO,
     SearchResultDTO,
@@ -8,6 +8,8 @@ from splunk_mcp.dtos import (
 
 __all__ = [
     "SplunkMCPAdapter",
+    "NativeSplunkAdapter",
+    "SplunkAdapter",
     "IndexDTO",
     "SearchResultDTO",
     "ServerInfoDTO",

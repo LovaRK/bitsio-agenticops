@@ -17,11 +17,15 @@ from __future__ import annotations
 import json
 import logging
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from decision_tracing.hashing import hash_content
 from decision_tracing.models import ApprovalEvent, ApprovalRequest, DecisionTrace, NodeRun
 
 log = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    import asyncpg
 
 
 class PostgresDecisionTraceStore:
@@ -29,7 +33,7 @@ class PostgresDecisionTraceStore:
 
     def __init__(self, dsn: str) -> None:
         self._dsn = dsn
-        self._pool: "asyncpg.Pool | None" = None  # type: ignore[name-defined]
+        self._pool: asyncpg.Pool | None = None
 
     async def connect(self) -> None:
         try:
@@ -82,15 +86,11 @@ class PostgresDecisionTraceStore:
             )
 
             if existing and not force_merge:
-                existing_trace = DecisionTrace.model_validate(
-                    json.loads(existing["payload"])
-                )
+                existing_trace = DecisionTrace.model_validate(json.loads(existing["payload"]))
                 return existing_trace, False
 
             if existing and force_merge:
-                existing_trace = DecisionTrace.model_validate(
-                    json.loads(existing["payload"])
-                )
+                existing_trace = DecisionTrace.model_validate(json.loads(existing["payload"]))
                 merged = existing_trace.model_copy(deep=True)
                 merged.node_runs.extend(trace.node_runs)
                 merged.completed_at = trace.completed_at
@@ -137,9 +137,7 @@ class PostgresDecisionTraceStore:
             )
             return trace, True
 
-    async def add_approval(
-        self, workflow_id: str, request: ApprovalRequest
-    ) -> ApprovalEvent:
+    async def add_approval(self, workflow_id: str, request: ApprovalRequest) -> ApprovalEvent:
         event = ApprovalEvent(
             workflow_id=workflow_id,
             approver=request.approver,
@@ -192,7 +190,7 @@ class PostgresDecisionTraceStore:
 
     @staticmethod
     async def _insert_node_runs(
-        conn: "asyncpg.Connection",  # type: ignore[name-defined]
+        conn: asyncpg.Connection,
         trace_db_id: int,
         node_runs: list[NodeRun],
     ) -> None:

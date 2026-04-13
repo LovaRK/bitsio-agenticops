@@ -34,7 +34,11 @@ def run(base_url: str, tenant_id: str) -> None:
 
         incidents = client.get(
             "/api/v1/incidents",
-            headers={"x-api-key": "dev-analyst", "x-user-id": "smoke-analyst", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-analyst",
+                "x-user-id": "smoke-analyst",
+                "x-tenant-id": tenant_id,
+            },
         )
         _assert(incidents.status_code == 200, f"/incidents failed: {incidents.status_code}")
 
@@ -44,27 +48,46 @@ def run(base_url: str, tenant_id: str) -> None:
         trace_create = client.post(
             "/api/v1/decision-traces",
             json=payload,
-            headers={"x-api-key": "dev-analyst", "x-user-id": "smoke-analyst", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-analyst",
+                "x-user-id": "smoke-analyst",
+                "x-tenant-id": tenant_id,
+            },
         )
-        _assert(trace_create.status_code in {200, 201}, f"create trace failed: {trace_create.status_code}")
+        _assert(
+            trace_create.status_code in {200, 201},
+            f"create trace failed: {trace_create.status_code}",
+        )
 
         wrong_role = client.post(
             "/api/v1/decision-traces/wf_smoke_contract_0001/approvals",
             json={"approver": "smoke-approver", "decision": "approved", "reason": "smoke"},
-            headers={"x-api-key": "dev-analyst", "x-user-id": "smoke-approver", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-analyst",
+                "x-user-id": "smoke-approver",
+                "x-tenant-id": tenant_id,
+            },
         )
         _assert(wrong_role.status_code == 403, f"RBAC deny check failed: {wrong_role.status_code}")
 
         approval = client.post(
             "/api/v1/decision-traces/wf_smoke_contract_0001/approvals",
             json={"approver": "smoke-approver", "decision": "approved", "reason": "smoke"},
-            headers={"x-api-key": "dev-approver", "x-user-id": "smoke-approver", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-approver",
+                "x-user-id": "smoke-approver",
+                "x-tenant-id": tenant_id,
+            },
         )
         _assert(approval.status_code == 200, f"approval create failed: {approval.status_code}")
 
         approvals = client.get(
             "/api/v1/decision-traces/wf_smoke_contract_0001/approvals",
-            headers={"x-api-key": "dev-analyst", "x-user-id": "smoke-analyst", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-analyst",
+                "x-user-id": "smoke-analyst",
+                "x-tenant-id": tenant_id,
+            },
         )
         _assert(approvals.status_code == 200, f"approval list failed: {approvals.status_code}")
         _assert(len(approvals.json().get("items", [])) >= 1, "approval list should not be empty")
@@ -107,7 +130,11 @@ def run_in_process(tenant_id: str) -> None:
 
         incidents = client.get(
             "/api/v1/incidents",
-            headers={"x-api-key": "dev-analyst", "x-user-id": "smoke-analyst", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-analyst",
+                "x-user-id": "smoke-analyst",
+                "x-tenant-id": tenant_id,
+            },
         )
         _assert(incidents.status_code == 200, f"/incidents failed: {incidents.status_code}")
 
@@ -117,27 +144,46 @@ def run_in_process(tenant_id: str) -> None:
         trace_create = client.post(
             "/api/v1/decision-traces",
             json=payload,
-            headers={"x-api-key": "dev-analyst", "x-user-id": "smoke-analyst", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-analyst",
+                "x-user-id": "smoke-analyst",
+                "x-tenant-id": tenant_id,
+            },
         )
-        _assert(trace_create.status_code in {200, 201}, f"create trace failed: {trace_create.status_code}")
+        _assert(
+            trace_create.status_code in {200, 201},
+            f"create trace failed: {trace_create.status_code}",
+        )
 
         wrong_role = client.post(
             "/api/v1/decision-traces/wf_smoke_contract_0001/approvals",
             json={"approver": "smoke-approver", "decision": "approved", "reason": "smoke"},
-            headers={"x-api-key": "dev-analyst", "x-user-id": "smoke-approver", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-analyst",
+                "x-user-id": "smoke-approver",
+                "x-tenant-id": tenant_id,
+            },
         )
         _assert(wrong_role.status_code == 403, f"RBAC deny check failed: {wrong_role.status_code}")
 
         approval = client.post(
             "/api/v1/decision-traces/wf_smoke_contract_0001/approvals",
             json={"approver": "smoke-approver", "decision": "approved", "reason": "smoke"},
-            headers={"x-api-key": "dev-approver", "x-user-id": "smoke-approver", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-approver",
+                "x-user-id": "smoke-approver",
+                "x-tenant-id": tenant_id,
+            },
         )
         _assert(approval.status_code == 200, f"approval create failed: {approval.status_code}")
 
         approvals = client.get(
             "/api/v1/decision-traces/wf_smoke_contract_0001/approvals",
-            headers={"x-api-key": "dev-analyst", "x-user-id": "smoke-analyst", "x-tenant-id": tenant_id},
+            headers={
+                "x-api-key": "dev-analyst",
+                "x-user-id": "smoke-analyst",
+                "x-tenant-id": tenant_id,
+            },
         )
         _assert(approvals.status_code == 200, f"approval list failed: {approvals.status_code}")
         _assert(len(approvals.json().get("items", [])) >= 1, "approval list should not be empty")
