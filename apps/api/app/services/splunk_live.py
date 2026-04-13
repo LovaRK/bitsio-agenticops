@@ -84,7 +84,6 @@ class SplunkIncidentService:
         if not probable_cause:
             probable_cause = "Insufficient host evidence in selected window."
 
-        confidence = max(0.55, min(0.97, round(0.55 + (len(rows) / 500), 2)))
         approval_required = severity in {"high", "medium"}
         workflow_id = incident_id if incident_id.startswith("wf_") else f"wf_{incident_id}"
 
@@ -97,17 +96,14 @@ class SplunkIncidentService:
             "source_index": source_index,
             "status": status,
             "graph_version": "v1.0.0",
-            "assigned_agent": "Observer-Prime",
             "summary": (
                 f"Splunk MCP analyzed {len(rows)} events for incident {incident_id} in index "
                 f"'{source_index}'."
             ),
             "probable_cause": probable_cause,
-            "confidence": confidence,
             "approval_required": approval_required,
             "evidence_refs": self._build_evidence_refs(incident_id, source_index),
             "missing_evidence": [],
-            "node_runs": self._node_runs_from_results(result_count=len(rows)),
         }
 
     def _build_evidence_refs(self, incident_id: str, source_index: str) -> list[str]:
@@ -117,67 +113,6 @@ class SplunkIncidentService:
         return [
             f"splunk://search?query=search%20index%3D{source_index}%20incident_id%3D{incident_id}"
         ]
-
-    @staticmethod
-    def _node_runs_from_results(*, result_count: int) -> list[dict[str, Any]]:
-        now = datetime.now(tz=UTC).isoformat()
-        return [
-            {
-                "node_name": "incident_ingest",
-                "status": "success",
-                "started_at": now,
-                "duration_ms": 48,
-                "tool_calls": [],
-                "policy_checks": [],
-            },
-            {
-                "node_name": "evidence_retrieval",
-                "status": "success",
-                "started_at": now,
-                "duration_ms": 220,
-                "tool_calls": [{"tool_name": "run_search", "status": "success"}],
-                "policy_checks": [],
-            },
-            {
-                "node_name": "correlation",
-                "status": "success",
-                "started_at": now,
-                "duration_ms": 105,
-                "tool_calls": [],
-                "policy_checks": [],
-            },
-            {
-                "node_name": "reasoning_draft",
-                "status": "success",
-                "started_at": now,
-                "duration_ms": 160,
-                "tool_calls": [{"tool_name": "model_generate", "status": "success"}],
-                "policy_checks": [],
-            },
-            {
-                "node_name": "confidence_score",
-                "status": "success",
-                "started_at": now,
-                "duration_ms": 30,
-                "tool_calls": [],
-                "policy_checks": [],
-            },
-            {
-                "node_name": "approval_check",
-                "status": "success",
-                "started_at": now,
-                "duration_ms": 22,
-                "tool_calls": [],
-                "policy_checks": [
-                    {
-                        "rule_id": "high_severity_gate",
-                        "matched": result_count > 0,
-                        "action": "require_approval",
-                    }
-                ],
-            },
-        ]
-
 
 def _extract_text(row: dict[str, Any], key: str, *, default: str) -> str:
     value = row.get(key, default)
