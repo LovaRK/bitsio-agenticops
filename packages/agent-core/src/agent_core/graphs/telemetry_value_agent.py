@@ -14,7 +14,7 @@ from agent_core.nodes.reasoning_draft import reasoning_draft
 from agent_core.policies.evaluator import PolicyEvaluator
 from agent_core.state.telemetry_state import TelemetryAgentState
 from agent_core.telemetry import node_span
-from splunk_mcp.adapter import SplunkMCPAdapter
+from splunk_mcp.adapter import SplunkAdapter
 
 _GRAPH_NAME = "telemetry_value_agent"
 _GRAPH_VERSION = "v1.0.0"
@@ -22,7 +22,7 @@ _GRAPH_VERSION = "v1.0.0"
 
 @dataclass
 class TelemetryValueAgentGraph:
-    splunk_adapter: SplunkMCPAdapter
+    splunk_adapter: SplunkAdapter
     model_adapter: ModelAdapter = field(default_factory=StubModelAdapter)
     policy_evaluator: PolicyEvaluator | None = None
 

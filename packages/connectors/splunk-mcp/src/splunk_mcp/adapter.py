@@ -13,6 +13,14 @@ LOGGER = logging.getLogger(__name__)
 REDACT_KEYS = {"token", "password", "query", "credential"}
 
 
+def _standardize_error(raw_error: dict[str, Any]) -> StandardizedErrorDTO:
+    """Convert raw error dict to StandardizedErrorDTO."""
+    code = str(raw_error.get("code", "unknown"))
+    message = str(raw_error.get("message", "Unknown error"))
+    retryable = int(code) in RETRYABLE_STATUS_CODES if code.isdigit() else False
+    return StandardizedErrorDTO(code=code, message=message, retryable=retryable)
+
+
 class SplunkAdapter(Protocol):
     def list_indexes(self) -> list[IndexDTO]: ...
     def run_search(self, query: str, earliest: str, latest: str) -> SearchResultDTO: ...
@@ -57,10 +65,7 @@ class SplunkMCPAdapter:
         return ServerInfoDTO.model_validate(payload)
 
     def explain_error(self, raw_error: dict[str, Any]) -> StandardizedErrorDTO:
-        code = str(raw_error.get("code", "unknown"))
-        message = str(raw_error.get("message", "Unknown error"))
-        retryable = int(code) in RETRYABLE_STATUS_CODES if code.isdigit() else False
-        return StandardizedErrorDTO(code=code, message=message, retryable=retryable)
+        return _standardize_error(raw_error)
 
     def _request(
         self, method: str, path: str, json: dict[str, Any] | None = None
@@ -229,10 +234,7 @@ class NativeSplunkAdapter:
         )
 
     def explain_error(self, raw_error: dict[str, Any]) -> StandardizedErrorDTO:
-        code = str(raw_error.get("code", "unknown"))
-        message = str(raw_error.get("message", "Unknown error"))
-        retryable = int(code) in RETRYABLE_STATUS_CODES if code.isdigit() else False
-        return StandardizedErrorDTO(code=code, message=message, retryable=retryable)
+        return _standardize_error(raw_error)
 
     def _request_json(
         self,
