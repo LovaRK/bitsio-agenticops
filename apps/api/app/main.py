@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from agent_core.models.adapter import resolve_model_adapter
+from apps.api.app.config import load_incidents, live_mode_enabled
 from apps.api.app.dependencies import (
     get_splunk_adapter,
     get_splunk_incident_service,
@@ -46,45 +47,6 @@ install_rate_limit_middleware(
     default_tenant=settings.tenant_safe_id,
 )
 
-SEED_INCIDENTS = [
-    {
-        "id": "inc_20260408_42",
-        "title": "Payments latency spike",
-        "severity": "high",
-        "timestamp": "2026-04-08T10:00:00Z",
-        "source": "tutorial",
-        "status": "triaging",
-        "graph_version": "v1.0.0",
-    },
-    {
-        "id": "inc_20260408_43",
-        "title": "Checkout retry storm",
-        "severity": "medium",
-        "timestamp": "2026-04-08T10:08:00Z",
-        "source": "tutorial",
-        "status": "pending_approval",
-        "graph_version": "v1.0.0",
-    },
-    {
-        "id": "inc_20260408_44",
-        "title": "Auth token expiration surge",
-        "severity": "low",
-        "timestamp": "2026-04-08T10:12:00Z",
-        "source": "main",
-        "status": "open",
-        "graph_version": "v1.0.0",
-    },
-]
-
-
-def _live_mode_enabled() -> bool:
-    return get_settings().splunk_live_mode
-
-
-def _load_incidents(splunk_service: SplunkIncidentService) -> list[dict]:
-    if _live_mode_enabled():
-        return splunk_service.list_incidents(limit=50)
-    return SEED_INCIDENTS
 
 
 class RuntimeConfigPayload(BaseModel):
@@ -120,7 +82,7 @@ def list_incidents(
     splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
 ) -> dict:
     try:
-        return {"items": _load_incidents(splunk_service)}
+        return {"items": load_incidents(splunk_service)}
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -164,7 +126,7 @@ def get_decision_trace(
     if trace is not None:
         return trace.model_dump(mode="json")
 
-    if _live_mode_enabled():
+    if live_mode_enabled():
         try:
             return splunk_service.get_decision_trace(workflow_id)
         except LookupError as exc:
@@ -212,7 +174,7 @@ def dashboard_summary(
     _ctx: AuthContext = Depends(require_analyst),
     splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
 ) -> dict:
-    incidents = _load_incidents(splunk_service)
+    incidents = load_incidents(splunk_service)
     pending = [item for item in incidents if item.get("status") == "pending_approval"]
     confidence_seed = [
         (
@@ -240,7 +202,7 @@ def list_pending_approvals(
     _ctx: AuthContext = Depends(require_analyst),
     splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
 ) -> dict:
-    incidents = _load_incidents(splunk_service)
+    incidents = load_incidents(splunk_service)
     pending: list[dict] = []
     for incident in incidents:
         if incident.get("status") != "pending_approval":
@@ -269,7 +231,7 @@ def monitoring_overview(
     _ctx: AuthContext = Depends(require_analyst),
     splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
 ) -> dict:
-    incidents = _load_incidents(splunk_service)
+    incidents = load_incidents(splunk_service)
     try:
         server = splunk_service.adapter.get_server_info().model_dump()
     except Exception:  # noqa: BLE001
@@ -339,7 +301,7 @@ def get_settings_snapshot(
         "timezone": cfg.app_timezone,
         "splunk": {
             "adapter_mode": cfg.splunk_adapter_mode,
-            "live_mode": _live_mode_enabled(),
+            "live_mode": live_mode_enabled(),
             "base_url": cfg.splunk_mcp_base_url,
             "web_base_url": cfg.splunk_web_base_url,
             "connected": splunk_connected,
