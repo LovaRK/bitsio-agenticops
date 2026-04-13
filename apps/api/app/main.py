@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections import Counter
 from datetime import UTC, datetime
 from statistics import mean
@@ -23,9 +22,11 @@ from apps.api.app.services.trace_service import TraceService
 from decision_tracing.models import ApprovalRequest
 from decision_tracing.store import InMemoryDecisionTraceStore
 from packages.shared.auth import AuthContext, require_analyst, require_approver
+from packages.shared.config.settings import get_settings
 
 app = FastAPI(title="BitsIO AgenticOps API", version="0.1.0")
-_web_base = os.getenv("WEB_BASE_URL", "http://localhost:3000").rstrip("/")
+settings = get_settings()
+_web_base = settings.web_base_url.rstrip("/")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -40,9 +41,9 @@ app.add_middleware(
 instrument_fastapi(app)
 install_rate_limit_middleware(
     app,
-    rate_limit_per_minute=int(os.getenv("RATE_LIMIT_PER_MINUTE", "100")),
-    redis_url=os.getenv("REDIS_URL", ""),
-    default_tenant=os.getenv("TENANT_SAFE_ID", "tenant_demo"),
+    rate_limit_per_minute=settings.rate_limit_per_minute,
+    redis_url=settings.redis_url,
+    default_tenant=settings.tenant_safe_id,
 )
 
 SEED_INCIDENTS = [
@@ -77,7 +78,7 @@ SEED_INCIDENTS = [
 
 
 def _live_mode_enabled() -> bool:
-    return os.getenv("SPLUNK_LIVE_MODE", "false").strip().lower() in {"1", "true", "yes", "on"}
+    return get_settings().splunk_live_mode
 
 
 def _load_incidents(splunk_service: SplunkIncidentService) -> list[dict]:
@@ -324,6 +325,7 @@ def get_settings_snapshot(
     _ctx: AuthContext = Depends(require_analyst),
     splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
 ) -> dict:
+    cfg = get_settings()
     try:
         index_count = len(splunk_service.adapter.list_indexes())
         splunk_connected = True
@@ -333,30 +335,26 @@ def get_settings_snapshot(
 
     return {
         "platform_name": "BitsIO AgenticOps",
-        "environment": os.getenv("APP_ENV", "local"),
-        "timezone": os.getenv("APP_TIMEZONE", "UTC"),
+        "environment": cfg.environment,
+        "timezone": cfg.app_timezone,
         "splunk": {
-            "adapter_mode": os.getenv("SPLUNK_ADAPTER_MODE", "auto"),
+            "adapter_mode": cfg.splunk_adapter_mode,
             "live_mode": _live_mode_enabled(),
-            "base_url": os.getenv("SPLUNK_MCP_BASE_URL", ""),
-            "web_base_url": os.getenv("SPLUNK_WEB_BASE_URL", ""),
+            "base_url": cfg.splunk_mcp_base_url,
+            "web_base_url": cfg.splunk_web_base_url,
             "connected": splunk_connected,
             "index_count": index_count,
         },
         "model": {
-            "provider": os.getenv("MODEL_PROVIDER", "ollama"),
-            "name": os.getenv("MODEL_NAME", "qwen2.5:14b"),
-            "runtime": (
-                "local"
-                if os.getenv("MODEL_PROVIDER", "ollama").strip().lower() == "ollama"
-                else "cloud"
-            ),
-            "base_url": os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
-            "mock_mode": os.getenv("MODEL_MOCK_MODE", "false").lower() == "true",
+            "provider": cfg.model_provider,
+            "name": cfg.model_name,
+            "runtime": "local" if cfg.model_provider.strip().lower() == "ollama" else "cloud",
+            "base_url": cfg.ollama_base_url,
+            "mock_mode": cfg.model_mock_mode,
         },
         "security": {
             "rbac_enabled": True,
-            "rate_limit_per_minute": int(os.getenv("RATE_LIMIT_PER_MINUTE", "100")),
+            "rate_limit_per_minute": cfg.rate_limit_per_minute,
             "oidc_boundary": True,
         },
     }
@@ -387,13 +385,16 @@ def update_runtime_settings(
             status_code=status.HTTP_400_BAD_REQUEST, detail="model_name is required"
         )
 
+    # Update environment variables for runtime reconfiguration
+    import os
     os.environ["MODEL_PROVIDER"] = model_provider
     os.environ["MODEL_NAME"] = model_name
     os.environ["MODEL_MOCK_MODE"] = "true" if payload.model_mock_mode else "false"
     os.environ["SPLUNK_ADAPTER_MODE"] = adapter_mode
     os.environ["SPLUNK_LIVE_MODE"] = "true" if payload.splunk_live_mode else "false"
 
-    # Clear cached dependency singletons so API uses new settings immediately.
+    # Clear cached dependency singletons so API uses new settings immediately
+    get_settings.cache_clear()
     get_splunk_adapter.cache_clear()
     get_splunk_incident_service.cache_clear()
 
@@ -412,11 +413,12 @@ def check_runtime_connections(
     _ctx: AuthContext = Depends(require_analyst),
     splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
 ) -> RuntimeConnectivityResponse:
+    cfg = get_settings()
     model_connected = False
     model_detail = "unavailable"
 
-    provider = os.getenv("MODEL_PROVIDER", "stub").strip().lower()
-    if provider == "anthropic" and not os.getenv("ANTHROPIC_API_KEY", "").strip():
+    provider = cfg.model_provider.strip().lower()
+    if provider == "anthropic" and not cfg.anthropic_api_key.strip():
         model_connected = False
         model_detail = "missing ANTHROPIC_API_KEY"
     else:

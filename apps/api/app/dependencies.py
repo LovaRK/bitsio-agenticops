@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import os
 from functools import lru_cache
 
 from apps.api.app.services.splunk_live import SplunkIncidentService
 from decision_tracing.store import InMemoryDecisionTraceStore
+from packages.shared.config.settings import get_settings
 from splunk_mcp.adapter import NativeSplunkAdapter, SplunkAdapter, SplunkMCPAdapter
 
 
@@ -15,12 +15,13 @@ def get_trace_store() -> InMemoryDecisionTraceStore:
 
 @lru_cache(maxsize=1)
 def get_splunk_adapter() -> SplunkAdapter:
-    mode = os.getenv("SPLUNK_ADAPTER_MODE", "auto").strip().lower()
-    base_url = os.getenv("SPLUNK_MCP_BASE_URL", "http://localhost:8081")
-    token = os.getenv("SPLUNK_MCP_TOKEN", "") or None
-    role = os.getenv("SPLUNK_MCP_ROLE", "read_only")
-    verify_ssl = os.getenv("SPLUNK_MCP_SSL_VERIFY", "true").lower() == "true"
-    auth_scheme = os.getenv("SPLUNK_AUTH_SCHEME", "Bearer")
+    settings = get_settings()
+    mode = settings.splunk_adapter_mode.strip().lower()
+    base_url = settings.splunk_mcp_base_url
+    token = settings.splunk_mcp_token or None
+    role = settings.splunk_mcp_role
+    verify_ssl = settings.splunk_mcp_ssl_verify
+    auth_scheme = settings.splunk_auth_scheme
 
     resolved_mode = mode
     if mode == "auto":
@@ -45,7 +46,8 @@ def get_splunk_adapter() -> SplunkAdapter:
 
 @lru_cache(maxsize=1)
 def get_splunk_incident_service() -> SplunkIncidentService:
+    settings = get_settings()
     return SplunkIncidentService(
         adapter=get_splunk_adapter(),
-        splunk_web_base_url=os.getenv("SPLUNK_WEB_BASE_URL", "").strip() or None,
+        splunk_web_base_url=settings.splunk_web_base_url.strip() or None,
     )

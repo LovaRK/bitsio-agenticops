@@ -5,13 +5,29 @@ All environment variables are loaded from .env (or process env).
 
 from __future__ import annotations
 
+import os
+import sys
 from functools import lru_cache
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _should_load_env_file() -> bool:
+    """Skip loading .env during tests to use defaults instead."""
+    # Check if pytest is running by looking for PYTEST_CURRENT_TEST or pytest in sys.modules
+    return "pytest" not in sys.modules
 
 
 class Settings(BaseSettings):
+    """Application settings with test-aware env file loading."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env" if _should_load_env_file() else None,
+        env_file_encoding="utf-8",
+        populate_by_name=True,
+        extra="ignore",
+    )
     # ── Database ──────────────────────────────────────────────────────────────
     database_url: str = Field(
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/bitsio",
@@ -64,8 +80,6 @@ class Settings(BaseSettings):
         if v not in allowed:
             raise ValueError(f"ENV must be one of {allowed}, got '{v}'")
         return v
-
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "populate_by_name": True}
 
 
 @lru_cache(maxsize=1)
