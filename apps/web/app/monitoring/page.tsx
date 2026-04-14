@@ -3,6 +3,7 @@ import { getMonitoringOverview } from "@/lib/api";
 export default async function MonitoringPage() {
   const monitoring = await getMonitoringOverview();
   const services = monitoring.services;
+  const runtime = monitoring.agent_runtime;
 
   const kpis = [
     {
@@ -140,6 +141,83 @@ export default async function MonitoringPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5">
+          <h3 className="text-lg font-semibold text-on-surface font-headline">How This Is Calculated</h3>
+          <div className="mt-4 space-y-3">
+            {monitoring.kpi_explanations.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-lg border border-outline-variant/15 bg-surface-container p-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-on-surface">{item.label}</p>
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${
+                      item.source === "reported"
+                        ? "border-secondary/40 text-secondary"
+                        : item.source === "derived"
+                          ? "border-tertiary/40 text-tertiary"
+                          : "border-outline-variant/40 text-on-surface-variant"
+                    }`}
+                  >
+                    {item.source === "reported"
+                      ? "Measured"
+                      : item.source === "derived"
+                        ? "Estimated"
+                        : "N/A"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-on-surface-variant">{item.formula}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5">
+          <h3 className="text-lg font-semibold text-on-surface font-headline">Agent Runtime Health</h3>
+          <p className="mt-1 text-xs text-on-surface-variant">
+            Window: last {runtime.window_minutes} minutes | Runtime: {runtime.runtime_mode} | Splunk:{" "}
+            {runtime.splunk_mode}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-outline-variant/15 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Model</p>
+              <p className="mt-1 text-xs font-mono text-on-surface">
+                {runtime.model_provider}:{runtime.model_name}
+              </p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/15 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">LLM Calls</p>
+              <p className="mt-1 text-sm font-semibold text-on-surface">{runtime.llm_calls}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/15 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                Retrieval / Policy
+              </p>
+              <p className="mt-1 text-sm font-semibold text-on-surface">
+                {runtime.retrieval_calls} / {runtime.policy_calls}
+              </p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/15 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Avg Latency (LLM)</p>
+              <p className="mt-1 text-sm font-semibold text-on-surface">{runtime.avg_llm_latency_ms}ms</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/15 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Total Tokens</p>
+              <p className="mt-1 text-sm font-semibold text-on-surface">{runtime.total_tokens}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/15 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Estimated Cost</p>
+              <p className="mt-1 text-sm font-semibold text-on-surface">${runtime.estimated_cost_usd.toFixed(4)}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-on-surface-variant">
+            Token source: {runtime.token_source} | Cost source: {runtime.cost_source}
+          </p>
+        </section>
       </div>
     </section>
   );

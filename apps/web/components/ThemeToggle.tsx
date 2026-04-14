@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-type Theme = "dark" | "light";
+import { THEME_KEY, DEFAULT_THEME, getSavedTheme, saveTheme, type Theme } from "@/constants/theme";
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
@@ -14,11 +13,10 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>(DEFAULT_THEME);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("bitsio-theme");
-    const nextTheme: Theme = saved === "light" ? "light" : "dark";
+    const nextTheme = getSavedTheme();
     setTheme(nextTheme);
     applyTheme(nextTheme);
   }, []);
@@ -27,7 +25,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
     const nextTheme: Theme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
     applyTheme(nextTheme);
-    window.localStorage.setItem("bitsio-theme", nextTheme);
+    saveTheme(nextTheme);
   };
 
   if (compact) {

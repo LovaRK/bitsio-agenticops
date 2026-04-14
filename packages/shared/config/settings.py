@@ -5,7 +5,6 @@ All environment variables are loaded from .env (or process env).
 
 from __future__ import annotations
 
-import os
 import sys
 from functools import lru_cache
 

@@ -6,7 +6,15 @@ import { usePathname } from "next/navigation";
 type NavItem = {
   label: string;
   icon: string;
-  href: "/" | "/incidents" | "/approvals" | "/monitoring" | "/settings" | "/support";
+  href:
+    | "/"
+    | "/incidents"
+    | "/approvals"
+    | "/monitoring"
+    | "/waste"
+    | "/telemetry-value"
+    | "/settings"
+    | "/support";
 };
 
 export function SideNav() {
@@ -16,7 +24,8 @@ export function SideNav() {
     { label: "Dashboard", icon: "dashboard", href: "/" },
     { label: "Incidents", icon: "error_med", href: "/incidents" },
     { label: "Approvals", icon: "check_circle", href: "/approvals" },
-    { label: "Monitoring", icon: "monitoring", href: "/monitoring" }
+    { label: "Monitoring", icon: "monitoring", href: "/monitoring" },
+    { label: "Telemetry Value Impact", icon: "paid", href: "/telemetry-value" },
   ];
 
   const isActive = (href: string) => {

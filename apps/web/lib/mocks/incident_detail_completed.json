@@ -31,7 +31,43 @@
       "status": "success",
       "started_at": "2026-04-08T00:08:35Z",
       "duration_ms": 180,
-      "tool_calls": [{ "tool_name": "run_search", "status": "success" }],
+      "tool_calls": [
+        {
+          "tool_name": "run_search",
+          "status": "success",
+          "tool_type": "retrieval",
+          "metric_source": {
+            "token_usage": "not_applicable",
+            "latency": "derived",
+            "confidence_impact": "derived"
+          },
+          "token_usage": { "prompt": 0, "completion": 0, "total": 0, "source": "not_applicable" },
+          "latency_ms": 104,
+          "confidence_impact": 0.22,
+          "provider": "splunk",
+          "model_name": "n/a"
+        }
+      ],
+      "policy_checks": []
+    },
+    {
+      "node_name": "reasoning_draft",
+      "status": "success",
+      "started_at": "2026-04-08T00:08:45Z",
+      "duration_ms": 130,
+      "tool_calls": [
+        {
+          "tool_name": "llm_call",
+          "status": "success",
+          "tool_type": "llm",
+          "metric_source": { "token_usage": "derived", "latency": "derived", "confidence_impact": "derived" },
+          "token_usage": { "prompt": 300, "completion": 110, "total": 410, "source": "derived" },
+          "latency_ms": 130,
+          "confidence_impact": 0.16,
+          "provider": "ollama/local",
+          "model_name": "qwen2.5:14b"
+        }
+      ],
       "policy_checks": []
     },
     {
@@ -42,6 +78,12 @@
       "tool_calls": [],
       "policy_checks": [{ "rule_id": "env-prod-approval", "matched": false, "action": "continue" }]
     }
-  ]
+  ],
+  "run_metadata": {
+    "model_provider": "ollama",
+    "model_name": "qwen2.5:14b",
+    "runtime_mode": "local",
+    "splunk_mode": "mcp",
+    "run_time_ms": 490
+  }
 }
-

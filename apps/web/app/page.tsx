@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ActionDock } from "@/components/ActionDock";
 import { getDashboardSummary, getSettingsSnapshot } from "@/lib/api";
+import { getTelemetryMetrics } from "@/lib/services/waste";
 
 function getSeverityStyles(severity: string) {
   const normalized = severity.toLowerCase();
@@ -15,7 +16,11 @@ function getSeverityStyles(severity: string) {
 }
 
 export default async function DashboardPage() {
-  const [summary, settings] = await Promise.all([getDashboardSummary(), getSettingsSnapshot()]);
+  const [summary, settings, telemetryMetrics] = await Promise.all([
+    getDashboardSummary(),
+    getSettingsSnapshot(),
+    getTelemetryMetrics(),
+  ]);
   const recent = summary.items.slice(0, 8);
   const lastUpdated = new Date(summary.stats.last_updated).toLocaleString();
 
@@ -84,6 +89,56 @@ export default async function DashboardPage() {
         <span className="inline-flex items-center rounded-full border border-outline-variant/30 bg-surface-container-high px-3 py-1 text-xs font-mono text-on-surface">
           {settings.model.provider}:{settings.model.name}
         </span>
+      </div>
+
+      {/* Telemetry Value Metrics Section */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-headline font-semibold text-on-surface mb-1">
+              Telemetry Value Metrics
+            </h3>
+            <p className="text-xs text-on-surface-variant">
+              Data utilization, cost analysis, and optimization opportunities
+            </p>
+          </div>
+          <Link
+            href="/waste"
+            className="text-primary hover:bg-primary/10 px-3 py-1 rounded text-xs font-bold transition-all"
+          >
+            View Full Analysis
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Total Annual Spend</p>
+            <p className="mt-2 text-2xl font-black text-on-surface">
+              ${(telemetryMetrics.summary.total_annual_spend_usd / 1000000).toFixed(2)}M
+            </p>
+            <p className="mt-1 text-xs text-on-surface-variant">across all sources</p>
+          </article>
+
+          <article className="rounded-xl border border-error/30 bg-error-container/10 p-4">
+            <p className="text-[10px] uppercase tracking-widest text-error font-bold">Potential Savings</p>
+            <p className="mt-2 text-2xl font-black text-error">
+              ${(telemetryMetrics.summary.total_potential_savings_usd / 1000000).toFixed(2)}M
+            </p>
+            <p className="mt-1 text-xs text-on-surface-variant">with optimization</p>
+          </article>
+
+          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Avg Utilization</p>
+            <p className="mt-2 text-2xl font-black text-tertiary">{telemetryMetrics.summary.avg_utilization_score}%</p>
+            <p className="mt-1 text-xs text-on-surface-variant">across sources</p>
+          </article>
+
+          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Security Gaps</p>
+            <p className="mt-2 text-2xl font-black text-on-surface">{telemetryMetrics.summary.security_gap_count}</p>
+            <p className="mt-1 text-xs text-on-surface-variant">found & ranked</p>
+          </article>
+        </div>
       </div>
 
       <div

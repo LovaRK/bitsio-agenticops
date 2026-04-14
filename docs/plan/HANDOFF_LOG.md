@@ -70,3 +70,54 @@
   - `GET /api/v1/incidents` returns real incidents from `tutorial`
   - `GET /api/v1/decision-traces/{id}` returns live trace
   - approve + reject endpoints return `200`
+
+## 2026-04-13 (Docs + UX Sync)
+- Added functional command palette:
+  - open via button or `Cmd/Ctrl+K`
+  - search + quick navigation commands
+  - close via `Esc`
+- Added action-specific loading indicators across key UI actions:
+  - approve/reject/escalate
+  - quick resolve + recent activity
+  - timeline refresh
+  - settings apply/test actions
+- Added scenario preset switching in runtime settings:
+  - `Local Mock`
+  - `Local Model + Live Splunk`
+  - `Cloud Model + Live Splunk`
+- Updated settings connection messaging to highlight failures in red.
+- Updated docs to remove stale phase/blocker statements and reflect current state.
+
+### Verification Executed
+- `pnpm --filter web lint` (pass)
+- `pnpm --filter web test:e2e` (9 passed)
+- `uv run pytest -q` (58 passed)
+
+## 2026-04-14 (Runtime Truth + Explainability Alignment)
+- Implemented runtime/model truth propagation across backend and UI:
+  - removed hardcoded `ollama/qwen` trace defaults
+  - populated `run_metadata` and tool runtime context from active runtime settings
+  - added derived metadata fallback only when backend omits runtime metadata
+- Implemented inline explainability UX on incident timeline:
+  - tapped tool chip opens inline detail block under that node
+  - non-LLM tools now render `Tool Details` with no token cards
+  - LLM tools retain token/cost cards with provenance badges
+- Expanded Monitoring API/UI:
+  - added `kpi_explanations` formulas + freshness
+  - added `agent_runtime` aggregates (llm/retrieval/policy metrics, tokens, cost source tags)
+- Updated navigation/clarity:
+  - sidebar label changed to `Telemetry Value Impact`
+  - top `Deploy Fix` now includes inline behavior help popover
+- Added live-mode stability fallback:
+  - incident loading now gracefully falls back to seeded incidents when live Splunk is unreachable
+  - dashboard summary reports fallback source metadata
+- Updated e2e spec for new explainability contract (`tool-explainability-inline`, no token cards for non-LLM).
+
+### Verification Executed
+- `make test` (78 passed)
+- `make lint` (pass; only existing Next warnings)
+- `make api-smoke` (pass)
+- `pnpm --filter web test:e2e` (9 passed)
+- Manual endpoint checks:
+  - `/`, `/settings`, `/incidents`, `/monitoring`, `/telemetry-value` all `200`
+  - runtime switch verification (`anthropic/cloud` reflected in `/settings` and `/monitoring/overview`)

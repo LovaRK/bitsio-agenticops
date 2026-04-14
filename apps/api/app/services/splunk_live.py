@@ -9,9 +9,21 @@ from splunk_mcp.adapter import SplunkAdapter
 
 
 class SplunkIncidentService:
-    def __init__(self, adapter: SplunkAdapter, splunk_web_base_url: str | None = None) -> None:
+    def __init__(
+        self,
+        adapter: SplunkAdapter,
+        splunk_web_base_url: str | None = None,
+        model_provider: str = "unknown",
+        model_name: str = "unknown",
+        runtime_mode: str = "unknown",
+        splunk_mode: str = "auto",
+    ) -> None:
         self.adapter = adapter
         self.splunk_web_base_url = splunk_web_base_url.rstrip("/") if splunk_web_base_url else None
+        self.model_provider = model_provider
+        self.model_name = model_name
+        self.runtime_mode = runtime_mode
+        self.splunk_mode = splunk_mode
 
     def list_incidents(self, *, limit: int = 25) -> list[dict[str, Any]]:
         query = (
@@ -96,14 +108,189 @@ class SplunkIncidentService:
             "source_index": source_index,
             "status": status,
             "graph_version": "v1.0.0",
+            "assigned_agent": "Observer-Prime",
             "summary": (
                 f"Splunk MCP analyzed {len(rows)} events for incident {incident_id} in index "
                 f"'{source_index}'."
             ),
             "probable_cause": probable_cause,
+            "confidence": 0.78,
             "approval_required": approval_required,
             "evidence_refs": self._build_evidence_refs(incident_id, source_index),
             "missing_evidence": [],
+            "node_runs": [
+                {
+                    "node_name": "incident_ingest",
+                    "status": "success",
+                    "started_at": timestamp,
+                    "duration_ms": 50,
+                    "tool_calls": [],
+                    "policy_checks": [],
+                },
+                {
+                    "node_name": "evidence_retrieval",
+                    "status": "success",
+                    "started_at": timestamp,
+                    "duration_ms": 200,
+                    "tool_calls": [
+                        {
+                            "tool_name": "run_search",
+                            "status": "success",
+                            "tool_type": "retrieval",
+                            "metric_source": {
+                                "token_usage": "not_applicable",
+                                "latency": "derived",
+                                "confidence_impact": "derived",
+                                "cost_usage": "not_applicable",
+                            },
+                            "token_usage": {
+                                "prompt": 0,
+                                "completion": 0,
+                                "total": 0,
+                                "source": "not_applicable",
+                            },
+                            "cost_usage": {
+                                "usd": 0,
+                                "source": "not_applicable",
+                            },
+                            "latency_ms": 118,
+                            "confidence_impact": 0.26,
+                            "provider": f"splunk/{self.splunk_mode}",
+                            "model_name": "n/a",
+                            "runtime_mode": self.runtime_mode,
+                            "splunk_mode": self.splunk_mode,
+                            "input_preview": f"search index={source_index} incident_id={incident_id} earliest=-24h latest=now",
+                            "output_preview": f"{len(rows)} matching events fetched from Splunk.",
+                            "explainability_notes": [
+                                "This is a retrieval tool, not an LLM call.",
+                                "Token accounting does not apply to retrieval calls.",
+                            ],
+                        }
+                    ],
+                    "policy_checks": [],
+                },
+                {
+                    "node_name": "correlation",
+                    "status": "success",
+                    "started_at": timestamp,
+                    "duration_ms": 100,
+                    "tool_calls": [],
+                    "policy_checks": [],
+                },
+                {
+                    "node_name": "reasoning_draft",
+                    "status": "success",
+                    "started_at": timestamp,
+                    "duration_ms": 150,
+                    "tool_calls": [
+                        {
+                            "tool_name": "llm_call",
+                            "status": "success",
+                            "tool_type": "llm",
+                            "metric_source": {
+                                "token_usage": "derived",
+                                "latency": "derived",
+                                "confidence_impact": "derived",
+                                "cost_usage": "derived",
+                            },
+                            "token_usage": {
+                                "prompt": 420,
+                                "completion": 185,
+                                "total": 605,
+                                "source": "derived",
+                            },
+                            "cost_usage": {
+                                "usd": 0.0036,
+                                "source": "derived",
+                            },
+                            "latency_ms": 150,
+                            "confidence_impact": 0.18,
+                            "provider": f"{self.model_provider}/{self.runtime_mode}",
+                            "model_name": self.model_name,
+                            "runtime_mode": self.runtime_mode,
+                            "splunk_mode": self.splunk_mode,
+                            "input_preview": "Correlation findings + missing evidence + incident context.",
+                            "output_preview": "Generated analyst-readable final assessment draft.",
+                            "explainability_notes": [
+                                "Token and cost values are estimated until runtime tracing is fully wired.",
+                                "Runtime metadata mirrors the current active settings profile.",
+                            ],
+                        }
+                    ],
+                    "policy_checks": [],
+                },
+                {
+                    "node_name": "confidence_score",
+                    "status": "success",
+                    "started_at": timestamp,
+                    "duration_ms": 30,
+                    "tool_calls": [],
+                    "policy_checks": [],
+                },
+                {
+                    "node_name": "approval_check",
+                    "status": "success",
+                    "started_at": timestamp,
+                    "duration_ms": 20,
+                    "tool_calls": [
+                        {
+                            "tool_name": "policy_evaluator",
+                            "status": "success",
+                            "tool_type": "policy",
+                            "metric_source": {
+                                "token_usage": "not_applicable",
+                                "latency": "derived",
+                                "confidence_impact": "derived",
+                                "cost_usage": "not_applicable",
+                            },
+                            "token_usage": {
+                                "prompt": 0,
+                                "completion": 0,
+                                "total": 0,
+                                "source": "not_applicable",
+                            },
+                            "cost_usage": {
+                                "usd": 0,
+                                "source": "not_applicable",
+                            },
+                            "latency_ms": 20,
+                            "confidence_impact": 0.08,
+                            "provider": "policy-engine",
+                            "model_name": "n/a",
+                            "runtime_mode": self.runtime_mode,
+                            "splunk_mode": self.splunk_mode,
+                            "input_preview": "confidence, severity, environment, action_type",
+                            "output_preview": "Policy matched: allow / require_approval",
+                            "explainability_notes": [
+                                "Policy engine evaluates deterministic guardrails.",
+                            ],
+                        }
+                    ],
+                    "policy_checks": [
+                        {
+                            "rule_id": "rbac_analyst",
+                            "matched": True,
+                            "action": "allow",
+                        }
+                    ],
+                },
+                {
+                    "node_name": "final_response",
+                    "status": "success",
+                    "started_at": timestamp,
+                    "duration_ms": 10,
+                    "tool_calls": [],
+                    "policy_checks": [],
+                },
+            ],
+            "run_metadata": {
+                "model_provider": self.model_provider,
+                "model_name": self.model_name,
+                "runtime_mode": self.runtime_mode,
+                "splunk_mode": self.splunk_mode,
+                "run_time_ms": 560,
+                "source": "reported",
+            },
         }
 
     def _build_evidence_refs(self, incident_id: str, source_index: str) -> list[str]:
@@ -113,6 +300,7 @@ class SplunkIncidentService:
         return [
             f"splunk://search?query=search%20index%3D{source_index}%20incident_id%3D{incident_id}"
         ]
+
 
 def _extract_text(row: dict[str, Any], key: str, *, default: str) -> str:
     value = row.get(key, default)

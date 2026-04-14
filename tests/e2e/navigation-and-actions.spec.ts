@@ -1,19 +1,25 @@
 import { expect, test } from "@playwright/test";
 
 test("main navigation links load without runtime errors", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/incidents", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("incidents-page")).toBeVisible();
+  await expect(page.getByText("Unhandled Runtime Error")).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Dashboard" }).click();
   await expect(page.getByTestId("dashboard-page")).toBeVisible();
   await expect(page.getByText("Unhandled Runtime Error")).toHaveCount(0);
 
   await page.getByRole("link", { name: "Incidents" }).click();
   await expect(page.getByTestId("incidents-page")).toBeVisible();
-  await expect(page.getByText("Unhandled Runtime Error")).toHaveCount(0);
 
   await page.getByRole("link", { name: "Approvals" }).click();
   await expect(page.getByRole("heading", { name: "Approval Gate" })).toBeVisible();
 
   await page.getByRole("link", { name: "Monitoring" }).click();
   await expect(page.getByTestId("monitoring-page")).toBeVisible();
+
+  await page.getByRole("link", { name: "Value Impact" }).click();
+  await expect(page.getByTestId("waste-page")).toBeVisible();
 
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page.getByTestId("settings-page")).toBeVisible();

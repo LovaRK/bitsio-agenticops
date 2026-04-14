@@ -1,0 +1,6 @@
+Method,Name,Error,Occurrences
+POST,POST /api/v1/decision-traces/{id}/approvals,HTTPError('429 Client Error: Too Many Requests for url: POST /api/v1/decision-traces/{id}/approvals'),64
+POST,POST /api/v1/decision-traces/{id}/approvals,HTTPError('422 Client Error: Unprocessable Entity for url: POST /api/v1/decision-traces/{id}/approvals'),68
+GET,GET /api/v1/decision-traces/{id},HTTPError('429 Client Error: Too Many Requests for url: GET /api/v1/decision-traces/{id}'),151
+GET,GET /api/v1/decision-traces/{id},HTTPError('404 Client Error: Not Found for url: GET /api/v1/decision-traces/{id}'),2
+GET,GET /api/v1/incidents,HTTPError('429 Client Error: Too Many Requests for url: GET /api/v1/incidents'),504

@@ -1,8 +1,43 @@
 export type TimelineStatus = "success" | "fail" | "pending";
 
+export type ToolType = "llm" | "retrieval" | "policy" | "transform";
+export type MetricSource = "reported" | "derived" | "not_applicable";
+
+export type TokenUsage = {
+  prompt: number;
+  completion: number;
+  total: number;
+  source: MetricSource;
+};
+
+export type CostUsage = {
+  usd: number;
+  source: MetricSource;
+};
+
 export type ToolCall = {
   tool_name: string;
   status: string;
+  tool_type?: ToolType;
+  metric_source?: {
+    token_usage?: MetricSource;
+    latency?: MetricSource;
+    confidence_impact?: MetricSource;
+    cost_usage?: MetricSource;
+  };
+  token_usage?: TokenUsage;
+  cost_usage?: CostUsage;
+  provider?: string;
+  model_name?: string;
+  runtime_mode?: "local" | "cloud" | "unknown";
+  splunk_mode?: "mcp" | "native" | "auto" | "unknown";
+  tokens_prompt?: number;
+  tokens_completion?: number;
+  latency_ms?: number;
+  input_preview?: string;
+  output_preview?: string;
+  confidence_impact?: number;
+  explainability_notes?: string[];
 };
 
 export type PolicyCheck = {
@@ -37,4 +72,12 @@ export type DecisionTrace = {
   evidence_refs: string[];
   missing_evidence: string[];
   node_runs: NodeRun[];
+  run_metadata?: {
+    model_provider?: string;
+    model_name?: string;
+    runtime_mode?: "local" | "cloud";
+    splunk_mode?: "mcp" | "native" | "auto";
+    run_time_ms?: number;
+    source?: MetricSource;
+  };
 };

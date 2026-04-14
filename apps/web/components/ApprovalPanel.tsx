@@ -4,7 +4,13 @@ import { useState } from "react";
 
 import { submitApproval } from "@/lib/api";
 
-export function ApprovalPanel({ workflowId }: { workflowId: string }) {
+export function ApprovalPanel({
+  workflowId,
+  approver = "analyst1",
+}: {
+  workflowId: string;
+  approver?: string;
+}) {
   const [comment, setComment] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "approved" | "rejected" | "error">(
     "idle"
@@ -18,7 +24,7 @@ export function ApprovalPanel({ workflowId }: { workflowId: string }) {
       setActiveDecision(decision);
       setMessage("");
       await submitApproval(workflowId, {
-        approver: "analyst1",
+        approver,
         decision,
         reason: comment || "No comment",
       });

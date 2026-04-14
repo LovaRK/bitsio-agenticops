@@ -24,7 +24,11 @@ This document is the fast handoff for any new developer or coding agent.
 - Do not force mock mode in production demonstrations.
 - Keep adapter contract stable; switch behavior using `SPLUNK_ADAPTER_MODE`.
 - Never commit secrets (`.env` is gitignored).
+- `Environment=local` with `Model Provider=anthropic` is valid:
+  - environment = where app runs
+  - provider = where model inference runs
 - Runtime mode can be changed from `/settings` without code edits:
+  - scenario presets (local-mock/local-live/cloud-live)
   - runtime profile selector (local vs cloud presets)
   - local/cloud model
   - mcp/native Splunk adapter

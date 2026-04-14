@@ -11,6 +11,9 @@ function getSeverityBadgeColor(severity: string) {
 
 export default async function IncidentDetailsPage({ params }: { params: { id: string } }) {
   const detail = await getIncidentDetail(params.id);
+  const recommendation = detail.approval_required
+    ? "Human review required before remediation is applied."
+    : "No additional approval required. Continue with guided remediation.";
 
   if (!detail.node_runs.length) {
     return (
@@ -41,9 +44,77 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
         <p className="text-on-surface-variant mt-2 max-w-2xl">{detail.summary}</p>
       </div>
 
+      <section
+        className="mb-8 rounded-xl border border-outline-variant/15 bg-surface-container-low p-6"
+        data-testid="story-card"
+      >
+        <h3 className="text-lg font-semibold text-on-surface font-headline">Incident Story</h3>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-4">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">What Happened</p>
+            <p className="mt-2 text-on-surface">{detail.summary}</p>
+          </div>
+          <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-4">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Why This Conclusion</p>
+            <p className="mt-2 text-on-surface">
+              Probable cause was derived from correlated evidence across {detail.evidence_refs.length} evidence references and node-level policy checks.
+            </p>
+          </div>
+          <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-4">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Evidence Used</p>
+            <p className="mt-2 text-on-surface">{detail.evidence_refs.length} evidence links from index <span className="font-mono">{detail.source_index}</span>.</p>
+          </div>
+          <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-4">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Recommended Action</p>
+            <p className="mt-2 text-on-surface">{recommendation}</p>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="rounded-full border border-outline-variant/30 bg-surface-container-high px-3 py-1 text-xs text-on-surface">
+            Confidence: Probability of decision reliability from available evidence.
+          </span>
+          <span className="rounded-full border border-outline-variant/30 bg-surface-container-high px-3 py-1 text-xs text-on-surface">
+            Correlation: Matching patterns across logs, events, and timeline context.
+          </span>
+          <span className="rounded-full border border-outline-variant/30 bg-surface-container-high px-3 py-1 text-xs text-on-surface">
+            Approval Gate: Human policy checkpoint before risky actions.
+          </span>
+        </div>
+      </section>
+
+      <section
+        className="mb-8 rounded-xl border border-outline-variant/15 bg-surface-container-low p-6"
+        data-testid="run-metadata"
+      >
+        <h3 className="text-lg font-semibold text-on-surface font-headline">Run Metadata</h3>
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Model</p>
+            <p className="mt-1 text-on-surface font-mono">
+              {detail.run_metadata?.model_provider ?? "unknown"} / {detail.run_metadata?.model_name ?? "unknown"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Runtime</p>
+            <p className="mt-1 text-on-surface font-mono">
+              {detail.run_metadata?.runtime_mode ?? "unknown"} | Splunk: {detail.run_metadata?.splunk_mode ?? "unknown"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Workflow</p>
+            <p className="mt-1 text-on-surface font-mono">
+              {detail.workflow_id} ({detail.run_metadata?.run_time_ms ?? "n/a"}ms)
+            </p>
+            <p className="mt-1 text-[10px] text-on-surface-variant">
+              Metadata source: {detail.run_metadata?.source ?? "reported"}
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Asymmetric Layout: Reasoning Timeline (Main) & Confidence Panel (Side) */}
       <div className="grid grid-cols-12 gap-8 items-start">
-        <ReasoningTimeline nodeRuns={detail.node_runs} />
+        <ReasoningTimeline nodeRuns={detail.node_runs} runMetadata={detail.run_metadata} />
         <ConfidencePanel
           confidence={detail.confidence}
           workflowId={detail.workflow_id}

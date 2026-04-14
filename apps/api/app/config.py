@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import logging
+
 from apps.api.app.services.splunk_live import SplunkIncidentService
 from packages.shared.config.settings import get_settings
+
+LOGGER = logging.getLogger(__name__)
 
 SEED_INCIDENTS = [
     {
@@ -44,5 +48,9 @@ def live_mode_enabled() -> bool:
 def load_incidents(splunk_service: SplunkIncidentService) -> list[dict]:
     """Load incidents from live Splunk or return seed data."""
     if live_mode_enabled():
-        return splunk_service.list_incidents(limit=50)
+        try:
+            return splunk_service.list_incidents(limit=50)
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.warning("live_splunk_incident_fetch_failed_falling_back_to_seed error=%s", exc)
+            return SEED_INCIDENTS
     return SEED_INCIDENTS

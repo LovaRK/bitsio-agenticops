@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from datetime import UTC, datetime
 from statistics import mean
 
 from fastapi import APIRouter, Depends
 
-from apps.api.app.config import load_incidents
+from apps.api.app.config import SEED_INCIDENTS, live_mode_enabled, load_incidents
 from apps.api.app.dependencies import get_splunk_incident_service
 from apps.api.app.services.splunk_live import SplunkIncidentService
 from packages.shared.auth import AuthContext, require_analyst
@@ -23,6 +22,16 @@ def dashboard_summary(
 ) -> dict:
     """Get dashboard summary with incident statistics."""
     incidents = load_incidents(splunk_service)
+    seed_ids = {str(item["id"]) for item in SEED_INCIDENTS}
+    current_ids = {str(item.get("id", "")) for item in incidents}
+    is_seed_fallback = live_mode_enabled() and current_ids == seed_ids
+    data_source = (
+        "fallback" if is_seed_fallback else ("reported" if live_mode_enabled() else "seed")
+    )
+    degraded_reason = (
+        "Live Splunk unreachable. Using local seeded incidents." if is_seed_fallback else None
+    )
+
     pending = [item for item in incidents if item.get("status") == "pending_approval"]
     confidence_seed = [
         (
@@ -40,6 +49,8 @@ def dashboard_summary(
             "avg_confidence": round(mean(confidence_seed), 2) if confidence_seed else 0.0,
             "source_indexes": source_indexes,
             "last_updated": datetime.now(tz=UTC).isoformat(),
+            "data_source": data_source,
+            "degraded_reason": degraded_reason,
         },
         "items": incidents,
     }

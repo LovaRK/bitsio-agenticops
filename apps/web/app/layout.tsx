@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { SideNav } from "@/components/SideNav";
 import { TopBar } from "@/components/TopBar";
+import { THEME_KEY } from "@/constants/theme";
 
 export const metadata: Metadata = {
   title: "BitsIO AgenticOps",
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               (function() {
                 try {
-                  var saved = localStorage.getItem('bitsio-theme');
+                  var saved = localStorage.getItem('${THEME_KEY}');
                   var theme = saved === 'light' ? 'light' : 'dark';
                   if (theme === 'dark') document.documentElement.classList.add('dark');
                   else document.documentElement.classList.remove('dark');

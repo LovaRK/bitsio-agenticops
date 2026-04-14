@@ -1,0 +1,82 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Bootstrap dependencies
+        run: make bootstrap
+
+      - name: Start Docker services
+        run: |
+          docker compose up -d
+          sleep 30
+          docker compose ps
+
+      - name: Wait for API health
+        run: |
+          max_attempts=30
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if curl -s http://localhost:8001/health | jq . > /dev/null 2>&1; then
+              echo "✅ API is healthy"
+              exit 0
+            fi
+            echo "Waiting for API... (attempt $attempt/$max_attempts)"
+            sleep 2
+            ((attempt++))
+          done
+          echo "❌ API failed to start"
+          docker compose logs api
+          exit 1
+
+      - name: Run E2E tests
+        working-directory: ./apps/web
+        run: pnpm test:e2e
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-test-results
+          path: apps/web/test-results/
+
+      - name: Collect Docker logs
+        if: failure()
+        run: |
+          docker compose logs > docker-logs.txt
+          echo "Docker logs:" && cat docker-logs.txt
+
+      - name: Stop Docker services
+        if: always()
+        run: docker compose down -v

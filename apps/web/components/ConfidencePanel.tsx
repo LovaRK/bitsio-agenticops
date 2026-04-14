@@ -9,14 +9,24 @@ export function ConfidencePanel({
   confidence,
   workflowId,
   approvalRequired,
+  approver = "analyst1",
   impactedService,
-  responders
+  responders,
+  sourceMetrics,
 }: {
   confidence: number;
   workflowId: string;
   approvalRequired: boolean;
+  approver?: string;
   impactedService?: string;
   responders?: Array<{ id: string; name: string; isAI?: boolean }>;
+  sourceMetrics?: {
+    sourceIndex: string;
+    utilizationScore: number;
+    valueRating: "High" | "Medium" | "Low";
+    annualSpendUsd: number;
+    potentialSavingsUsd: number;
+  };
 }) {
   const router = useRouter();
   const confidencePercent = Math.round(confidence * 100);
@@ -35,7 +45,7 @@ export function ConfidencePanel({
     setMessage("");
     try {
       await submitApproval(workflowId, {
-        approver: "analyst1",
+        approver,
         decision: "approved",
         reason: "Approved from confidence panel quick action",
       });
@@ -56,7 +66,7 @@ export function ConfidencePanel({
     setMessage("");
     try {
       await submitApproval(workflowId, {
-        approver: "analyst1",
+        approver,
         decision: "rejected",
         reason: "Escalated to human responder from confidence panel",
       });
@@ -141,6 +151,52 @@ export function ConfidencePanel({
             System is highly confident based on 4 historic matches and log patterns in Splunk.
           </p>
         </div>
+
+        {/* Data Source Telemetry */}
+        {sourceMetrics && (
+          <div className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 space-y-2">
+            <span className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider block">
+              Data Source Telemetry
+            </span>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-bold text-on-surface mb-1">{sourceMetrics.sourceIndex}</p>
+                <div className="relative h-1.5 w-24 bg-surface-container-lowest rounded-full overflow-hidden">
+                  <div
+                    className="absolute left-0 top-0 h-full bg-secondary rounded-full"
+                    style={{ width: `${sourceMetrics.utilizationScore}%` }}
+                  />
+                </div>
+                <p className="text-[9px] text-on-surface-variant mt-1">
+                  {sourceMetrics.utilizationScore}% utilized
+                </p>
+              </div>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  sourceMetrics.valueRating === "High"
+                    ? "bg-secondary-container/20 text-secondary"
+                    : sourceMetrics.valueRating === "Medium"
+                      ? "bg-tertiary-container/20 text-tertiary"
+                      : "bg-error-container/20 text-error"
+                }`}
+              >
+                {sourceMetrics.valueRating}
+              </span>
+            </div>
+            <div className="text-[9px] text-on-surface-variant space-y-0.5 pt-1 border-t border-outline-variant/10">
+              <div className="flex justify-between">
+                <span>Annual Cost:</span>
+                <span className="text-on-surface font-bold">${(sourceMetrics.annualSpendUsd / 1000).toFixed(0)}K</span>
+              </div>
+              {sourceMetrics.potentialSavingsUsd > 0 && (
+                <div className="flex justify-between">
+                  <span>Potential Savings:</span>
+                  <span className="text-tertiary font-bold">${(sourceMetrics.potentialSavingsUsd / 1000).toFixed(0)}K</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Contextual Data */}
         <div className="space-y-4">

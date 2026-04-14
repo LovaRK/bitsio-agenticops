@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { listPendingApprovals } from "@/lib/api";
 
 type NotificationItem = {
   id: string;
@@ -21,6 +22,7 @@ export function TopBar() {
   const [pendingApprovals, setPendingApprovals] = useState<number>(0);
   const [actionMessage, setActionMessage] = useState("");
   const [deployLoading, setDeployLoading] = useState(false);
+  const [showDeployHelp, setShowDeployHelp] = useState(false);
 
   const notifications = useMemo<NotificationItem[]>(
     () => [
@@ -44,18 +46,10 @@ export function TopBar() {
   );
 
   useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8001";
-    const apiKey = process.env.NEXT_PUBLIC_DEV_API_KEY_ANALYST ?? "dev-analyst";
-
     async function loadNotifications() {
       try {
-        const response = await fetch(`${base}/api/v1/approvals/pending`, {
-          headers: { "x-api-key": apiKey },
-          cache: "no-store",
-        });
-        if (!response.ok) return;
-        const payload = (await response.json()) as { items?: unknown[] };
-        setPendingApprovals(payload.items?.length ?? 0);
+        const approvals = await listPendingApprovals();
+        setPendingApprovals(approvals.length);
       } catch {
         setPendingApprovals(0);
       }
@@ -70,6 +64,7 @@ export function TopBar() {
       if (!panelRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setIsProfileOpen(false);
+        setShowDeployHelp(false);
       }
     }
     document.addEventListener("mousedown", onOutsideClick);
@@ -147,9 +142,11 @@ export function TopBar() {
           </Link>
           <Link
             className={`hover:text-on-surface transition-opacity text-sm font-medium ${
-              pathname.startsWith("/monitoring") ? "text-on-surface" : "text-on-surface-variant"
+              pathname.startsWith("/waste") || pathname.startsWith("/telemetry-value")
+                ? "text-on-surface"
+                : "text-on-surface-variant"
             }`}
-            href="/monitoring"
+            href="/telemetry-value"
           >
             Metrics
           </Link>
@@ -191,6 +188,14 @@ export function TopBar() {
             ) : null}
             {deployLoading ? "Loading..." : "Deploy Fix"}
           </span>
+        </button>
+        <button
+          type="button"
+          aria-label="Deploy Fix help"
+          onClick={() => setShowDeployHelp((current) => !current)}
+          className="rounded-lg p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+        >
+          <span className="material-symbols-outlined text-base">help</span>
         </button>
         <button
           type="button"
@@ -258,6 +263,17 @@ export function TopBar() {
             >
               Sign Out
             </button>
+          </div>
+        )}
+
+        {showDeployHelp && (
+          <div className="absolute top-14 right-24 w-80 rounded-xl border border-outline-variant/20 bg-surface-container shadow-2xl p-3 z-50">
+            <p className="text-xs font-bold tracking-widest uppercase text-outline">Deploy Fix Behavior</p>
+            <ul className="mt-2 space-y-1 text-xs text-on-surface-variant">
+              <li>On incident detail: jumps to the decision/approval section.</li>
+              <li>When approvals are pending: opens approvals queue.</li>
+              <li>Otherwise: opens incidents explorer to pick a fix candidate.</li>
+            </ul>
           </div>
         )}
 

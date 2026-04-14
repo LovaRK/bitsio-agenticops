@@ -1,61 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
 
-import type { IncidentSummary } from "@/lib/api";
-
-function getSeverityStyles(severity: string) {
-  const s = severity.toLowerCase();
-  if (s === "critical") {
-    return {
-      dot: "bg-error status-glow-error",
-      badge: "text-error border-error/30",
-    };
-  }
-  if (s === "high") {
-    return {
-      dot: "bg-tertiary status-glow-warning",
-      badge: "text-tertiary border-tertiary/30",
-    };
-  }
-  return {
-    dot: "bg-secondary status-glow-success",
-    badge: "text-secondary border-secondary/30",
-  };
-}
+import type { IncidentSummary } from "@/types/api";
+import { getSeverityStyle } from "@/lib/severity";
+import { useIncidentFilters } from "@/hooks/useIncidentFilters";
 
 export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] }) {
-  const [query, setQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [severityFilter, setSeverityFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sourceFilter, setSourceFilter] = useState("all");
-
-  const sources = useMemo(() => {
-    const all = incidents
-      .map((item) => item.source?.trim())
-      .filter((value): value is string => Boolean(value));
-    return Array.from(new Set(all)).sort();
-  }, [incidents]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return incidents.filter((item) => {
-      const matchesQuery =
-        q.length === 0 ||
-        item.id.toLowerCase().includes(q) ||
-        item.title.toLowerCase().includes(q) ||
-        item.status.toLowerCase().includes(q) ||
-        (item.source ?? "").toLowerCase().includes(q);
-      const matchesSeverity =
-        severityFilter === "all" || item.severity.toLowerCase() === severityFilter;
-      const matchesStatus = statusFilter === "all" || item.status.toLowerCase() === statusFilter;
-      const matchesSource =
-        sourceFilter === "all" || (item.source ?? "").toLowerCase() === sourceFilter;
-      return matchesQuery && matchesSeverity && matchesStatus && matchesSource;
-    });
-  }, [incidents, query, severityFilter, sourceFilter, statusFilter]);
+  const {
+    query,
+    setQuery,
+    showFilters,
+    setShowFilters,
+    severityFilter,
+    setSeverityFilter,
+    statusFilter,
+    setStatusFilter,
+    sourceFilter,
+    setSourceFilter,
+    sources,
+    filtered,
+    reset,
+  } = useIncidentFilters(incidents);
 
   return (
     <>
@@ -145,12 +111,7 @@ export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] 
           <div className="flex md:items-end">
             <button
               type="button"
-              onClick={() => {
-                setQuery("");
-                setSeverityFilter("all");
-                setStatusFilter("all");
-                setSourceFilter("all");
-              }}
+              onClick={reset}
               className="w-full rounded-lg border border-outline-variant/30 px-3 py-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             >
               Reset Filters
@@ -187,7 +148,7 @@ export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] 
             </thead>
             <tbody className="divide-y divide-outline-variant/5">
               {filtered.map((incident) => {
-                const styles = getSeverityStyles(incident.severity);
+                const styles = getSeverityStyle(incident.severity);
                 return (
                   <tr key={incident.id} className="hover:bg-surface-container/40 transition-colors group">
                     <td className="px-6 py-5">

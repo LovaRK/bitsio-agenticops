@@ -117,8 +117,10 @@ def update_runtime_settings(
 
     # Clear cached dependency singletons so API uses new settings immediately
     get_settings.cache_clear()
-    get_splunk_adapter.cache_clear()
-    get_splunk_incident_service.cache_clear()
+    if hasattr(get_splunk_adapter, "cache_clear"):
+        get_splunk_adapter.cache_clear()
+    if hasattr(get_splunk_incident_service, "cache_clear"):
+        get_splunk_incident_service.cache_clear()
 
     return RuntimeConfigResponse(
         updated=True,

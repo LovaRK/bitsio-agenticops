@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends
 
 from apps.api.app.config import load_incidents
 from apps.api.app.dependencies import get_splunk_incident_service
 from apps.api.app.services.splunk_live import SplunkIncidentService
-from datetime import UTC, datetime
 from packages.shared.auth import AuthContext, require_analyst
 
 router = APIRouter(prefix="/api/v1", tags=["approvals"])

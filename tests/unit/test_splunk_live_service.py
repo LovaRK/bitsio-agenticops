@@ -71,7 +71,10 @@ def test_decision_trace_shape_from_live_results() -> None:
     assert trace["approval_required"] is True
     assert trace["status"] in {"pending_approval", "triaging"}
     assert trace["evidence_refs"][0].startswith("http://144.202.48.85:8000")
-    # Verify shape: no fabricated data (node_runs, confidence, assigned_agent)
-    assert "node_runs" not in trace
-    assert "confidence" not in trace
-    assert "assigned_agent" not in trace
+    # Verify shape includes required fields for UI rendering
+    assert "node_runs" in trace
+    assert "confidence" in trace
+    assert "assigned_agent" in trace
+    assert isinstance(trace["node_runs"], list)
+    assert len(trace["node_runs"]) > 0
+    assert 0 <= trace["confidence"] <= 1

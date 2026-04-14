@@ -17,6 +17,7 @@ from apps.api.app.routers import (
     monitoring,
     settings,
     support,
+    waste,
 )
 from packages.shared.config.settings import get_settings
 
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
     app.include_router(monitoring.router)
     app.include_router(settings.router)
     app.include_router(support.router)
+    app.include_router(waste.router)
 
     # Health endpoint
     @app.get("/health")
