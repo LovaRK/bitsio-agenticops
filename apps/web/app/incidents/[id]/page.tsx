@@ -2,6 +2,7 @@ import { ApprovalPanel } from "@/components/ApprovalPanel";
 import { ConfidencePanel } from "@/components/ConfidencePanel";
 import { ReasoningTimeline } from "@/components/ReasoningTimeline";
 import { getIncidentDetail } from "@/lib/api";
+import { getTelemetryMetrics } from "@/lib/services/waste";
 
 function getSeverityBadgeColor(severity: string) {
   if (severity.toLowerCase() === "critical") return "bg-error-container/20 text-error";
@@ -11,6 +12,33 @@ function getSeverityBadgeColor(severity: string) {
 
 export default async function IncidentDetailsPage({ params }: { params: { id: string } }) {
   const detail = await getIncidentDetail(params.id);
+
+  // Fetch telemetry metrics with error handling
+  let sourceMetrics: {
+    sourceIndex: string;
+    utilizationScore: number;
+    valueRating: "High" | "Medium" | "Low";
+    annualSpendUsd: number;
+    potentialSavingsUsd: number;
+  } | undefined;
+
+  try {
+    const telemetry = await getTelemetryMetrics();
+    const source = telemetry.sources.find(s => s.index === detail.source_index);
+    if (source) {
+      sourceMetrics = {
+        sourceIndex: source.name,
+        utilizationScore: source.utilization_score,
+        valueRating: source.value_rating as "High" | "Medium" | "Low",
+        annualSpendUsd: source.annual_spend_usd,
+        potentialSavingsUsd: source.potential_savings_usd
+      };
+    }
+  } catch (error) {
+    // Telemetry metrics are optional - page still loads if API fails
+    sourceMetrics = undefined;
+  }
+
   const recommendation = detail.approval_required
     ? "Human review required before remediation is applied."
     : "No additional approval required. Continue with guided remediation.";
@@ -124,6 +152,7 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
             { id: "user1", name: "Sarah Chen", isAI: false },
             { id: "ai", name: "Observer-Prime", isAI: true }
           ]}
+          sourceMetrics={sourceMetrics}
         />
       </div>
 
