@@ -42,6 +42,48 @@ def server_info() -> dict:
     return _load_fixture("server_info")
 
 
+@app.get("/api/v1/baselines/{service_name}")
+def baseline_metrics(service_name: str, lookback_days: int = 30) -> dict:
+    base = {
+        "api-gateway": {
+            "latency_p50": 95.0,
+            "latency_p95": 180.0,
+            "error_rate": 0.012,
+            "throughput": 2150.0,
+        },
+        "payment-service": {
+            "latency_p50": 130.0,
+            "latency_p95": 260.0,
+            "error_rate": 0.021,
+            "throughput": 1450.0,
+        },
+        "order-service": {
+            "latency_p50": 110.0,
+            "latency_p95": 230.0,
+            "error_rate": 0.015,
+            "throughput": 1800.0,
+        },
+        "auth-service": {
+            "latency_p50": 70.0,
+            "latency_p95": 140.0,
+            "error_rate": 0.009,
+            "throughput": 2500.0,
+        },
+    }.get(service_name)
+    if not base:
+        raise HTTPException(status_code=404, detail="baseline not found")
+
+    lookback = max(1, lookback_days)
+    scale = 1.0 + min(0.35, lookback / 3650)
+    return {
+        **base,
+        "stddev": {
+            "latency_p95": round(base["latency_p95"] * (0.08 * scale), 3),
+            "error_rate": round(base["error_rate"] * (0.1 * scale), 6),
+        },
+    }
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}

@@ -3,10 +3,22 @@ from __future__ import annotations
 import logging
 from functools import lru_cache
 
+from agent_core.graphs.incident_context_agent import IncidentContextAgentGraph
+from agent_core.models.adapter import resolve_model_adapter
+from agent_core.services.baseline_service import SplunkBaselineService, StubBaselineService
+from agent_core.services.embedding_service import PgvectorEmbeddingService, StubEmbeddingService
+from agent_core.services.metadata_service import PostgresMetadataService, StubMetadataService
 from apps.api.app.services.splunk_live import SplunkIncidentService
 from decision_tracing.store import InMemoryDecisionTraceStore
 from packages.shared.config.settings import get_settings
 from splunk_mcp.adapter import NativeSplunkAdapter, SplunkAdapter, SplunkMCPAdapter
+
+try:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+except Exception:  # pragma: no cover
+    create_engine = None  # type: ignore[assignment]
+    Session = None  # type: ignore[assignment]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,4 +83,36 @@ def get_splunk_incident_service() -> SplunkIncidentService:
         model_name=settings.model_name,
         runtime_mode=runtime_mode,
         splunk_mode=resolved_splunk_mode,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_incident_context_graph() -> IncidentContextAgentGraph:
+    settings = get_settings()
+    model_adapter = resolve_model_adapter()
+    splunk_adapter = get_splunk_adapter()
+
+    metadata_service = StubMetadataService()
+    embedding_service = StubEmbeddingService()
+
+    if create_engine is not None and settings.database_url:
+        try:
+            engine = create_engine(settings.database_url)
+            if Session is not None:
+                session = Session(engine)
+                metadata_service = PostgresMetadataService(session)
+                embedding_service = PgvectorEmbeddingService(session)
+        except Exception:
+            metadata_service = StubMetadataService()
+            embedding_service = StubEmbeddingService()
+
+    baseline_service = (
+        SplunkBaselineService(splunk_adapter) if settings.splunk_live_mode else StubBaselineService()
+    )
+
+    return IncidentContextAgentGraph(
+        metadata_service=metadata_service,
+        embedding_service=embedding_service,
+        baseline_service=baseline_service,
+        model_adapter=model_adapter,
     )

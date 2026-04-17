@@ -13,6 +13,7 @@ from apps.api.app.routers import (
     approvals,
     dashboard,
     decision_traces,
+    incident_context,
     incidents,
     monitoring,
     settings,
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(incidents.router)
     app.include_router(decision_traces.router)
+    app.include_router(incident_context.router)
     app.include_router(approvals.router)
     app.include_router(dashboard.router)
     app.include_router(monitoring.router)

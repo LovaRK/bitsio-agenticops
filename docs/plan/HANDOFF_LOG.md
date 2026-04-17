@@ -121,3 +121,69 @@
 - Manual endpoint checks:
   - `/`, `/settings`, `/incidents`, `/monitoring`, `/telemetry-value` all `200`
   - runtime switch verification (`anthropic/cloud` reflected in `/settings` and `/monitoring/overview`)
+
+## 2026-04-15 (Docs Contract Sync + Telemetry Matrix Alignment)
+- Synced documentation to current telemetry metrics contract:
+  - endpoint canonicalized to `GET /api/v1/waste/telemetry/metrics`
+  - removed stale references to deprecated `/api/v1/telemetry/metrics` path across docs
+- Confirmed live runtime contract currently used in app:
+  - Splunk live via native mode + SSH tunnel (`localhost:8089 -> 144.202.48.85:8089`)
+  - runtime connectivity endpoint remains `GET /api/v1/settings/runtime/check` (analyst role required)
+- Fixed telemetry page matrix alignment in UI for consistent responsive rendering:
+  - normalized chart bounds and axis/tick positioning
+  - clamped bubble coordinates to keep markers/labels in plot area
+  - enabled horizontal overflow behavior for narrower viewports
+
+### Verification Executed
+- Local: `http://127.0.0.1:3000/telemetry-value` returns `200`
+- Public tunnel: `/telemetry-value` returns `200`
+- API check: `GET /api/v1/waste/telemetry/metrics` returns payload
+
+## 2026-04-16 (Codebase Understanding + Documentation Refresh)
+- Performed full codebase surface review across:
+  - API routers, dependencies, runtime config, auth middleware, Splunk adapter resolution
+  - web routes, service clients, telemetry value view wiring
+- Added canonical implementation snapshot doc:
+  - `docs/plan/CODEBASE_IMPLEMENTATION_SNAPSHOT_2026-04-16.md`
+- Updated roadmap/decision docs to reflect current contract and known caveat:
+  - telemetry metrics endpoint is `GET /api/v1/waste/telemetry/metrics`
+  - live waste analysis path is `POST /api/v1/waste/analyze/live`
+  - telemetry metrics endpoint currently returns curated payload (stable schema), not direct per-request live rollup.
+
+### Verification Executed
+- `make test` -> `78 passed`
+- `pnpm --filter web lint` -> pass (2 existing warnings only)
+
+## 2026-04-16 (Incident Context Agent Complete)
+- Implemented ICA backend end-to-end:
+  - state model: `IncidentContextAgentState`
+  - service abstractions: metadata/embedding/baseline (stub + production scaffold)
+  - nodes: `context_ingest`, `context_enrichment`, `historical_correlation`, `anomaly_detection`, `context_response`
+  - graph: `IncidentContextAgentGraph` (`v1.0.0`)
+- Added ICA prompts:
+  - `packages/prompts/graph-nodes/historical_correlation.txt`
+  - `packages/prompts/graph-nodes/anomaly_explanation.txt`
+- Added API contract:
+  - `POST /api/v1/incidents/{incident_id}/enrich`
+  - force refresh support + in-memory enrichment cache
+  - decision trace persistence via in-memory trace store
+- Added mock MCP baseline endpoint:
+  - `GET /api/v1/baselines/{service_name}?lookback_days=30`
+- Added web Incident Context UX:
+  - `ContextPanel`, `AnomalyBadge`, `SimilarIncidentsList`
+  - integrated into incident detail page
+  - graceful fallback dataset for mock/dev mode when API is unavailable
+- Added/updated tests:
+  - ICA unit tests, graph integration tests, API tests, mock MCP tests
+  - e2e: `incident-context.spec.ts` + navigation label contract update
+- Added ADRs:
+  - `ADR-009` through `ADR-012` for ICA architecture, embeddings abstraction, anomaly formula, caching strategy.
+
+### Verification Executed
+- `uv run pytest -q` -> `131 passed`
+- `pnpm --filter web lint` -> pass (warnings only)
+- `pnpm --filter web test:e2e` -> `11 passed`
+- `uv run ruff check <changed ICA backend/test files>` -> pass
+
+### Known Note
+- `make lint` currently scans unrelated `.claude/worktrees/...` files and fails on pre-existing issues outside active repo implementation; ICA-targeted lint is clean.

@@ -1,0 +1,214 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║         BitsIO AgenticOps Phase 8 — SUMAN'S QUICK REFERENCE CARD              ║
+║                                                                               ║
+║                        🎯 READ. RUN. DEMO. WIN.                              ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+📂 WHAT TO OPEN FIRST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1️⃣  FOR_SUMAN_READ_FIRST.md
+      ├─ What: 10-minute business overview
+      ├─ Read time: 10 minutes
+      └─ Then: Open CTO_QUICK_START_GUIDE.md
+
+  2️⃣  CTO_QUICK_START_GUIDE.md
+      ├─ What: Step-by-step setup instructions
+      ├─ Read/Do time: 5 min setup + 30 min walkthrough
+      └─ Then: Run the demo
+
+  3️⃣  TELEMETRY_ALIGNMENT_ANALYSIS.md (optional, for deeper understanding)
+      ├─ What: How this aligns with master plan
+      ├─ Read time: 15 minutes
+      └─ For: Understanding why decisions were made
+
+
+🚀 TO RUN IN 30 SECONDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Terminal:
+  $ cd ~/Desktop/OfficeWork/bitsio-agenticops
+  $ make bootstrap    # First time only (2-3 min)
+  $ make dev          # Every time (30 sec)
+
+  Browser:
+  → http://localhost:3000              # Dashboard
+  → http://localhost:3000/waste        # Main demo page (6 sections)
+  → http://localhost:3000/incidents    # Incident list
+
+
+📊 KEY NUMBERS TO MEMORIZE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Total Annual Spend:     $2.4M
+  Potential Savings:      $580K (24% reduction)
+  Average Utilization:    62%
+  Security Gaps:          8
+
+  BIGGEST OPPORTUNITY:
+  Cisco Nexus at 22% utilization = $290K annual savings
+
+
+📱 WHAT YOU'LL SEE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  DASHBOARD (http://localhost:3000)
+  ├─ Top: 3 incident metrics cards
+  │   ├─ Active Incidents: 3
+  │   ├─ Pending Approvals: 1
+  │   └─ Avg Confidence: 79%
+  │
+  ├─ Middle: ✨ NEW TELEMETRY VALUE METRICS (4 cards)
+  │   ├─ Total Annual Spend: $2.40M
+  │   ├─ Potential Savings: $0.58M
+  │   ├─ Avg Utilization: 62%
+  │   ├─ Security Gaps: 8
+  │   └─ Button: "View Full Analysis" → /waste
+  │
+  └─ Bottom: Active Incident Stream table (3 incidents)
+
+  WASTE PAGE (http://localhost:3000/waste) — MAIN DEMO PAGE
+  ├─ Section 1: Overview (4 summary cards)
+  ├─ Section 2: Data Source Analysis (list + bubble chart)
+  ├─ Section 3: Financial Impact (ROI timeline)
+  ├─ Section 4: Security & Compliance (expandable findings)
+  ├─ Section 5: Projected Savings (12-month trajectory)
+  └─ Section 6: Recommended Actions (4 action cards)
+
+  INCIDENT DETAIL (http://localhost:3000/incidents/1)
+  └─ ✨ NEW: "Data Source Telemetry" card
+     ├─ Shows which source this incident used
+     ├─ Utilization score for that source
+     ├─ Annual cost of that source
+     └─ Value rating (High/Medium/Low)
+
+
+🎬 DEMO SCRIPT (5-7 minutes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  "Here's AgenticOps. Notice the Telemetry Value Metrics section on the
+  dashboard—4 new cards showing your data investment.
+
+  We're seeing $2.4M in annual spend across 5 sources, but we've found
+  $580K in optimization opportunities.
+
+  Let me show you the detailed analysis..."
+
+  [Click "View Full Analysis"]
+
+  "Here's your breakdown:
+
+  HIGH VALUE (Keep):
+  - Office 365: $820K/year, 92% utilized ✓
+  - DNS: $420K/year, 78% utilized ✓
+
+  MEDIUM VALUE (Optimize):
+  - Windows Events: $290K/year, 56% utilized ⚠
+  - App Logs: $190K/year, 68% utilized ⚠
+
+  BIGGEST OPPORTUNITY (Remove):
+  - Cisco Nexus: $680K/year, 22% utilized
+    This is costing you $290K in unnecessary spend.
+
+  Over 12 months, we project moving from $2.4M to $1.82M spend—
+  that's $580K in annual savings, while also resolving your 8 security gaps.
+
+  And notice how every incident is tagged with its data source and value.
+  We're not just solving incidents—we're optimizing your data investment."
+
+
+✅ PRE-DEMO CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [ ] Docker is running
+  [ ] `make dev` is running in terminal
+  [ ] http://localhost:3000 loads
+  [ ] 4 telemetry cards visible
+  [ ] /waste page loads with all 6 sections
+  [ ] Data source bubble chart is interactive
+  [ ] Incident detail shows "Data Source Telemetry" card
+  [ ] No errors in browser console (F12)
+  [ ] Screen zoomed to 125% for projector visibility
+
+
+❓ QUICK TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  White screen?
+  └─ Cmd+Shift+Delete (clear cache), reload
+
+  Port 3000 in use?
+  └─ lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9
+
+  Docker not starting?
+  └─ colima start (or open Docker Desktop app)
+
+  Need API working?
+  └─ API fallback mock data is enabled; you're seeing realistic demo data
+
+  Modified mock data and need restart?
+  └─ docker-compose restart api
+
+
+📄 ALL DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  FOR_SUMAN_READ_FIRST.md
+  → 10-min business overview, TL;DR, key numbers, FAQ
+
+  CTO_QUICK_START_GUIDE.md
+  → Prerequisites, 5-step startup, page walkthrough, demo script,
+    troubleshooting, verification checklist
+
+  TELEMETRY_ALIGNMENT_ANALYSIS.md
+  → How this aligns with master build plan, Wave 1 MVP completion,
+    team rationale, next steps
+
+  TELEMETRY_IMPLEMENTATION_COMPLETE.md
+  → Verification of all 4 tasks, data tables, component lists,
+    API endpoint docs
+
+  TELEMETRY_VALUE_DEPLOYMENT_GUIDE.md
+  → For developers: component specs, backend API, type system,
+    quality assurance
+
+  SUMAN_DELIVERY_PACKAGE.md
+  → Navigation guide by role, reading order, customization help
+
+  QUICK_REFERENCE_CARD.txt
+  → This file!
+
+
+🎯 SUCCESS METRICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✅ Dashboard loads in <2 seconds
+  ✅ 4 telemetry cards show correct numbers
+  ✅ /waste page renders all 6 sections
+  ✅ Bubble chart interactive (hover works)
+  ✅ Timeline shows 12-month path correctly
+  ✅ Colors: Green (high), Yellow (medium), Red (low)
+  ✅ Incident detail shows data source card
+  ✅ Zero console errors (F12)
+  ✅ Demo takes 10 min, tells compelling story
+
+
+🚀 NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  TODAY:     Read FOR_SUMAN_READ_FIRST.md + run make dev
+  TOMORROW:  Follow CTO_QUICK_START_GUIDE.md walkthrough
+  THIS WEEK: Demo to team + read TELEMETRY_ALIGNMENT_ANALYSIS.md
+  NEXT WEEK: Present to customers (customize mock data if needed)
+
+
+═════════════════════════════════════════════════════════════════════════════════
+
+Status: ✅ PRODUCTION READY FOR DEMO
+
+For questions, see the detailed documentation files above.
+Start with FOR_SUMAN_READ_FIRST.md.
+
+Good luck with the demo! 🎉
+
+═════════════════════════════════════════════════════════════════════════════════

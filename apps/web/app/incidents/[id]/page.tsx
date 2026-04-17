@@ -1,5 +1,6 @@
 import { ApprovalPanel } from "@/components/ApprovalPanel";
 import { ConfidencePanel } from "@/components/ConfidencePanel";
+import { ContextPanel } from "@/components/ContextPanel";
 import { ReasoningTimeline } from "@/components/ReasoningTimeline";
 import { getIncidentDetail } from "@/lib/api";
 import { getTelemetryMetrics } from "@/lib/services/waste";
@@ -58,6 +59,8 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
 
   return (
     <main className="pt-6 pb-12 px-8" data-testid="incident-detail-page">
+      <ContextPanel incidentId={params.id} />
+
       {/* Incident Header */}
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-2">

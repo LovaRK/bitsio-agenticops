@@ -8,65 +8,202 @@ The BitsIO AgenticOps application has been successfully enhanced with comprehens
 
 ## 📋 What Was Built
 
-### 1. **5 New React Components** (SVG-based, no external charting libraries)
+### 1. **6 React Components** (SVG-based, no external charting libraries)
 
 #### SourceUtilizationCard
-- **Path**: `/apps/web/components/SourceUtilizationCard.tsx`
-- **Features**: Gauge chart showing utilization score (0-100%), value rating (High/Medium/Low), daily ingest, annual cost
-- **Colors**: Green (High), Yellow (Medium), Red (Low)
+- **Path**: `apps/web/components/SourceUtilizationCard.tsx`
+- **Lines**: ~234
+- **Features**: 
+  - SVG gauge chart showing utilization score (0-100%)
+  - Value rating badge (High/Medium/Low) with color coding
+  - Daily ingest volume (GB)
+  - Annual cost (USD)
+  - Responsive sizing
+- **Colors**: Green ($4db8a8) for High, Yellow (#ffc107) for Medium, Red (#f44336) for Low
+- **Usage**: Waste page Section 2 (array of 5 components)
 
 #### SourceValueMatrix  
-- **Path**: `/apps/web/components/SourceValueMatrix.tsx`
-- **Features**: Interactive SVG bubble chart, X-axis (Daily Volume), Y-axis (Utilization Score), Size (Annual Cost)
-- **Quadrants**: High Value | Optimize | Consider Removing | Review Usage
-- **Hover**: Tooltip showing source details
+- **Path**: `apps/web/components/SourceValueMatrix.tsx`
+- **Lines**: ~234
+- **Features**: 
+  - Interactive SVG bubble chart with 4 quadrants
+  - X-axis: Daily Volume (GB)
+  - Y-axis: Utilization Score (0-100%)
+  - Bubble size: Annual Cost (USD)
+  - Bubble color: Recommendation (Keep/Optimize/Remove)
+- **Quadrants**: High Value (top-left) | Optimize (top-right) | Consider Removing (bottom-left) | Review Usage (bottom-right)
+- **Interactivity**: 
+  - Hover shows tooltip with full source details
+  - Click-aware for future integration
+- **Usage**: Waste page Section 2 (single component)
 
 #### ROIBreakdown
-- **Path**: `/apps/web/components/ROIBreakdown.tsx`
-- **Features**: Stacked bar chart + timeline overlay, 12-month optimization projection
-- **Metrics**: Current spend vs potential savings, phased implementation timeline
+- **Path**: `apps/web/components/ROIBreakdown.tsx`
+- **Lines**: ~200
+- **Features**: 
+  - Stacked bar chart showing current spend by source
+  - Overlay line showing potential savings per source
+  - Timeline below bars: Month 0, 3, 6, 12
+  - 12-month optimization projection
+- **Metrics Shown**: 
+  - Current trajectory: Flat at $2.4M
+  - Optimized trajectory: Declining to $1.82M
+  - Savings accumulation: $580K total
+- **Usage**: Waste page Section 3
 
 #### SecurityGapsList
-- **Path**: `/apps/web/components/SecurityGapsList.tsx`
-- **Features**: Expandable findings by category (Detection/Investigation/Response), severity levels, confidence scores
-- **Interactive**: Click to expand categories, see impact on savings
+- **Path**: `apps/web/components/SecurityGapsList.tsx`
+- **Lines**: ~180
+- **Features**: 
+  - Expandable/collapsible findings grouped by category
+  - Categories: Detection, Investigation, Response
+  - Severity indicators: Critical (red), High (orange), Medium (yellow)
+  - Resolution confidence percentage (0-100%)
+  - Impact on savings if resolved
+- **Interactive**: Click category header to expand/collapse findings
+- **Usage**: Waste page Section 4
 
 #### StorageSavingsTimeline
-- **Path**: `/apps/web/components/StorageSavingsTimeline.tsx`
-- **Features**: Dual-trajectory line chart (current vs optimized), 12-month projection with key milestones
-- **Milestones**: Day 0, Month 3, Month 6, Month 12
+- **Path**: `apps/web/components/StorageSavingsTimeline.tsx`
+- **Lines**: ~220
+- **Features**: 
+  - Dual-trajectory line chart (current vs optimized)
+  - Current path: Flat line at $2.4M/year
+  - Optimized path: Declining curve to $1.82M/year
+  - Key milestones marked: Day 0, Month 3, Month 6, Month 12
+  - Shaded area between lines showing cumulative savings
+  - Y-axis: Annual Spend (USD), X-axis: Time (months)
+- **Usage**: Waste page Section 5
+
+#### ConfidencePanel (Enhanced)
+- **Path**: `apps/web/components/ConfidencePanel.tsx`
+- **Enhancement Lines**: ~50
+- **New Card Features**:
+  - "Data Source Telemetry" section (new)
+  - Shows source name (e.g., "Office 365")
+  - Utilization score with progress bar visualization
+  - Value rating badge (High/Medium/Low)
+  - Annual spend in USD
+  - Potential savings in USD
+- **Props Added**: `sourceMetrics?: SourceMetricsProps` (optional)
+- **Position**: After "Confidence Score" section, before "Impacted Service"
+- **Usage**: Incident detail page (`incidents/[id]`)
 
 ---
 
 ### 2. **Enhanced Pages**
 
-#### Dashboard Page (`/apps/web/app/page.tsx`)
-- **New Section**: "Telemetry Value Metrics" with 4 summary cards
-  - Total Annual Spend ($2.4M)
-  - Potential Savings ($580K)
-  - Avg Utilization (62%)
-  - Security Gaps (8 findings)
-- **Link**: "View Full Analysis" button to `/waste`
+#### Dashboard Page (`apps/web/app/page.tsx`)
+- **Location**: Root route `/`
+- **Enhancement**: Added "Telemetry Value Metrics" section
+- **New Section Contains**: 4 summary cards
+  - Card 1: Total Annual Spend = $2.40M (across 5 sources)
+  - Card 2: Potential Savings = $0.58M (with optimization)
+  - Card 3: Avg Utilization = 62% (across sources)
+  - Card 4: Security Gaps = 8 (found & ranked)
+- **Interactive Element**: "View Full Analysis" button
+  - Links to `/waste` page
+  - Uses Material Design colors and spacing
+- **Data Source**: Calls `getTelemetryMetrics()` service
+- **Error Handling**: Shows mock data if API unavailable
+- **Responsive**: 1-col mobile, 2-col tablet, 4-col desktop
 
-#### Waste Page - Complete Redesign (`/apps/web/app/waste/page.tsx`)
-- **Section 1**: Overview (4 summary metric cards)
-- **Section 2**: Data Source Analysis (Utilization cards + bubble matrix)
-- **Section 3**: Financial Impact (ROI breakdown with timeline)
-- **Section 4**: Security & Compliance (expandable findings)
-- **Section 5**: Projected Savings (12-month trajectory)
-- **Section 6**: Recommended Actions (4 action cards with complexity/timeline)
-- **Plus**: Key insights summary with actionable recommendations
+#### Waste Page - Complete Redesign (`apps/web/app/waste/page.tsx`)
+- **Location**: `/waste` route
+- **Purpose**: Comprehensive telemetry value analysis dashboard
+- **6 Complete Sections**:
 
-#### ConfidencePanel Enhancement (`/apps/web/components/ConfidencePanel.tsx`)
+  **Section 1: Overview** 
+  - 4 summary metric cards (same as dashboard)
+  - Total Annual Spend, Potential Savings, Avg Utilization, Security Gaps
+
+  **Section 2: Data Source Analysis**
+  - Left: List of 5 SourceUtilizationCard components (ranked by utilization)
+    - Office 365: 92% utilization, $820K annual spend
+    - DNS: 78% utilization, $420K annual spend
+    - Cisco Nexus: 22% utilization, $680K annual spend ← BIGGEST OPPORTUNITY
+    - Windows Events: 56% utilization, $290K annual spend
+    - App Logs: 68% utilization, $190K annual spend
+  - Right: SourceValueMatrix bubble chart (all 5 sources)
+
+  **Section 3: Financial Impact**
+  - ROIBreakdown component
+  - Stacked bars: Current spend vs potential savings per source
+  - Timeline: Month 0 → 3 → 6 → 12
+  - Shows path to $580K total savings
+
+  **Section 4: Security & Compliance**
+  - SecurityGapsList component
+  - 8 findings across 3 categories
+  - Expandable by category (Detection/Investigation/Response)
+  - Severity and confidence scoring
+
+  **Section 5: Projected Savings**
+  - StorageSavingsTimeline component
+  - Dual trajectories: Current ($2.4M flat) and Optimized ($1.82M target)
+  - Key milestones: 0, 3, 6, 12 months
+
+  **Section 6: Recommended Actions**
+  - 4 action cards with:
+    - Action title and description
+    - Annual savings impact
+    - Implementation complexity
+    - Estimated timeline
+  - Actions: Reduce Retention, Archive Low-Value, Field Filtering, Resolve Gaps
+
+- **Additional Content**: Key Insights summary (4 bullet points)
+- **Data Source**: Calls `getTelemetryMetrics()` service
+- **Error Handling**: Shows mock data if API unavailable
+
+#### Telemetry Value Page (`apps/web/app/telemetry-value/page.tsx`)
+- **Location**: `/telemetry-value` route
+- **Purpose**: Alternate dedicated view for telemetry metrics
+- **Features**: Similar layout to waste page with telemetry focus
+- **Target Users**: Observability leads, cost analysts
+
+#### Incident Detail Page (`apps/web/app/incidents/[id]/page.tsx`)
+- **Location**: `/incidents/{incident_id}` route
+- **Enhancement**: Data source telemetry integration
+- **New Functionality**:
+  - Fetches telemetry metrics on page load
+  - Extracts source metrics for incident's `source_index`
+  - Creates `sourceMetrics` object with:
+    - sourceIndex: Source name (e.g., "Office 365")
+    - utilizationScore: 0-100 (e.g., 92)
+    - valueRating: "High" | "Medium" | "Low"
+    - annualSpendUsd: Annual cost (e.g., 820000)
+    - potentialSavingsUsd: Savings opportunity (e.g., 45000)
+- **ConfidencePanel Integration**: Passes `sourceMetrics` prop
+- **Error Handling**: Gracefully renders without sourceMetrics if API fails
+- **Code Changes**: ~50 lines added for telemetry integration
+
+#### ConfidencePanel Enhancement (`apps/web/components/ConfidencePanel.tsx`)
 - **New Card**: "Data Source Telemetry" 
-- **Optional**: Only shows when `sourceMetrics` prop provided
-- **Shows**: Source index, utilization gauge, value rating, annual cost, potential savings
+- **Visibility**: Only renders when `sourceMetrics` prop is provided
+- **Card Contents**:
+  - Source index name
+  - Utilization gauge (0-100% with progress bar)
+  - Value rating badge (color-coded: green/yellow/red)
+  - Annual spend in USD with label
+  - Potential savings in USD with label
+- **Props Interface**:
+  ```typescript
+  interface SourceMetricsProps {
+    sourceIndex: string;
+    utilizationScore: number;
+    valueRating: "High" | "Medium" | "Low";
+    annualSpendUsd: number;
+    potentialSavingsUsd: number;
+  }
+  ```
+- **Position in Panel**: After Confidence Score section, before Impacted Service
+- **Styling**: Uses Material Design 3 tokens, responsive
 
 ---
 
 ### 3. **Backend API Enhancement**
 
-#### New Endpoint: `GET /api/v1/telemetry/metrics`
+#### New Endpoint: `GET /api/v1/waste/telemetry/metrics`
 - **Path**: `/apps/api/app/routers/waste.py`
 - **Response**: `TelemetryMetricsResponse` with:
   - **Summary**: Total spend, potential savings, avg utilization, security gaps
@@ -91,7 +228,7 @@ The BitsIO AgenticOps application has been successfully enhanced with comprehens
 ```typescript
 getTelemetryMetrics(): Promise<TelemetryMetricsResponse>
 ```
-- Fetches from `/api/v1/telemetry/metrics`
+- Fetches from `/api/v1/waste/telemetry/metrics`
 - Falls back to realistic mock data if API unavailable
 
 ---
@@ -119,7 +256,7 @@ make dev
 # - http://localhost:3000/waste              # Complete telemetry analysis
 # - http://localhost:3000/incidents          # Incidents list
 # - http://localhost:3000/incidents/[id]     # Incident detail with source telemetry
-# - http://localhost:8001/api/v1/telemetry/metrics  # API endpoint (raw JSON)
+# - http://localhost:8001/api/v1/waste/telemetry/metrics  # API endpoint (raw JSON)
 ```
 
 ### Option 2: Development Mode (Without Docker)
@@ -235,7 +372,7 @@ Click on any incident, show ConfidencePanel with new "Data Source Telemetry" car
 
 ### Backend Enhancement (1)
 ```
-✨ apps/api/app/routers/waste.py (New GET /api/v1/telemetry/metrics endpoint)
+✨ apps/api/app/routers/waste.py (New GET /api/v1/waste/telemetry/metrics endpoint)
 ```
 
 ### Type System & Services (2)
@@ -273,7 +410,7 @@ kill -9 <PID>
 ### API Not Responding
 ```bash
 # Check if API is running
-curl http://localhost:8001/api/v1/telemetry/metrics
+curl http://localhost:8001/api/v1/waste/telemetry/metrics
 
 # Should return mock data (no auth required in dev)
 ```
@@ -290,7 +427,7 @@ React component mounts
   ↓
 getTelemetryMetrics() called
   ↓
-Calls GET /api/v1/telemetry/metrics
+Calls GET /api/v1/waste/telemetry/metrics
   ↓
 API returns TelemetryMetricsResponse with mock data
   ↓

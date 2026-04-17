@@ -25,3 +25,12 @@
 | T21 | Live browser flow fix (CORS preflight for approvals) | Codex | DONE | None |
 | T22 | Live run helper scripts (`live-api`, `live-seed`, `live-verify`) | Codex | DONE | None |
 | T23 | Live docs + showcase + persona scenario matrix + onboarding pack | Codex | DONE | None |
+| T24 | Canonical implementation snapshot + route contract documentation sync | Codex | DONE | None |
+| T25 | ICA state model + ingest node + enrichment node/service abstraction | Codex | DONE | None |
+| T26 | ICA correlation + anomaly nodes + prompt files + service abstractions | Codex | DONE | None |
+| T27 | ICA full graph wiring + integration tests | Codex | DONE | None |
+| T28 | ICA API endpoint (`POST /api/v1/incidents/{incident_id}/enrich`) + response schema | Codex | DONE | None |
+| T29 | ICA decision trace persistence + force refresh cache behavior | Codex | DONE | None |
+| T30 | Mock MCP baseline endpoint for local ICA development | Codex | DONE | None |
+| T31 | Incident Context web panel (anomaly badge + similar incidents + fallback UX) | Codex | DONE | None |
+| T32 | ICA e2e suite + navigation contract alignment | Codex | DONE | None |

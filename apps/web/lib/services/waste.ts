@@ -261,7 +261,7 @@ function createMockTelemetryMetrics(): TelemetryMetricsResponse {
 
 export async function getTelemetryMetrics(): Promise<TelemetryMetricsResponse> {
   try {
-    const response = await apiFetch<TelemetryMetricsResponse>("/api/v1/telemetry/metrics");
+    const response = await apiFetch<TelemetryMetricsResponse>("/api/v1/waste/telemetry/metrics");
     return response;
   } catch (error) {
     if (!canFallback()) {

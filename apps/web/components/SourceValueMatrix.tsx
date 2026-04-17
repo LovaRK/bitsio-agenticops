@@ -14,6 +14,19 @@ export interface SourceBubble {
 export function SourceValueMatrix({ sources }: { sources: SourceBubble[] }) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
+  const chart = {
+    width: 1000,
+    height: 600,
+    left: 90,
+    right: 960,
+    top: 90,
+    bottom: 520,
+  };
+  const plotWidth = chart.right - chart.left;
+  const plotHeight = chart.bottom - chart.top;
+
+  const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
   // Calculate scales
   const maxDailyGb = Math.max(...sources.map((s) => s.dailyGb), 100);
   const maxCost = Math.max(...sources.map((s) => s.annualCostUsd), 100000);
@@ -24,25 +37,22 @@ export function SourceValueMatrix({ sources }: { sources: SourceBubble[] }) {
     Remove: "#f44336", // error
   };
 
-  const recommendationBg = {
-    Keep: "bg-secondary-container/20 border-secondary/30",
-    Optimize: "bg-tertiary-container/20 border-tertiary/30",
-    Remove: "bg-error-container/20 border-error/30",
-  };
-
   // Map data to SVG coordinates
   const bubbles = sources.map((source) => {
     // X: Daily GB (0-100% of width)
     const xPercent = (source.dailyGb / maxDailyGb) * 100;
-    const x = 80 + (xPercent / 100) * 880; // 880px width for chart area
+    const rawX = chart.left + (xPercent / 100) * plotWidth;
 
     // Y: Utilization score (0-100% of height, inverted so high scores are at top)
     const yPercent = source.utilizationScore;
-    const y = 520 - (yPercent / 100) * 420; // 420px height for chart area
+    const rawY = chart.bottom - (yPercent / 100) * plotHeight;
 
     // Size: Based on annual cost
     const sizePercent = (source.annualCostUsd / maxCost) * 100;
     const radius = Math.max(15, Math.min(50, (sizePercent / 100) * 50 + 15)); // 15-65px
+
+    const x = clamp(rawX, chart.left + radius + 2, chart.right - radius - 2);
+    const y = clamp(rawY, chart.top + radius + 2, chart.bottom - radius - 2);
 
     return {
       ...source,
@@ -63,62 +73,122 @@ export function SourceValueMatrix({ sources }: { sources: SourceBubble[] }) {
         </p>
       </div>
 
-      <div className="relative bg-surface-container-lowest rounded-lg overflow-hidden border border-outline-variant/10">
-        <svg className="w-full" viewBox="0 0 1000 600" aria-hidden="true">
+      <div className="relative overflow-x-auto rounded-lg border border-outline-variant/10 bg-surface-container-lowest">
+        <svg
+          className="block min-w-[900px] w-full"
+          viewBox={`0 0 ${chart.width} ${chart.height}`}
+          aria-hidden="true"
+        >
           {/* Grid background */}
           <defs>
             <pattern id="grid" width="100" height="75" patternUnits="userSpaceOnUse">
               <path d="M 100 0 L 0 0 0 75" fill="none" stroke="rgba(140,144,161,0.1)" strokeWidth="1" />
             </pattern>
           </defs>
-          <rect width="1000" height="600" fill="url(#grid)" />
+          <rect width={chart.width} height={chart.height} fill="url(#grid)" />
 
           {/* Axes */}
-          <line x1="80" y1="520" x2="960" y2="520" stroke="rgba(140,144,161,0.3)" strokeWidth="2" />
-          <line x1="80" y1="520" x2="80" y2="100" stroke="rgba(140,144,161,0.3)" strokeWidth="2" />
+          <line
+            x1={chart.left}
+            y1={chart.bottom}
+            x2={chart.right}
+            y2={chart.bottom}
+            stroke="rgba(140,144,161,0.3)"
+            strokeWidth="2"
+          />
+          <line
+            x1={chart.left}
+            y1={chart.bottom}
+            x2={chart.left}
+            y2={chart.top}
+            stroke="rgba(140,144,161,0.3)"
+            strokeWidth="2"
+          />
 
           {/* Axis labels */}
-          <text x="960" y="550" textAnchor="end" fontSize="11" fill="currentColor" className="text-on-surface-variant">
+          <text
+            x={chart.right}
+            y={chart.bottom + 30}
+            textAnchor="end"
+            fontSize="11"
+            fill="currentColor"
+            className="text-on-surface-variant"
+          >
             Daily Volume (GB)
           </text>
           <text
-            x="40"
-            y="100"
+            x={40}
+            y={chart.top}
             textAnchor="middle"
             fontSize="11"
             fill="currentColor"
             className="text-on-surface-variant"
-            transform="rotate(-90 40 100)"
+            transform={`rotate(-90 40 ${chart.top})`}
           >
             Utilization Score
           </text>
 
-          {/* Grid lines */}
-          {[100, 200, 300, 400, 500].map((x) => (
-            <line key={`vline-${x}`} x1={x + 80} y1="510" x2={x + 80} y2="520" stroke="rgba(140,144,161,0.2)" />
-          ))}
-          {[0, 25, 50, 75, 100].map((y, i) => (
-            <line
-              key={`hline-${i}`}
-              x1="70"
-              y1={520 - (y / 100) * 420}
-              x2="80"
-              y2={520 - (y / 100) * 420}
-              stroke="rgba(140,144,161,0.2)"
-            />
-          ))}
+          {/* Ticks + labels */}
+          {[0, 20, 40, 60, 80, 100].map((tick) => {
+            const x = chart.left + (tick / 100) * plotWidth;
+            return (
+              <g key={`xtick-${tick}`}>
+                <line
+                  x1={x}
+                  y1={chart.bottom}
+                  x2={x}
+                  y2={chart.bottom + 8}
+                  stroke="rgba(140,144,161,0.25)"
+                />
+                <text
+                  x={x}
+                  y={chart.bottom + 22}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill="currentColor"
+                  className="text-on-surface-variant"
+                >
+                  {Math.round((tick / 100) * maxDailyGb)}
+                </text>
+              </g>
+            );
+          })}
+          {[0, 25, 50, 75, 100].map((tick) => {
+            const y = chart.bottom - (tick / 100) * plotHeight;
+            return (
+              <g key={`ytick-${tick}`}>
+                <line
+                  x1={chart.left - 8}
+                  y1={y}
+                  x2={chart.left}
+                  y2={y}
+                  stroke="rgba(140,144,161,0.25)"
+                />
+                <text
+                  x={chart.left - 12}
+                  y={y + 3}
+                  textAnchor="end"
+                  fontSize="10"
+                  fill="currentColor"
+                  className="text-on-surface-variant"
+                >
+                  {tick}%
+                </text>
+              </g>
+            );
+          })}
 
           {/* Quadrant labels */}
-          <text x="200" y="140" fontSize="12" fontWeight="bold" fill="rgba(140,144,161,0.4)" textAnchor="middle">
+          <text x="220" y="140" fontSize="12" fontWeight="bold" fill="rgba(140,144,161,0.4)" textAnchor="middle">
             High Value
           </text>
-          <text x="800" y="140" fontSize="12" fontWeight="bold" fill="rgba(140,144,161,0.4)" textAnchor="middle">
+          <text x="780" y="140" fontSize="12" fontWeight="bold" fill="rgba(140,144,161,0.4)" textAnchor="middle">
             Optimize
           </text>
-          <text x="200" y="480" fontSize="12" fontWeight="bold" fill="rgba(140,144,161,0.4)" textAnchor="middle">
+          <text x="220" y="480" fontSize="12" fontWeight="bold" fill="rgba(140,144,161,0.4)" textAnchor="middle">
             Consider Removing
           </text>
-          <text x="800" y="480" fontSize="12" fontWeight="bold" fill="rgba(140,144,161,0.4)" textAnchor="middle">
+          <text x="780" y="480" fontSize="12" fontWeight="bold" fill="rgba(140,144,161,0.4)" textAnchor="middle">
             Review Usage
           </text>
 
@@ -177,41 +247,43 @@ export function SourceValueMatrix({ sources }: { sources: SourceBubble[] }) {
         {/* Tooltip - shown on hover */}
         {hoveredId && (
           <div className="absolute top-4 right-4 bg-surface-container border border-outline-variant/30 rounded-lg p-3 max-w-xs z-10">
-            {bubbles.find((b) => b.id === hoveredId) && (
+            {(() => {
+              const hoveredBubble = bubbles.find((b) => b.id === hoveredId);
+              if (!hoveredBubble) return null;
+              return (
               <div className="space-y-2 text-xs">
                 <p className="font-bold text-on-surface">
-                  {bubbles.find((b) => b.id === hoveredId)?.name}
+                  {hoveredBubble.name}
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <p className="text-on-surface-variant">Daily Ingest</p>
                     <p className="font-bold text-on-surface">
-                      {bubbles.find((b) => b.id === hoveredId)?.dailyGb.toFixed(1)} GB
+                      {hoveredBubble.dailyGb.toFixed(1)} GB
                     </p>
                   </div>
                   <div>
                     <p className="text-on-surface-variant">Utilization</p>
                     <p className="font-bold text-on-surface">
-                      {bubbles.find((b) => b.id === hoveredId)?.utilizationScore}%
+                      {hoveredBubble.utilizationScore}%
                     </p>
                   </div>
                   <div>
                     <p className="text-on-surface-variant">Annual Cost</p>
                     <p className="font-bold text-on-surface">
-                      ${(
-                        (bubbles.find((b) => b.id === hoveredId)?.annualCostUsd || 0) / 1000
-                      ).toFixed(1)}K
+                      ${(hoveredBubble.annualCostUsd / 1000).toFixed(1)}K
                     </p>
                   </div>
                   <div>
                     <p className="text-on-surface-variant">Action</p>
                     <p className="font-bold text-on-surface">
-                      {bubbles.find((b) => b.id === hoveredId)?.recommendation}
+                      {hoveredBubble.recommendation}
                     </p>
                   </div>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
         )}
       </div>

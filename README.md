@@ -10,6 +10,13 @@ make bootstrap
 make dev
 ```
 
+## Canonical Docs (Read First)
+
+- `docs/plan/CODEBASE_IMPLEMENTATION_SNAPSHOT_2026-04-16.md`
+- `docs/plan/MASTER_ROADMAP.md`
+- `docs/plan/EXECUTION_BOARD.md`
+- `docs/plan/HANDOFF_LOG.md`
+
 ## Live Splunk Mode
 
 Use this for real-data browser testing (no mock fallback).
@@ -93,6 +100,39 @@ You can now switch runtime behavior directly from the app:
 Notes:
 - Changes apply immediately to the running API process.
 - If you restart API, persist desired values in `.env`.
+
+## Current API Contracts (2026-04-16)
+
+- Telemetry metrics endpoint:
+  - `GET /api/v1/waste/telemetry/metrics`
+  - (Older docs may mention `/api/v1/telemetry/metrics`; treat that as deprecated.)
+- Runtime connectivity check:
+  - `GET /api/v1/settings/runtime/check`
+- Most control-plane routes require analyst role in dev:
+  - send header `x-api-key: dev-analyst`
+- Live waste analysis endpoint:
+  - `POST /api/v1/waste/analyze/live`
+- Incident context enrichment endpoint:
+  - `POST /api/v1/incidents/{incident_id}/enrich`
+  - request body: `{ "force_refresh": false }`
+  - returns enriched incident context (metadata + similar incidents + anomaly)
+
+## Incident Context Agent (ICA)
+
+ICA is now fully wired in local/dev flow:
+- graph: `incident_context_agent` (`v1.0.0`)
+- nodes: `context_ingest -> context_enrichment -> historical_correlation -> anomaly_detection -> context_response`
+- web UI: Incident Context panel on incident detail page (`/incidents/{id}`)
+- mock baseline endpoint: `GET /api/v1/baselines/{service_name}`
+
+Quick API check:
+
+```bash
+curl -X POST http://localhost:8001/api/v1/incidents/inc_20260408_42/enrich \
+  -H 'content-type: application/json' \
+  -H 'x-api-key: dev-analyst' \
+  -d '{"force_refresh":true}'
+```
 
 ## Make Commands
 

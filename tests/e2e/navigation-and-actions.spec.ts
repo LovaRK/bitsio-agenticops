@@ -18,7 +18,7 @@ test("main navigation links load without runtime errors", async ({ page }) => {
   await page.getByRole("link", { name: "Monitoring" }).click();
   await expect(page.getByTestId("monitoring-page")).toBeVisible();
 
-  await page.getByRole("link", { name: "Value Impact" }).click();
+  await page.getByRole("link", { name: "Telemetry Value Impact" }).click();
   await expect(page.getByTestId("waste-page")).toBeVisible();
 
   await page.getByRole("link", { name: "Settings" }).click();

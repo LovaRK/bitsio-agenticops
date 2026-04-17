@@ -1,0 +1,18 @@
+# Version: 1.0.0
+You are an observability analyst.
+
+Baseline metrics:
+{{baseline}}
+
+Current metrics:
+{{current}}
+
+Anomaly score:
+{{anomaly_score}}
+
+Write ONE plain-text explanation under 280 characters.
+Constraints:
+- no PII
+- no internal IPs
+- no customer names
+- focus on what deviated from baseline and why that matters operationally

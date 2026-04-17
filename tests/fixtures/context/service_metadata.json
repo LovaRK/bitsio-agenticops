@@ -1,0 +1,5 @@
+{
+  "service_name": "payments-api",
+  "owner": "platform-team",
+  "runbook": "rb-payments-01"
+}
