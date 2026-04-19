@@ -12,6 +12,7 @@ type NavItem = {
     | "/incidents"
     | "/approvals"
     | "/monitoring"
+    | "/fraud-risk"
     | "/waste"
     | "/telemetry-value"
     | "/settings"
@@ -30,6 +31,7 @@ export function SideNav() {
     { label: "Incidents", icon: "error_med", href: "/incidents" },
     { label: "Approvals", icon: "check_circle", href: "/approvals" },
     { label: "Monitoring", icon: "monitoring", href: "/monitoring" },
+    { label: "Fraud Risk Agent", icon: "gpp_maybe", href: "/fraud-risk" },
     { label: "Telemetry Value Impact", icon: "paid", href: "/telemetry-value" },
   ];
 
@@ -44,6 +46,7 @@ export function SideNav() {
       { label: "Go to Incidents", hint: "Trace explorer", href: "/incidents" as const },
       { label: "Go to Approvals", hint: "Human-in-loop queue", href: "/approvals" as const },
       { label: "Go to Monitoring", hint: "System health", href: "/monitoring" as const },
+      { label: "Go to Fraud Risk Agent", hint: "CFO / Audit demo", href: "/fraud-risk" as const },
       { label: "Go to Telemetry Value Impact", hint: "ROI and savings", href: "/telemetry-value" as const },
       { label: "Open Settings", hint: "Runtime control", href: "/settings" as const },
       { label: "Open Support", hint: "Help resources", href: "/support" as const },

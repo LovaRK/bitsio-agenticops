@@ -142,6 +142,14 @@ export function TopBar() {
           </Link>
           <Link
             className={`hover:text-on-surface transition-opacity text-sm font-medium ${
+              pathname.startsWith("/fraud-risk") ? "text-on-surface" : "text-on-surface-variant"
+            }`}
+            href="/fraud-risk"
+          >
+            Fraud
+          </Link>
+          <Link
+            className={`hover:text-on-surface transition-opacity text-sm font-medium ${
               pathname.startsWith("/waste") || pathname.startsWith("/telemetry-value")
                 ? "text-on-surface"
                 : "text-on-surface-variant"
