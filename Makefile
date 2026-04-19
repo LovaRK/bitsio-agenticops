@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap dev test lint seed eval load-test api-smoke verify-local tunnel-start tunnel-stop tunnel-status live-api live-web live-seed live-verify local local-stop local-status
+.PHONY: bootstrap dev test lint seed eval load-test api-smoke verify-local tunnel-start tunnel-stop tunnel-status live-api live-web live-seed live-verify local local-stop local-status share-web
 
 bootstrap:
 	uv sync --all-groups
@@ -113,3 +113,10 @@ local-status:
 		echo "❌ Web: down"; \
 	fi
 	@$(MAKE) tunnel-status
+
+# Free public share URL for quick demos.
+# Requires cloudflared installed: brew install cloudflared
+share-web:
+	@echo "🌐 Starting Cloudflare quick tunnel for http://127.0.0.1:3000 ..."
+	@command -v cloudflared >/dev/null 2>&1 || (echo "❌ cloudflared not found. Install with: brew install cloudflared" && exit 1)
+	@cloudflared tunnel --url http://127.0.0.1:3000
