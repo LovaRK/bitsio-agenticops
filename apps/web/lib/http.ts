@@ -5,6 +5,8 @@
 
 import { API_BASE_URL, DEV_ANALYST_KEY, REQUIRE_LIVE_API, USE_MOCK_FALLBACK } from "@/lib/config";
 
+const UI_TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || "tenant_ui_local";
+
 export async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
@@ -33,6 +35,12 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 
   if (process.env.NODE_ENV !== "production" && !headers.has("x-api-key")) {
     headers.set("x-api-key", DEV_ANALYST_KEY);
+  }
+
+  // Avoid sharing the global default tenant bucket (tenant_demo),
+  // which can trigger 429s during local/demo traffic bursts.
+  if (!headers.has("x-tenant-id")) {
+    headers.set("x-tenant-id", UI_TENANT_ID);
   }
 
   const res = await fetch(url, {

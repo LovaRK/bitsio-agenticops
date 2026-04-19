@@ -12,8 +12,7 @@ type RuntimeConfigPanelProps = {
 
 type ModelProvider = "ollama" | "anthropic" | "stub";
 type AdapterMode = "mcp" | "native" | "auto";
-type RuntimeProfile = "local" | "cloud";
-type RuntimeScenario = "local_mock" | "local_live" | "cloud_live";
+type RuntimeMode = "LOCAL_DEV" | "LOCAL_INTEGRATION" | "CLOUD_MODEL_TEST" | "CLOUD_LIVE";
 
 const OLLAMA_MODELS = ["qwen2.5:14b", "llama3.1:8b", "mistral:7b-instruct"];
 const ANTHROPIC_MODELS = ["claude-haiku-4-5-20251001", "claude-sonnet-4-5-20251001"];
@@ -58,15 +57,17 @@ function ToggleRow(props: {
 export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
   const router = useRouter();
 
-  const initialProvider = (settings.model.provider as ModelProvider) || "ollama";
-  const initialAdapterMode = (settings.splunk.adapter_mode as AdapterMode) || "auto";
-  const initialProfile: RuntimeProfile =
-    initialProvider === "anthropic" || settings.splunk.live_mode ? "cloud" : "local";
-
-  const [profile, setProfile] = useState<RuntimeProfile>(initialProfile);
-  const [modelProvider, setModelProvider] = useState<ModelProvider>(initialProvider);
+  const initialMode: RuntimeMode = settings.runtime?.mode || "LOCAL_DEV";
+  const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(initialMode);
+  const [lastAppliedMode, setLastAppliedMode] = useState<RuntimeMode>(initialMode);
+  const [showCloudLiveConfirm, setShowCloudLiveConfirm] = useState(false);
+  const [modelProvider, setModelProvider] = useState<ModelProvider>(
+    (settings.model.provider as ModelProvider) || "ollama",
+  );
   const [modelName, setModelName] = useState(settings.model.name);
-  const [adapterMode, setAdapterMode] = useState<AdapterMode>(initialAdapterMode);
+  const [adapterMode, setAdapterMode] = useState<AdapterMode>(
+    (settings.splunk.adapter_mode as AdapterMode) || "auto",
+  );
   const [mockMode, setMockMode] = useState(settings.model.mock_mode);
   const [liveDataMode, setLiveDataMode] = useState(settings.splunk.live_mode);
 
@@ -78,68 +79,56 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
   const [connectionOk, setConnectionOk] = useState<boolean | null>(null);
 
   const modelCandidates = modelProvider === "anthropic" ? ANTHROPIC_MODELS : OLLAMA_MODELS;
-  const activeScenario: RuntimeScenario =
-    !liveDataMode
-      ? "local_mock"
-      : modelProvider === "anthropic" && !mockMode
-        ? "cloud_live"
-        : "local_live";
 
   useEffect(() => {
     setConnectionReport(null);
     setConnectionOk(null);
     setError(null);
-  }, [profile, modelProvider, modelName, adapterMode, mockMode, liveDataMode]);
+  }, [runtimeMode, modelProvider, modelName, adapterMode, mockMode, liveDataMode]);
 
   const helperText = useMemo(() => {
-    if (profile === "local") {
-      return "Local profile keeps everything development-safe: local model runtime and seeded mock Splunk flow by default.";
+    if (runtimeMode === "LOCAL_DEV") {
+      return "Local Dev uses local Ollama model + mock data for fastest safe development.";
     }
-    return "Cloud profile targets production-like runtime: cloud model and live Splunk data with adapter mode control.";
-  }, [profile]);
-
-  function applyProfile(next: RuntimeProfile) {
-    setProfile(next);
-    if (next === "local") {
-      setModelProvider("ollama");
-      setModelName((prev) => (prev ? prev : "qwen2.5:14b"));
-      setMockMode(true);
-      setLiveDataMode(false);
-      setAdapterMode("auto");
-      return;
+    if (runtimeMode === "LOCAL_INTEGRATION") {
+      return "Local Integration uses local Ollama model with live Splunk for connector validation.";
     }
-
-    setModelProvider("anthropic");
-    setModelName("claude-haiku-4-5-20251001");
-    setMockMode(false);
-    setLiveDataMode(true);
-    if (adapterMode === "auto") {
-      setAdapterMode("native");
+    if (runtimeMode === "CLOUD_MODEL_TEST") {
+      return "Cloud Model Test uses Claude with mock data to validate reasoning quality without live data dependency.";
     }
-  }
+    return "Cloud Live uses Claude + live Splunk for production-like end-to-end behavior.";
+  }, [runtimeMode]);
 
-  function applyScenario(next: RuntimeScenario) {
-    if (next === "local_mock") {
-      setProfile("local");
+  function applyRuntimeMode(next: RuntimeMode) {
+    setRuntimeMode(next);
+
+    if (next === "LOCAL_DEV") {
       setModelProvider("ollama");
       setModelName("qwen2.5:14b");
-      setMockMode(true);
+      setMockMode(false);
       setLiveDataMode(false);
       setAdapterMode("auto");
       return;
     }
 
-    if (next === "local_live") {
-      setProfile("local");
+    if (next === "LOCAL_INTEGRATION") {
       setModelProvider("ollama");
-      setModelName((prev) => prev || "qwen2.5:14b");
+      setModelName("qwen2.5:14b");
       setMockMode(false);
       setLiveDataMode(true);
       setAdapterMode("native");
       return;
     }
 
-    setProfile("cloud");
+    if (next === "CLOUD_MODEL_TEST") {
+      setModelProvider("anthropic");
+      setModelName("claude-haiku-4-5-20251001");
+      setMockMode(false);
+      setLiveDataMode(false);
+      setAdapterMode("auto");
+      return;
+    }
+
     setModelProvider("anthropic");
     setModelName("claude-haiku-4-5-20251001");
     setMockMode(false);
@@ -147,26 +136,42 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
     setAdapterMode("native");
   }
 
-  async function handleApply() {
+  async function performApply() {
     setSaving(true);
     setError(null);
     setMessage(null);
 
     try {
-      await updateRuntimeConfig({
+      const result = await updateRuntimeConfig({
+        runtime_mode: runtimeMode,
         model_provider: modelProvider,
         model_name: modelName.trim(),
         splunk_adapter_mode: adapterMode,
         model_mock_mode: mockMode,
         splunk_live_mode: liveDataMode,
       });
-      setMessage("Runtime updated successfully.");
+      setLastAppliedMode(runtimeMode);
+      const tunnelNote =
+        result.tunnel_message && result.tunnel_status
+          ? ` Tunnel: ${result.tunnel_status} (${result.tunnel_message})`
+          : "";
+      setMessage(`Runtime updated successfully.${tunnelNote}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update runtime config.");
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleApply() {
+    const requiresCloudLiveConfirmation =
+      runtimeMode === "CLOUD_LIVE" && lastAppliedMode !== "CLOUD_LIVE";
+    if (requiresCloudLiveConfirmation) {
+      setShowCloudLiveConfirm(true);
+      return;
+    }
+    await performApply();
   }
 
   async function handleTestConnections() {
@@ -191,38 +196,36 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
   }
 
   return (
-    <article className="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
-      <div className="px-6 py-4 bg-surface-container border-b border-outline-variant/10">
-        <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Runtime Control</h3>
-      </div>
-      <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <>
+      <article className="bg-surface-container-low border border-outline-variant/10 rounded-xl overflow-hidden">
+        <div className="px-6 py-4 bg-surface-container border-b border-outline-variant/10">
+          <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest">Runtime Control</h3>
+        </div>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="text-xs text-on-surface-variant uppercase tracking-wider md:col-span-2">
-          Scenario Preset
+          Runtime Mode
           <select
-            value={activeScenario}
-            onChange={(e) => applyScenario(e.target.value as RuntimeScenario)}
+            value={runtimeMode}
+            onChange={(e) => applyRuntimeMode(e.target.value as RuntimeMode)}
             disabled={saving || testing}
             className="mt-2 w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
             data-testid="runtime-scenario-select"
           >
-            <option value="local_mock">Local Mock (best for UI/build speed)</option>
-            <option value="local_live">Local Model + Live Splunk (best for integration)</option>
-            <option value="cloud_live">Cloud Model + Live Splunk (best for demo/production-like)</option>
+            <option value="LOCAL_DEV">Local Dev (Local LLM + Mock Data)</option>
+            <option value="LOCAL_INTEGRATION">Local Integration (Local LLM + Live Splunk)</option>
+            <option value="CLOUD_MODEL_TEST">Cloud Model Test (Claude + Mock Data)</option>
+            <option value="CLOUD_LIVE">Cloud Live (Claude + Live Splunk)</option>
           </select>
         </label>
 
         <label className="text-xs text-on-surface-variant uppercase tracking-wider">
           Runtime Profile
-          <select
-            value={profile}
-            onChange={(e) => applyProfile(e.target.value as RuntimeProfile)}
-            disabled={saving || testing}
+          <input
+            readOnly
+            value={modelProvider === "anthropic" ? "Cloud" : "Local"}
             className="mt-2 w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
             data-testid="runtime-profile-select"
-          >
-            <option value="local">Local Dev (safe defaults)</option>
-            <option value="cloud">Cloud Live (production-like)</option>
-          </select>
+          />
         </label>
 
         <label className="text-xs text-on-surface-variant uppercase tracking-wider">
@@ -230,7 +233,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
           <select
             value={adapterMode}
             onChange={(e) => setAdapterMode(e.target.value as AdapterMode)}
-            disabled={saving || testing}
+            disabled={saving || testing || !liveDataMode}
             className="mt-2 w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
           >
             <option value="auto">auto</option>
@@ -244,7 +247,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
           <select
             value={modelProvider}
             onChange={(e) => setModelProvider(e.target.value as ModelProvider)}
-            disabled={saving || testing}
+            disabled
             className="mt-2 w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
           >
             <option value="ollama">ollama (local)</option>
@@ -260,7 +263,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             onChange={(e) => setModelName(e.target.value)}
             list="model-candidate-list"
             placeholder="Pick from list or type custom model"
-            disabled={saving || testing}
+            disabled
             className="mt-2 w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
           />
           <datalist id="model-candidate-list">
@@ -275,7 +278,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
           description="Use deterministic stub responses instead of live model calls."
           checked={mockMode}
           onChange={setMockMode}
-          disabled={saving || testing}
+          disabled={saving || testing || runtimeMode !== "LOCAL_DEV"}
           testId="toggle-model-mock-mode"
         />
 
@@ -284,7 +287,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
           description="When OFF, the app uses local seeded mock incidents for safe demos."
           checked={liveDataMode}
           onChange={setLiveDataMode}
-          disabled={saving || testing}
+          disabled={saving || testing || runtimeMode === "LOCAL_DEV" || runtimeMode === "CLOUD_MODEL_TEST"}
           testId="toggle-live-splunk-mode"
         />
 
@@ -333,7 +336,47 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             </span>
           </button>
         </div>
-      </div>
-    </article>
+        </div>
+      </article>
+
+      {showCloudLiveConfirm ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-lg rounded-xl border border-outline-variant/20 bg-surface-container p-6 shadow-2xl">
+            <h4 className="text-base font-bold text-on-surface">Confirm Cloud Live Mode</h4>
+            <p className="mt-3 text-sm text-on-surface-variant">
+              You are switching to <strong className="text-on-surface">Cloud Live</strong>. This uses live
+              Splunk data and cloud model inference, which may incur usage cost and operate on production-like
+              telemetry.
+            </p>
+            <ul className="mt-4 list-disc space-y-1 pl-5 text-xs text-on-surface-variant">
+              <li>Model provider: Anthropic (Claude)</li>
+              <li>Data source: Live Splunk</li>
+              <li>Adapter mode: {adapterMode}</li>
+            </ul>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-outline-variant/30 px-4 py-2 text-xs font-bold text-on-surface"
+                onClick={() => setShowCloudLiveConfirm(false)}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+                onClick={async () => {
+                  setShowCloudLiveConfirm(false);
+                  await performApply();
+                }}
+                disabled={saving}
+              >
+                Confirm & Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

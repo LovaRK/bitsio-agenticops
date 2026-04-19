@@ -291,6 +291,38 @@ class SplunkIncidentService:
                 "run_time_ms": 560,
                 "source": "reported",
             },
+            "data_quality": {
+                "completeness_score": 0.94,
+                "freshness_seconds": 45,
+                "accuracy_confidence": 0.89,
+                "validation_passed": True,
+                "source": "reported",
+            },
+            "policy_evaluation": {
+                "policy_id": "rbac_analyst",
+                "policy_version": "v1.0.0",
+                "guardrail_triggered": "allow" if not approval_required else "require_approval",
+                "approval_reason": (
+                    "Human review required due to severity and confidence policy thresholds."
+                    if approval_required
+                    else "No additional human gate required by policy."
+                ),
+                "source": "reported",
+            },
+            "data_classification": {
+                "classification": "restricted" if severity == "high" else "internal",
+                "compliance_frameworks": ["PCI-DSS", "SOX"] if severity == "high" else ["SOC2"],
+                "encryption_required": "in-transit+at-rest" if severity == "high" else "in-transit",
+                "source": "reported",
+            },
+            "agent_telemetry": {
+                "agent_id": "observer-prime",
+                "agent_version": "v1.0.0",
+                "agent_capabilities": "propose-only" if approval_required else "propose+auto-remediate",
+                "action_confidence": round(0.78 * (0.96 if approval_required else 1.02), 2),
+                "human_in_the_loop": approval_required,
+                "source": "reported",
+            },
         }
 
     def _build_evidence_refs(self, incident_id: str, source_index: str) -> list[str]:

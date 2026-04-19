@@ -7,6 +7,26 @@ export interface ProjectionPoint {
   optimizedTrajectoryUsd: number;
 }
 
+function formatCompactUsd(value: number): string {
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(2)}M`;
+  }
+  if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(2)}K`;
+  }
+  return `$${value.toFixed(2)}`;
+}
+
+function formatAxisUsd(value: number): string {
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(1)}M`;
+  }
+  if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(1)}K`;
+  }
+  return `$${value.toFixed(0)}`;
+}
+
 export function StorageSavingsTimeline({ projections }: { projections: ProjectionPoint[] }) {
   const maxCost = Math.max(...projections.map((p) => p.currentTrajectoryUsd));
   const minCost = Math.min(...projections.map((p) => Math.min(p.currentTrajectoryUsd, p.optimizedTrajectoryUsd)));
@@ -77,19 +97,19 @@ export function StorageSavingsTimeline({ projections }: { projections: Projectio
           <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
             Current Path (12mo)
           </p>
-          <p className="text-lg font-black text-on-surface">${(totalCurrentCost / 1000000).toFixed(2)}M</p>
+          <p className="text-lg font-black text-on-surface">{formatCompactUsd(totalCurrentCost)}</p>
         </div>
         <div className="bg-secondary-container/20 border border-secondary/30 rounded-lg p-3">
           <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
             With Optimization (12mo)
           </p>
-          <p className="text-lg font-black text-secondary">${(totalOptimizedCost / 1000000).toFixed(2)}M</p>
+          <p className="text-lg font-black text-secondary">{formatCompactUsd(totalOptimizedCost)}</p>
         </div>
         <div className="bg-tertiary-container/20 border border-tertiary/30 rounded-lg p-3">
           <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
             Total Savings
           </p>
-          <p className="text-lg font-black text-tertiary">${(totalSavings / 1000000).toFixed(2)}M ({savingsPercent}%)</p>
+          <p className="text-lg font-black text-tertiary">{formatCompactUsd(totalSavings)} ({savingsPercent}%)</p>
         </div>
       </div>
 
@@ -117,7 +137,7 @@ export function StorageSavingsTimeline({ projections }: { projections: Projectio
                   fill="currentColor"
                   className="text-on-surface-variant"
                 >
-                  ${((maxY - (i / 4) * yRange) / 1000000).toFixed(1)}M
+                  {formatAxisUsd(maxY - (i / 4) * yRange)}
                 </text>
               </g>
             );

@@ -6,6 +6,16 @@ export interface ROISource {
   potentialSavingsUsd: number;
 }
 
+function formatCompactUsd(value: number): string {
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(2)}M`;
+  }
+  if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(2)}K`;
+  }
+  return `$${value.toFixed(2)}`;
+}
+
 export function ROIBreakdown({ sources }: { sources: ROISource[] }) {
   const totalCurrentSpend = sources.reduce((sum, s) => sum + s.currentSpendUsd, 0);
   const totalPotentialSavings = sources.reduce((sum, s) => sum + s.potentialSavingsUsd, 0);
@@ -40,19 +50,19 @@ export function ROIBreakdown({ sources }: { sources: ROISource[] }) {
           <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
             Current Annual Spend
           </p>
-          <p className="text-lg font-black text-on-surface">${(totalCurrentSpend / 1000000).toFixed(2)}M</p>
+          <p className="text-lg font-black text-on-surface">{formatCompactUsd(totalCurrentSpend)}</p>
         </div>
         <div className="bg-error-container/20 border border-error/30 rounded-lg p-3">
           <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
             Potential Savings
           </p>
-          <p className="text-lg font-black text-error">${(totalPotentialSavings / 1000000).toFixed(2)}M</p>
+          <p className="text-lg font-black text-error">{formatCompactUsd(totalPotentialSavings)}</p>
         </div>
         <div className="bg-secondary-container/20 border border-secondary/30 rounded-lg p-3">
           <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
             Optimized Annual Cost
           </p>
-          <p className="text-lg font-black text-secondary">${(totalOptimizedCost / 1000000).toFixed(2)}M</p>
+          <p className="text-lg font-black text-secondary">{formatCompactUsd(totalOptimizedCost)}</p>
         </div>
       </div>
 
@@ -60,8 +70,9 @@ export function ROIBreakdown({ sources }: { sources: ROISource[] }) {
       <div className="bg-surface-container-lowest rounded-lg p-4">
         <div className="flex items-end gap-2 justify-between h-64 mb-4">
           {sortedSources.map((source, idx) => {
-            const currentHeight = (source.currentSpendUsd / totalCurrentSpend) * barHeight;
-            const savingsHeight = (source.potentialSavingsUsd / totalCurrentSpend) * barHeight;
+            const denominator = totalCurrentSpend > 0 ? totalCurrentSpend : 1;
+            const currentHeight = (source.currentSpendUsd / denominator) * barHeight;
+            const savingsHeight = (source.potentialSavingsUsd / denominator) * barHeight;
             const color = colors[idx % colors.length];
 
             return (

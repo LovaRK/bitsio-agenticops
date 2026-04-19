@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ApprovalPanel } from "@/components/ApprovalPanel";
 import { listPendingApprovals } from "@/lib/api";
+import { formatDateTimeUTC } from "@/lib/datetime";
 
 function getSeverityColor(severity: string) {
   if (severity.toLowerCase() === "high" || severity.toLowerCase() === "critical") {
@@ -70,7 +71,7 @@ export default async function ApprovalsPage() {
                     <span>
                       Confidence: <strong>{Math.round(approval.confidence * 100)}%</strong>
                     </span>
-                    <span>{new Date(approval.time_queued).toLocaleString()}</span>
+                    <span>{formatDateTimeUTC(approval.time_queued)}</span>
                     <Link
                       href={`/incidents/${approval.incident_id}`}
                       className="text-primary font-semibold hover:underline"

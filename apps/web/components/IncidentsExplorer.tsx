@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import type { IncidentSummary } from "@/types/api";
+import { formatDateTimeUTC } from "@/lib/datetime";
 import { getSeverityStyle } from "@/lib/severity";
 import { useIncidentFilters } from "@/hooks/useIncidentFilters";
 
@@ -171,7 +172,7 @@ export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] 
                     </td>
                     <td className="px-6 py-5 text-xs text-on-surface-variant">{incident.status}</td>
                     <td className="px-6 py-5 text-xs text-on-surface-variant font-mono">
-                      {new Date(incident.timestamp).toLocaleString()}
+                      {formatDateTimeUTC(incident.timestamp)}
                     </td>
                     <td className="px-6 py-5 text-right">
                       <Link

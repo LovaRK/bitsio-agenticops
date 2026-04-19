@@ -10,7 +10,7 @@ export function mockSettingsSnapshot(): SettingsSnapshot {
     environment: "local",
     timezone: "UTC",
     splunk: {
-      adapter_mode: "mock",
+      adapter_mode: "auto",
       live_mode: false,
       base_url: "http://localhost:8081",
       web_base_url: "http://localhost:8000",
@@ -23,6 +23,9 @@ export function mockSettingsSnapshot(): SettingsSnapshot {
       runtime: "local",
       base_url: "http://127.0.0.1:11434",
       mock_mode: true,
+    },
+    runtime: {
+      mode: "LOCAL_DEV",
     },
     security: {
       rbac_enabled: true,

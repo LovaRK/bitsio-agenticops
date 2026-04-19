@@ -5,6 +5,16 @@ import { ROIBreakdown } from "@/components/ROIBreakdown";
 import { SecurityGapsList } from "@/components/SecurityGapsList";
 import { StorageSavingsTimeline } from "@/components/StorageSavingsTimeline";
 
+function formatCompactUsd(value: number): string {
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(2)}M`;
+  }
+  if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(2)}K`;
+  }
+  return `$${value.toFixed(2)}`;
+}
+
 export default async function WastePage() {
   const metrics = await getTelemetryMetrics();
 
@@ -31,7 +41,7 @@ export default async function WastePage() {
           <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Total Annual Spend</p>
             <p className="mt-3 text-3xl font-black text-on-surface">
-              ${(metrics.summary.total_annual_spend_usd / 1000000).toFixed(2)}M
+              {formatCompactUsd(metrics.summary.total_annual_spend_usd)}
             </p>
             <p className="mt-2 text-xs text-on-surface-variant">across all data sources</p>
           </article>
@@ -39,7 +49,7 @@ export default async function WastePage() {
           <article className="rounded-xl border border-outline-variant/10 bg-error-container/20 border-error/30 p-5">
             <p className="text-[10px] uppercase tracking-widest text-error font-bold">Potential Savings</p>
             <p className="mt-3 text-3xl font-black text-error">
-              ${(metrics.summary.total_potential_savings_usd / 1000000).toFixed(2)}M
+              {formatCompactUsd(metrics.summary.total_potential_savings_usd)}
             </p>
             <p className="mt-2 text-xs text-on-surface-variant">available with optimization</p>
           </article>
@@ -77,8 +87,8 @@ export default async function WastePage() {
               .sort((a, b) => b.utilization_score - a.utilization_score)
               .map((source) => (
                 <SourceUtilizationCard
-                  key={source.index}
-                  sourceIndex={source.index}
+                  key={`${source.index}:${source.name}`}
+                  sourceIndex={`${source.name} (${source.index})`}
                   utilizationScore={source.utilization_score}
                   valueRating={source.value_rating}
                   annualSpendUsd={source.annual_spend_usd}
@@ -92,7 +102,7 @@ export default async function WastePage() {
           <div className="lg:col-span-2">
             <SourceValueMatrix
               sources={metrics.sources.map((s) => ({
-                id: s.index,
+                id: `${s.index}:${s.name}`,
                 name: s.name,
                 dailyGb: s.daily_ingest_gb,
                 utilizationScore: s.utilization_score,

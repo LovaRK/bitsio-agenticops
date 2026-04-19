@@ -44,6 +44,57 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
     ? "Human review required before remediation is applied."
     : "No additional approval required. Continue with guided remediation.";
 
+  const policyChecks = detail.node_runs.flatMap((node) => node.policy_checks ?? []);
+  const matchedPolicy = policyChecks.find((check) => check.matched) ?? policyChecks[0];
+  const createdAt = Date.parse(detail.timestamp);
+  const now = Date.now();
+  const derivedFreshnessSeconds = Number.isFinite(createdAt)
+    ? Math.max(0, Math.round((now - createdAt) / 1000))
+    : 0;
+  const derivedValidationPassed = detail.node_runs.every((node) => node.status !== "fail");
+  const derivedCompletenessScore = Math.max(
+    0.5,
+    Math.min(0.99, (detail.evidence_refs.length + 2) / (detail.evidence_refs.length + detail.missing_evidence.length + 3)),
+  );
+  const derivedAccuracyConfidence = Math.max(0.5, Math.min(0.99, detail.confidence));
+  const derivedClassification =
+    detail.severity === "high" || detail.severity === "critical" ? "restricted" : "internal";
+  const derivedComplianceFrameworks = derivedClassification === "restricted" ? "PCI-DSS, SOX" : "SOC 2";
+  const derivedEncryptionRequired = derivedClassification === "restricted" ? "in-transit + at-rest" : "in-transit";
+  const derivedActionConfidence = Math.max(0.5, Math.min(0.99, detail.confidence * (detail.approval_required ? 0.96 : 1.02)));
+  const derivedAgentCapabilities = detail.approval_required ? "propose-only" : "propose + auto-remediate";
+
+  const dataQuality = detail.data_quality ?? {
+    completeness_score: derivedCompletenessScore,
+    freshness_seconds: derivedFreshnessSeconds,
+    accuracy_confidence: derivedAccuracyConfidence,
+    validation_passed: derivedValidationPassed,
+    source: "derived",
+  };
+  const policyEvaluation = detail.policy_evaluation ?? {
+    policy_id: matchedPolicy?.rule_id ?? "rbac_analyst",
+    policy_version: detail.graph_version,
+    guardrail_triggered: matchedPolicy?.action ?? (detail.approval_required ? "require_approval" : "allow"),
+    approval_reason: detail.approval_required
+      ? "Human approval required due to policy gate for this risk profile."
+      : "No human gate required for current risk profile.",
+    source: "derived",
+  };
+  const classification = detail.data_classification ?? {
+    classification: derivedClassification,
+    compliance_frameworks: derivedComplianceFrameworks.split(", "),
+    encryption_required: derivedEncryptionRequired.replace(" + ", "+"),
+    source: "derived",
+  };
+  const agentTelemetry = detail.agent_telemetry ?? {
+    agent_id: detail.assigned_agent.toLowerCase().replace(/\s+/g, "-"),
+    agent_version: detail.graph_version,
+    agent_capabilities: derivedAgentCapabilities.replace(" + ", "+"),
+    action_confidence: derivedActionConfidence,
+    human_in_the_loop: detail.approval_required,
+    source: "derived",
+  };
+
   if (!detail.node_runs.length) {
     return (
       <main className="pt-6 pb-12 px-8">
@@ -139,6 +190,100 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
             <p className="mt-1 text-[10px] text-on-surface-variant">
               Metadata source: {detail.run_metadata?.source ?? "reported"}
             </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="governance-panels">
+        <div className="rounded-xl border border-outline-variant/15 bg-surface-container-low p-5">
+          <h3 className="text-lg font-semibold text-on-surface font-headline">Data Quality Metadata</h3>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">completeness_score</p>
+              <p className="mt-1 text-on-surface font-mono">{dataQuality.completeness_score.toFixed(2)}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">freshness_seconds</p>
+              <p className="mt-1 text-on-surface font-mono">{dataQuality.freshness_seconds}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">accuracy_confidence</p>
+              <p className="mt-1 text-on-surface font-mono">{dataQuality.accuracy_confidence.toFixed(2)}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">validation_passed</p>
+              <p className={`mt-1 font-mono ${dataQuality.validation_passed ? "text-secondary" : "text-error"}`}>
+                {dataQuality.validation_passed ? "true" : "false"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-outline-variant/15 bg-surface-container-low p-5">
+          <h3 className="text-lg font-semibold text-on-surface font-headline">Policy Evaluation</h3>
+          <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">policy_id</p>
+              <p className="mt-1 text-on-surface font-mono">{policyEvaluation.policy_id}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">policy_version</p>
+              <p className="mt-1 text-on-surface font-mono">{policyEvaluation.policy_version}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">guardrail_triggered</p>
+              <p className="mt-1 text-on-surface font-mono">{policyEvaluation.guardrail_triggered}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">approval_reason</p>
+              <p className="mt-1 text-on-surface">{policyEvaluation.approval_reason}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-outline-variant/15 bg-surface-container-low p-5">
+          <h3 className="text-lg font-semibold text-on-surface font-headline">Data Classification & Compliance</h3>
+          <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">data_classification</p>
+              <p className="mt-1 text-on-surface font-mono">{classification.classification}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">compliance_framework</p>
+              <p className="mt-1 text-on-surface font-mono">{classification.compliance_frameworks.join(", ")}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">encryption_required</p>
+              <p className="mt-1 text-on-surface font-mono">{classification.encryption_required.replace("+", " + ")}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-outline-variant/15 bg-surface-container-low p-5">
+          <h3 className="text-lg font-semibold text-on-surface font-headline">Agent Telemetry</h3>
+          <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">agent_id</p>
+              <p className="mt-1 text-on-surface font-mono">{agentTelemetry.agent_id}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">agent_version</p>
+              <p className="mt-1 text-on-surface font-mono">{agentTelemetry.agent_version}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">agent_capabilities</p>
+              <p className="mt-1 text-on-surface font-mono">{agentTelemetry.agent_capabilities.replace("+", " + ")}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">action_confidence</p>
+              <p className="mt-1 text-on-surface font-mono">{agentTelemetry.action_confidence.toFixed(2)}</p>
+            </div>
+            <div className="rounded-lg border border-outline-variant/10 bg-surface-container p-3">
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">human_in_the_loop</p>
+              <p className={`mt-1 font-mono ${agentTelemetry.human_in_the_loop ? "text-tertiary" : "text-secondary"}`}>
+                {agentTelemetry.human_in_the_loop ? "required" : "not_required"}
+              </p>
+            </div>
           </div>
         </div>
       </section>

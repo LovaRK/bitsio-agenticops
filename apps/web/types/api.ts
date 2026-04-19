@@ -117,6 +117,9 @@ export interface SettingsSnapshot {
     base_url: string;
     mock_mode: boolean;
   };
+  runtime: {
+    mode: "LOCAL_DEV" | "LOCAL_INTEGRATION" | "CLOUD_MODEL_TEST" | "CLOUD_LIVE";
+  };
   security: {
     rbac_enabled: boolean;
     rate_limit_per_minute: number;
@@ -125,6 +128,7 @@ export interface SettingsSnapshot {
 }
 
 export interface RuntimeConfigPayload {
+  runtime_mode?: "LOCAL_DEV" | "LOCAL_INTEGRATION" | "CLOUD_MODEL_TEST" | "CLOUD_LIVE";
   model_provider: "ollama" | "anthropic" | "stub";
   model_name: string;
   splunk_adapter_mode: "mcp" | "native" | "auto";
@@ -134,11 +138,14 @@ export interface RuntimeConfigPayload {
 
 export interface RuntimeConfigResponse {
   updated: boolean;
+  runtime_mode: "LOCAL_DEV" | "LOCAL_INTEGRATION" | "CLOUD_MODEL_TEST" | "CLOUD_LIVE";
   model_provider: string;
   model_name: string;
   splunk_adapter_mode: string;
   model_mock_mode: boolean;
   splunk_live_mode: boolean;
+  tunnel_status?: "not_required" | "already_active" | "started" | "failed";
+  tunnel_message?: string;
 }
 
 export interface RuntimeConnectivityResponse {
