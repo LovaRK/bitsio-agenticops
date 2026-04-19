@@ -57,8 +57,7 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
     Math.min(0.99, (detail.evidence_refs.length + 2) / (detail.evidence_refs.length + detail.missing_evidence.length + 3)),
   );
   const derivedAccuracyConfidence = Math.max(0.5, Math.min(0.99, detail.confidence));
-  const derivedClassification =
-    detail.severity === "high" || detail.severity === "critical" ? "restricted" : "internal";
+  const derivedClassification = detail.severity === "high" ? "restricted" : "internal";
   const derivedComplianceFrameworks = derivedClassification === "restricted" ? "PCI-DSS, SOX" : "SOC 2";
   const derivedEncryptionRequired = derivedClassification === "restricted" ? "in-transit + at-rest" : "in-transit";
   const derivedActionConfidence = Math.max(0.5, Math.min(0.99, detail.confidence * (detail.approval_required ? 0.96 : 1.02)));
