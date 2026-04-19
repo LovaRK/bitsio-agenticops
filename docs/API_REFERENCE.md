@@ -2,7 +2,7 @@
 
 **Base URL (local):** `http://localhost:8001`  
 **Version:** v1  
-**Last updated:** 2026-04-13
+**Last updated:** 2026-04-18
 
 ---
 
@@ -275,6 +275,32 @@ Update runtime configuration without restart. Changes apply immediately to the r
 #### `GET /api/v1/monitoring/health`
 
 Detailed health check — reports status of PostgreSQL, Redis, Splunk adapter, and OTel collector connectivity.
+
+---
+
+### Fraud Risk Analysis
+
+#### `GET /api/v1/fraud/overview?mode=auto|seed|live`
+
+Returns fraud-risk overview for the current runtime profile.
+
+- `mode=auto` → live when `SPLUNK_LIVE_MODE=true`, otherwise seeded fallback
+- `mode=seed` → deterministic local demo data
+- `mode=live` → force live Splunk query path
+
+**Required role:** `analyst`
+
+#### `GET /api/v1/fraud/demo`
+
+Deterministic fraud demo payload for UI and local validation.
+
+**Required role:** `analyst`
+
+#### `POST /api/v1/fraud/analyze/live`
+
+Forces live fraud analysis (returns `400` if `SPLUNK_LIVE_MODE=false`).
+
+**Required role:** `analyst`
 
 ---
 

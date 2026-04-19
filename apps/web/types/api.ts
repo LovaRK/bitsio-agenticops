@@ -258,3 +258,82 @@ export interface TelemetryMetricsResponse {
   security_findings: SecurityFindingDetail[];
   savings_projection: SavingsProjectionPoint[];
 }
+
+export interface FraudCaseItem {
+  case_id: string;
+  incident_id: string;
+  vendor: string;
+  user: string;
+  amount_usd: number;
+  risk_score: number;
+  status: string;
+  requires_approval: boolean;
+  anomaly_types: string[];
+  event_count: number;
+  timestamp: string;
+  source_index: string;
+}
+
+export interface FraudSummary {
+  open_cases: number;
+  high_risk_cases: number;
+  approval_required_cases: number;
+  avg_risk_score: number;
+  total_amount_reviewed_usd: number;
+  potential_exposure_usd: number;
+  recommended_hold_amount_usd: number;
+}
+
+export interface FraudPolicyEvaluation {
+  policy_id: string;
+  policy_version: string;
+  rule_triggered: string;
+  approval_reason: string;
+  source: "reported" | "derived";
+}
+
+export interface FraudDataQuality {
+  completeness_score: number;
+  freshness_seconds: number;
+  accuracy_confidence: number;
+  validation_passed: boolean;
+  source: "reported" | "derived";
+}
+
+export interface FraudCompliance {
+  data_classification: "internal" | "confidential" | "restricted";
+  compliance_frameworks: string[];
+  encryption_required: string;
+  source: "reported" | "derived";
+}
+
+export interface FraudAgentTelemetry {
+  agent_id: string;
+  agent_version: string;
+  agent_capabilities: string;
+  action_confidence: number;
+  human_in_the_loop: boolean;
+  source: "reported" | "derived";
+}
+
+export interface FraudPricingContext {
+  primary_buyer: string;
+  annual_subscription_arr_usd: string;
+  one_time_onboarding_usd: string;
+  optional_managed_tuning_usd_per_year: string;
+}
+
+export interface FraudOverviewResponse {
+  mode: "live" | "seed";
+  degraded_reason: string | null;
+  generated_at: string;
+  summary: FraudSummary;
+  active_cases: FraudCaseItem[];
+  signal_breakdown: Record<string, number>;
+  policy_evaluation: FraudPolicyEvaluation;
+  data_quality: FraudDataQuality;
+  compliance: FraudCompliance;
+  agent_telemetry: FraudAgentTelemetry;
+  pricing_context: FraudPricingContext;
+  narrative: string;
+}

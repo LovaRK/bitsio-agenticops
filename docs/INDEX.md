@@ -22,6 +22,7 @@ Phases 0–8 complete. Latest additions (2026-04-13):
 - `tests/unit/test_telemetry_nodes_negative.py`: 15 negative test cases added
 - Dual Splunk adapters: `SplunkMCPAdapter` (mock/MCP) + `NativeSplunkAdapter` (REST) with `auto` routing
 - Runtime switching available from `/settings` UI: scenario preset, model provider, adapter mode
+- Fraud Risk Analysis feature added at `/fraud-risk` with production-style API + policy/compliance/data-quality panels
 
 ## Verified Quality Snapshot
 
@@ -80,6 +81,7 @@ Phases 0–8 complete. Latest additions (2026-04-13):
 - [System Design Flow](runbooks/SYSTEM_DESIGN_FLOW.md)
 - [Telemetry Value Local Demo](runbooks/TELEMETRY_VALUE_LOCAL_DEMO.md)
 - [Splunk Real Data Seeding](runbooks/SPLUNK_REAL_DATA_SEED.md)
+- [Fraud Risk Analysis](runbooks/FRAUD_RISK_AGENT.md)
 
 ## Security & Hardening
 

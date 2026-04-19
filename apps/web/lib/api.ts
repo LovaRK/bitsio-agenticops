@@ -18,6 +18,7 @@ export type {
   RuntimeConnectivityResponse,
   SupportResourcesResponse,
   WasteDemoResponse,
+  FraudOverviewResponse,
 } from "@/types/api";
 
 // Re-export service functions
@@ -29,3 +30,4 @@ export { getMonitoringOverview } from "@/lib/services/monitoring";
 export { getSettingsSnapshot, updateRuntimeConfig, checkRuntimeConnections } from "@/lib/services/settings";
 export { getSupportResources } from "@/lib/services/support";
 export { getWasteDemo, getWasteDemoLocal, getWasteLive } from "@/lib/services/waste";
+export { getFraudOverview, getFraudDemo } from "@/lib/services/fraud";
