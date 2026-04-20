@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { APP_ALERT_EVENT, type AppAlertLevel, type AppAlertPayload } from "@/lib/uiAlerts";
 
@@ -26,12 +26,21 @@ function getIcon(level: AppAlertLevel): string {
 
 export function AppAlertCenter() {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const lastAlertFingerprint = useRef<string>("");
+  const lastAlertAt = useRef<number>(0);
 
   useEffect(() => {
     function onAlert(event: Event) {
       const custom = event as CustomEvent<AppAlertPayload>;
       const detail = custom.detail;
       if (!detail?.message) return;
+      const fingerprint = `${detail.level}:${detail.message}`;
+      const now = Date.now();
+      if (fingerprint === lastAlertFingerprint.current && now - lastAlertAt.current < 4000) {
+        return;
+      }
+      lastAlertFingerprint.current = fingerprint;
+      lastAlertAt.current = now;
 
       const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       setAlerts((current) => [{ id, ...detail }, ...current].slice(0, MAX_ALERTS));

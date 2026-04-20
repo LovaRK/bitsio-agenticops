@@ -26,9 +26,14 @@ export async function withTimeout<T>(
   }
 }
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+type ApiFetchOptions = RequestInit & {
+  suppressAlerts?: boolean;
+};
+
+export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
-  const headers = new Headers(options.headers ?? {});
+  const { suppressAlerts = false, ...requestOptions } = options;
+  const headers = new Headers(requestOptions.headers ?? {});
 
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
@@ -47,22 +52,26 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   let res: Response;
   try {
     res = await fetch(url, {
-      ...options,
-      cache: options.cache ?? "no-store",
+      ...requestOptions,
+      cache: requestOptions.cache ?? "no-store",
       headers,
     });
   } catch (error) {
-    const message = `Network error while reaching API (${path}).`;
-    emitAppAlert({ level: "error", message });
+    if (!suppressAlerts) {
+      const message = `Network error while reaching API (${path}).`;
+      emitAppAlert({ level: "error", message });
+    }
     throw error;
   }
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    emitAppAlert({
-      level: "error",
-      message: `API ${res.status} for ${path}. Check runtime connection in Settings.`,
-    });
+    if (!suppressAlerts) {
+      emitAppAlert({
+        level: "error",
+        message: `API ${res.status} for ${path}. Check runtime connection in Settings.`,
+      });
+    }
     throw new Error(`API ${res.status} on ${path}: ${body}`);
   }
 

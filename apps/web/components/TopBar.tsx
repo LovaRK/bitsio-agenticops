@@ -49,7 +49,7 @@ export function TopBar() {
   useEffect(() => {
     async function loadNotifications() {
       try {
-        const approvals = await listPendingApprovals();
+        const approvals = await listPendingApprovals({ suppressAlerts: true });
         setPendingApprovals(approvals.length);
       } catch {
         setPendingApprovals(0);

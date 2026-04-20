@@ -10,6 +10,7 @@ type FetchWithFallbackOptions<T> = {
   timeoutLabel?: string;
   init?: RequestInit;
   allowFallback?: boolean;
+  suppressAlerts?: boolean;
 };
 
 export async function fetchWithFallback<T>(
@@ -23,6 +24,7 @@ export async function fetchWithFallback<T>(
     timeoutLabel,
     init,
     allowFallback = true,
+    suppressAlerts = false,
   } = options;
 
   if (USE_MOCK_FALLBACK) {
@@ -34,7 +36,7 @@ export async function fetchWithFallback<T>(
   }
 
   try {
-    const request = apiFetch<T>(path, init);
+    const request = apiFetch<T>(path, { ...init, suppressAlerts });
     if (timeoutMs && timeoutLabel) {
       return await withTimeout(request, timeoutMs, timeoutLabel);
     }
@@ -44,10 +46,12 @@ export async function fetchWithFallback<T>(
       throw err;
     }
     console.warn(warningMessage, err);
-    emitAppAlert({
-      level: "warning",
-      message: `${warningMessage} Falling back to local data.`,
-    });
+    if (!suppressAlerts) {
+      emitAppAlert({
+        level: "warning",
+        message: `${warningMessage} Falling back to local data.`,
+      });
+    }
     return fallbackFactory();
   }
 }

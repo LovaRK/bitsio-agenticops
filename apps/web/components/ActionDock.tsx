@@ -25,7 +25,7 @@ export function ActionDock() {
   useEffect(() => {
     async function loadPending() {
       try {
-        const items = await listPendingApprovals();
+        const items = await listPendingApprovals({ suppressAlerts: true });
         setPendingItems(items);
       } catch {
         setPendingItems([]);
@@ -50,7 +50,7 @@ export function ActionDock() {
           message: `Quick resolve completed: ${resolvedCount} incident${resolvedCount > 1 ? "s" : ""}.`,
         });
       }
-      const refreshed = await listPendingApprovals();
+      const refreshed = await listPendingApprovals({ suppressAlerts: true });
       setPendingItems(refreshed);
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);

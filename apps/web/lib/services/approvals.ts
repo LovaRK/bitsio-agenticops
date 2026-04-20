@@ -9,7 +9,9 @@ import { mockPendingApprovals } from "@/lib/mocks/approvals";
 import { fetchWithFallback } from "@/lib/services/serviceFetch";
 import { submitApproval } from "@/lib/services/traces";
 
-export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
+export async function listPendingApprovals(options?: {
+  suppressAlerts?: boolean;
+}): Promise<PendingApprovalItem[]> {
   const response = await fetchWithFallback<{ items: PendingApprovalItem[] }>({
     path: "/api/v1/approvals/pending",
     fallbackFactory: () => ({ items: mockPendingApprovals() }),
@@ -17,6 +19,7 @@ export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
     timeoutMs: ACTION_TIMEOUT_MS,
     timeoutLabel: "listPendingApprovals",
     allowFallback: MAIN_TABS_ALLOW_FALLBACK,
+    suppressAlerts: options?.suppressAlerts ?? false,
   });
   return response.items;
 }
