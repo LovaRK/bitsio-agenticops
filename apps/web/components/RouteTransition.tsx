@@ -1,28 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 
 export function RouteTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [isSwitching, setIsSwitching] = useState(false);
-
-  useEffect(() => {
-    setIsSwitching(true);
-    const timer = window.setTimeout(() => setIsSwitching(false), 320);
-    return () => window.clearTimeout(timer);
-  }, [pathname]);
 
   return (
-    <>
-      {isSwitching ? (
-        <div className="fixed top-16 left-64 right-0 h-0.5 z-[90] overflow-hidden bg-primary/20">
-          <div className="route-progress-bar" />
-        </div>
-      ) : null}
-      <div key={pathname} className="route-fade-in">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={pathname}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+      >
         {children}
-      </div>
-    </>
+      </motion.div>
+    </AnimatePresence>
   );
 }

@@ -1,4 +1,6 @@
 import { getMonitoringOverview } from "@/lib/api";
+import { MotionCard } from "@/components/ui/MotionCard";
+import { TOOLTIP } from "@/lib/uiTooltips";
 
 export default async function MonitoringPage() {
   let monitoring: Awaited<ReturnType<typeof getMonitoringOverview>>;
@@ -60,10 +62,18 @@ export default async function MonitoringPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         {kpis.map((kpi) => (
-          <article
+          <MotionCard
             key={kpi.label}
-            className="card-lift bg-surface-container-low border border-outline-variant/10 p-5 rounded-xl"
-            title={`${kpi.label}: ${kpi.sub}`}
+            className="bg-surface-container-low border border-outline-variant/10 p-5 rounded-xl"
+            title={
+              kpi.label === "Global Uptime"
+                ? TOOLTIP.monitoring.uptime
+                : kpi.label === "Active Nodes"
+                  ? TOOLTIP.monitoring.activeNodes
+                  : kpi.label === "Avg Latency"
+                    ? TOOLTIP.monitoring.latency
+                    : TOOLTIP.monitoring.runtimeHealth
+            }
           >
             <div className="flex justify-between items-start mb-4">
               <span className="material-symbols-outlined text-primary text-xl">{kpi.icon}</span>
@@ -75,7 +85,7 @@ export default async function MonitoringPage() {
               <span className="text-2xl font-bold text-on-surface">{kpi.value}</span>
               <span className="text-[10px] text-secondary font-medium">{kpi.sub}</span>
             </div>
-          </article>
+          </MotionCard>
         ))}
       </div>
 
@@ -167,7 +177,7 @@ export default async function MonitoringPage() {
               <div
                 key={item.label}
                 className="rounded-lg border border-outline-variant/15 bg-surface-container p-3"
-                title={`Formula: ${item.formula}`}
+                title={`${TOOLTIP.monitoring.howCalculated} Formula: ${item.formula}`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-on-surface">{item.label}</p>

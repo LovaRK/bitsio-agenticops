@@ -4,6 +4,8 @@ import { SourceValueMatrix } from "@/components/SourceValueMatrix";
 import { ROIBreakdown } from "@/components/ROIBreakdown";
 import { SecurityGapsList } from "@/components/SecurityGapsList";
 import { StorageSavingsTimeline } from "@/components/StorageSavingsTimeline";
+import { MotionCard } from "@/components/ui/MotionCard";
+import { TOOLTIP } from "@/lib/uiTooltips";
 
 function formatCompactUsd(value: number): string {
   if (value >= 1_000_000) {
@@ -97,43 +99,31 @@ export default async function WastePage() {
           Overview
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <article
-            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
-            title="Current annual telemetry spend based on active indexed sources."
-          >
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5" title={TOOLTIP.dashboard.annualSpend}>
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Total Annual Spend</p>
             <p className="mt-3 text-3xl font-black text-on-surface">
               {formatCompactUsd(metrics.summary.total_annual_spend_usd)}
             </p>
             <p className="mt-2 text-xs text-on-surface-variant">across all data sources</p>
-          </article>
+          </MotionCard>
 
-          <article
-            className="card-lift rounded-xl border border-outline-variant/10 bg-error-container/20 border-error/30 p-5"
-            title="Estimated savings opportunity from optimization actions."
-          >
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-error-container/20 border-error/30 p-5" title={TOOLTIP.dashboard.potentialSavings}>
             <p className="text-[10px] uppercase tracking-widest text-error font-bold">Potential Savings</p>
             <p className="mt-3 text-3xl font-black text-error">
               {formatCompactUsd(metrics.summary.total_potential_savings_usd)}
             </p>
             <p className="mt-2 text-xs text-on-surface-variant">available with optimization</p>
-          </article>
+          </MotionCard>
 
-          <article
-            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
-            title="Average utilization score across current sources."
-          >
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5" title={TOOLTIP.dashboard.utilization}>
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
               Avg Utilization Score
             </p>
             <p className="mt-3 text-3xl font-black text-tertiary">{metrics.summary.avg_utilization_score}%</p>
             <p className="mt-2 text-xs text-on-surface-variant">across all sources</p>
-          </article>
+          </MotionCard>
 
-          <article
-            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
-            title="Security and compliance gaps detected in telemetry coverage."
-          >
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5" title={TOOLTIP.dashboard.securityGaps}>
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
               Security Gaps Found
             </p>
@@ -141,7 +131,7 @@ export default async function WastePage() {
             <p className="mt-2 text-xs text-on-surface-variant">
               improvement opportunities
             </p>
-          </article>
+          </MotionCard>
         </div>
       </div>
 

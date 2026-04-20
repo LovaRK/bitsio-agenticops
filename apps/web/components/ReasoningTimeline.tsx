@@ -1,10 +1,12 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { DecisionTrace, MetricSource, NodeRun, ToolCall } from "@/types/decision-trace";
 import { formatDateTimeUTC } from "@/lib/datetime";
+import { TOOLTIP } from "@/lib/uiTooltips";
 
 function getStatusStyles(status: NodeRun["status"]) {
   switch (status) {
@@ -247,10 +249,12 @@ export function ReasoningTimeline({
               : selectedExplainability?.modelName ?? "unknown";
 
           return (
-            <div
+            <motion.div
               key={`${node.node_name}-${node.started_at}`}
-              className={`relative timeline-node-enter ${styles.opacity}`}
-              style={{ animationDelay: `${nodeIndex * 55}ms` }}
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 * nodeIndex, duration: 0.18 }}
+              className={`relative ${styles.opacity}`}
               title={`${node.node_name} • ${node.status}`}
             >
               <div className={`absolute -left-[41px] top-0 w-4 h-4 rounded-full ${styles.dot} flex items-center justify-center`}>
@@ -314,7 +318,19 @@ export function ReasoningTimeline({
                                 }`}
                                 data-testid={`tool-chip-${tool.tool_name.toLowerCase()}`}
                                 aria-pressed={isSelected}
-                                title={getToolDescription(tool)}
+                                title={
+                                  node.node_name === "evidence_retrieval"
+                                    ? TOOLTIP.incidents.evidence
+                                    : node.node_name === "correlation"
+                                      ? TOOLTIP.incidents.correlation
+                                      : node.node_name === "reasoning_draft"
+                                        ? TOOLTIP.incidents.reasoning
+                                        : node.node_name === "confidence_score"
+                                          ? TOOLTIP.incidents.confidence
+                                          : node.node_name === "approval_check"
+                                            ? TOOLTIP.incidents.policy
+                                            : getToolDescription(tool)
+                                }
                               >
                                 <span className="material-symbols-outlined text-xs">{getToolIcon(tool.tool_name)}</span>
                                 <span className="truncate">{tool.tool_name}</span>
@@ -474,7 +490,7 @@ export function ReasoningTimeline({
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

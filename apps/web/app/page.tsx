@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { ActionDock } from "@/components/ActionDock";
+import { MotionCard } from "@/components/ui/MotionCard";
 import { getDashboardSummary, getSettingsSnapshot } from "@/lib/api";
 import { formatDateTimeUTC } from "@/lib/datetime";
 import { getTelemetryMetrics } from "@/lib/services/waste";
+import { TOOLTIP } from "@/lib/uiTooltips";
 
 function formatCompactUsd(value: number): string {
   if (value >= 1_000_000) {
@@ -104,15 +106,15 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {stats.map((stat) => (
-          <article
+          <MotionCard
             key={stat.label}
-            className="card-lift bg-surface-container border border-outline-variant/10 p-6 rounded-xl"
+            className="bg-surface-container border border-outline-variant/10 p-6 rounded-xl"
             title={
               stat.label === "Active Incidents"
-                ? "Live incidents correlated from Splunk telemetry"
+                ? TOOLTIP.dashboard.activeIncidents
                 : stat.label === "Pending Approvals"
-                  ? "Human-in-the-loop decisions waiting for approval"
-                  : "Average confidence from current agent decision traces"
+                  ? TOOLTIP.dashboard.pendingApprovals
+                  : TOOLTIP.dashboard.modelConfidence
             }
           >
             <div className="flex justify-between items-center mb-3">
@@ -124,7 +126,7 @@ export default async function DashboardPage() {
             <div className="mt-4 w-full bg-surface-container-lowest h-1 rounded-full overflow-hidden">
               <div className={`${stat.color} h-full w-2/3`} />
             </div>
-          </article>
+          </MotionCard>
         ))}
       </div>
 
@@ -161,35 +163,35 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-4" title={TOOLTIP.dashboard.annualSpend}>
             <p className="sr-only">Live telemetry spend and value metrics.</p>
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Total Annual Spend</p>
             <p className="mt-2 text-2xl font-black text-on-surface">
               {formatCompactUsd(telemetryMetrics.summary.total_annual_spend_usd)}
             </p>
             <p className="mt-1 text-xs text-on-surface-variant">across all sources</p>
-          </article>
+          </MotionCard>
 
-          <article className="rounded-xl border border-error/30 bg-error-container/10 p-4">
+          <MotionCard className="rounded-xl border border-error/30 bg-error-container/10 p-4" title={TOOLTIP.dashboard.potentialSavings}>
             <p className="sr-only">Potential savings from telemetry optimization recommendations.</p>
             <p className="text-[10px] uppercase tracking-widest text-error font-bold">Potential Savings</p>
             <p className="mt-2 text-2xl font-black text-error">
               {formatCompactUsd(telemetryMetrics.summary.total_potential_savings_usd)}
             </p>
             <p className="mt-1 text-xs text-on-surface-variant">with optimization</p>
-          </article>
+          </MotionCard>
 
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-4" title={TOOLTIP.dashboard.utilization}>
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Avg Utilization</p>
             <p className="mt-2 text-2xl font-black text-tertiary">{telemetryMetrics.summary.avg_utilization_score}%</p>
             <p className="mt-1 text-xs text-on-surface-variant">across sources</p>
-          </article>
+          </MotionCard>
 
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-4" title={TOOLTIP.dashboard.securityGaps}>
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Security Gaps</p>
             <p className="mt-2 text-2xl font-black text-on-surface">{telemetryMetrics.summary.security_gap_count}</p>
             <p className="mt-1 text-xs text-on-surface-variant">found & ranked</p>
-          </article>
+          </MotionCard>
         </div>
       </div>
 

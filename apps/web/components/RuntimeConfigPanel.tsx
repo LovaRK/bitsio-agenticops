@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { SettingsSnapshot } from "@/lib/api";
 import { checkRuntimeConnections, updateRuntimeConfig } from "@/lib/api";
 import { emitAppAlert } from "@/lib/uiAlerts";
+import { TOOLTIP } from "@/lib/uiTooltips";
 
 type RuntimeConfigPanelProps = {
   settings: SettingsSnapshot;
@@ -227,6 +228,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             value={runtimeMode}
             onChange={(e) => applyRuntimeMode(e.target.value as RuntimeMode)}
             disabled={saving || testing}
+            title={TOOLTIP.settings.mode}
             className="mt-2 w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
             data-testid="runtime-scenario-select"
           >
@@ -329,7 +331,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             type="button"
             onClick={handleTestConnections}
             disabled={saving || testing}
-            title="Validate model and Splunk connectivity for the selected runtime mode"
+            title={TOOLTIP.settings.testConnections}
             className="rounded-lg border border-outline-variant/30 px-4 py-2 text-xs font-bold text-on-surface disabled:opacity-60"
           >
             <span className="inline-flex items-center gap-2">
@@ -346,7 +348,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             type="button"
             onClick={handleApply}
             disabled={saving || testing}
-            title="Apply selected runtime profile and refresh data sources"
+            title={TOOLTIP.settings.apply}
             className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
           >
             <span className="inline-flex items-center gap-2">

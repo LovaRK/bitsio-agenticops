@@ -6,6 +6,7 @@ import type { IncidentSummary } from "@/types/api";
 import { formatDateTimeUTC } from "@/lib/datetime";
 import { getSeverityStyle } from "@/lib/severity";
 import { useIncidentFilters } from "@/hooks/useIncidentFilters";
+import { TOOLTIP } from "@/lib/uiTooltips";
 
 export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] }) {
   const {
@@ -52,7 +53,7 @@ export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] 
           <button
             type="button"
             data-testid="incidents-filter-toggle"
-            title="Show or hide filter controls for incidents"
+            title={TOOLTIP.incidents.filters}
             onClick={() => setShowFilters((current) => !current)}
             className="bg-surface-container border border-outline-variant/20 px-4 py-2 rounded-lg text-sm font-bold text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-2"
           >
@@ -179,7 +180,7 @@ export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] 
                     <td className="px-6 py-5 text-right">
                       <Link
                         href={`/incidents/${incident.id}`}
-                        title="Open full incident context and reasoning timeline"
+                        title={TOOLTIP.incidents.row}
                         className="text-primary hover:bg-primary/10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all border border-primary/20 hover:border-primary/50"
                       >
                         Details
