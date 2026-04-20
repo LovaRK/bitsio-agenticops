@@ -12,10 +12,13 @@ make dev
 
 ## Canonical Docs (Read First)
 
-- `docs/plan/CODEBASE_IMPLEMENTATION_SNAPSHOT_2026-04-16.md`
-- `docs/plan/MASTER_ROADMAP.md`
-- `docs/plan/EXECUTION_BOARD.md`
-- `docs/plan/HANDOFF_LOG.md`
+- `docs/SOURCE_OF_TRUTH.md`
+
+## Documentation Policy (From Now)
+
+- Single source of truth: `docs/SOURCE_OF_TRUTH.md`
+- Legacy documents are archived at: `docs/archive/2026-04-19/`
+- New architecture/process/runbook updates must be appended to `docs/SOURCE_OF_TRUTH.md`
 
 ## Live Splunk Mode
 
