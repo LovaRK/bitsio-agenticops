@@ -156,3 +156,40 @@ body {
   background: linear-gradient(90deg, rgba(173, 198, 255, 0.2), rgba(173, 198, 255, 0.9));
   animation: routeProgress 320ms ease-out;
 }
+
+@keyframes cardLiftIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes timelineNodeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.card-lift {
+  animation: cardLiftIn 360ms cubic-bezier(0.19, 1, 0.22, 1);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.2);
+  border-color: rgba(173, 198, 255, 0.35);
+}
+
+.timeline-node-enter {
+  animation: timelineNodeIn 280ms cubic-bezier(0.19, 1, 0.22, 1);
+}

@@ -62,7 +62,8 @@ export default async function MonitoringPage() {
         {kpis.map((kpi) => (
           <article
             key={kpi.label}
-            className="bg-surface-container-low border border-outline-variant/10 p-5 rounded-xl"
+            className="card-lift bg-surface-container-low border border-outline-variant/10 p-5 rounded-xl"
+            title={`${kpi.label}: ${kpi.sub}`}
           >
             <div className="flex justify-between items-start mb-4">
               <span className="material-symbols-outlined text-primary text-xl">{kpi.icon}</span>
@@ -166,6 +167,7 @@ export default async function MonitoringPage() {
               <div
                 key={item.label}
                 className="rounded-lg border border-outline-variant/15 bg-surface-container p-3"
+                title={`Formula: ${item.formula}`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold text-on-surface">{item.label}</p>

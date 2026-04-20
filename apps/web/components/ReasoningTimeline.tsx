@@ -224,7 +224,7 @@ export function ReasoningTimeline({
       </div>
 
       <div className="relative pl-8 border-l border-outline-variant/20 space-y-12">
-        {nodeRuns.map((node) => {
+        {nodeRuns.map((node, nodeIndex) => {
           const styles = getStatusStyles(node.status);
           const toolCalls = toolCallDisplayByNode[node.node_name] || [];
           const isLocked = node.status === "fail";
@@ -247,7 +247,12 @@ export function ReasoningTimeline({
               : selectedExplainability?.modelName ?? "unknown";
 
           return (
-            <div key={`${node.node_name}-${node.started_at}`} className={`relative ${styles.opacity}`}>
+            <div
+              key={`${node.node_name}-${node.started_at}`}
+              className={`relative timeline-node-enter ${styles.opacity}`}
+              style={{ animationDelay: `${nodeIndex * 55}ms` }}
+              title={`${node.node_name} • ${node.status}`}
+            >
               <div className={`absolute -left-[41px] top-0 w-4 h-4 rounded-full ${styles.dot} flex items-center justify-center`}>
                 {node.status === "success" && (
                   <span className="material-symbols-outlined text-[10px] text-on-secondary font-bold">check</span>
@@ -290,6 +295,9 @@ export function ReasoningTimeline({
 
                     {toolCalls.length > 0 && (
                       <>
+                        <p className="mb-2 text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">
+                          Click a tool chip to expand details
+                        </p>
                         <div className="grid grid-cols-2 gap-2">
                           {toolCalls.map((tool, i) => {
                             const toolKey = `${node.node_name}-${tool.tool_name}-${i}`;

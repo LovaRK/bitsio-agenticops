@@ -106,7 +106,14 @@ export default async function DashboardPage() {
         {stats.map((stat) => (
           <article
             key={stat.label}
-            className="bg-surface-container border border-outline-variant/10 p-6 rounded-xl"
+            className="card-lift bg-surface-container border border-outline-variant/10 p-6 rounded-xl"
+            title={
+              stat.label === "Active Incidents"
+                ? "Live incidents correlated from Splunk telemetry"
+                : stat.label === "Pending Approvals"
+                  ? "Human-in-the-loop decisions waiting for approval"
+                  : "Average confidence from current agent decision traces"
+            }
           >
             <div className="flex justify-between items-center mb-3">
               <p className="text-xs font-bold text-outline uppercase tracking-widest">{stat.label}</p>
@@ -155,6 +162,7 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
+            <p className="sr-only">Live telemetry spend and value metrics.</p>
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Total Annual Spend</p>
             <p className="mt-2 text-2xl font-black text-on-surface">
               {formatCompactUsd(telemetryMetrics.summary.total_annual_spend_usd)}
@@ -163,6 +171,7 @@ export default async function DashboardPage() {
           </article>
 
           <article className="rounded-xl border border-error/30 bg-error-container/10 p-4">
+            <p className="sr-only">Potential savings from telemetry optimization recommendations.</p>
             <p className="text-[10px] uppercase tracking-widest text-error font-bold">Potential Savings</p>
             <p className="mt-2 text-2xl font-black text-error">
               {formatCompactUsd(telemetryMetrics.summary.total_potential_savings_usd)}

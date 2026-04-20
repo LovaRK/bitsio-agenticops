@@ -97,7 +97,10 @@ export default async function WastePage() {
           Overview
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+          <article
+            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
+            title="Current annual telemetry spend based on active indexed sources."
+          >
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Total Annual Spend</p>
             <p className="mt-3 text-3xl font-black text-on-surface">
               {formatCompactUsd(metrics.summary.total_annual_spend_usd)}
@@ -105,7 +108,10 @@ export default async function WastePage() {
             <p className="mt-2 text-xs text-on-surface-variant">across all data sources</p>
           </article>
 
-          <article className="rounded-xl border border-outline-variant/10 bg-error-container/20 border-error/30 p-5">
+          <article
+            className="card-lift rounded-xl border border-outline-variant/10 bg-error-container/20 border-error/30 p-5"
+            title="Estimated savings opportunity from optimization actions."
+          >
             <p className="text-[10px] uppercase tracking-widest text-error font-bold">Potential Savings</p>
             <p className="mt-3 text-3xl font-black text-error">
               {formatCompactUsd(metrics.summary.total_potential_savings_usd)}
@@ -113,7 +119,10 @@ export default async function WastePage() {
             <p className="mt-2 text-xs text-on-surface-variant">available with optimization</p>
           </article>
 
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+          <article
+            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
+            title="Average utilization score across current sources."
+          >
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
               Avg Utilization Score
             </p>
@@ -121,7 +130,10 @@ export default async function WastePage() {
             <p className="mt-2 text-xs text-on-surface-variant">across all sources</p>
           </article>
 
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+          <article
+            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
+            title="Security and compliance gaps detected in telemetry coverage."
+          >
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
               Security Gaps Found
             </p>
@@ -220,7 +232,8 @@ export default async function WastePage() {
           {recommendedActions.map((action) => (
             <article
               key={action.id}
-              className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5 space-y-3"
+              className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container-low p-5 space-y-3"
+              title={`Recommendation for ${action.title}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div>

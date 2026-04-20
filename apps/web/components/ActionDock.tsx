@@ -7,6 +7,7 @@ import {
   quickResolvePendingApprovals,
   type PendingApprovalItem,
 } from "@/lib/api";
+import { emitAppAlert } from "@/lib/uiAlerts";
 
 export function ActionDock() {
   const router = useRouter();
@@ -39,10 +40,15 @@ export function ActionDock() {
       const resolvedCount = await quickResolvePendingApprovals(pendingItems);
       if (resolvedCount === 0) {
         setToastMessage("No high-priority pending incidents to resolve.");
+        emitAppAlert({ level: "info", message: "No high-priority pending incidents to resolve." });
       } else {
         setToastMessage(
           `Successfully resolved ${resolvedCount} pending high-priority incident${resolvedCount > 1 ? "s" : ""}.`,
         );
+        emitAppAlert({
+          level: "success",
+          message: `Quick resolve completed: ${resolvedCount} incident${resolvedCount > 1 ? "s" : ""}.`,
+        });
       }
       const refreshed = await listPendingApprovals();
       setPendingItems(refreshed);
@@ -50,6 +56,7 @@ export function ActionDock() {
       setTimeout(() => setShowToast(false), 3000);
     } catch {
       setToastMessage("Quick resolve failed. Check API connection and retry.");
+      emitAppAlert({ level: "error", message: "Quick resolve failed. Check API connection and retry." });
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } finally {
@@ -99,6 +106,7 @@ export function ActionDock() {
           <button
             onClick={handleQuickResolve}
             disabled={isResolving}
+            title="Resolve high-priority pending approvals in one action"
             data-testid="quick-resolve-btn"
             className={`flex items-center gap-2 text-xs font-bold transition-all active:scale-95 ${
               isResolving 
@@ -115,6 +123,7 @@ export function ActionDock() {
           <button
             onClick={handleRecentActivity}
             disabled={isNavigating}
+            title="Jump to incident activity feed"
             className="flex items-center gap-2 text-xs font-bold text-primary hover:text-primary transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <span className={`material-symbols-outlined text-sm ${isNavigating ? "animate-spin" : ""}`}>

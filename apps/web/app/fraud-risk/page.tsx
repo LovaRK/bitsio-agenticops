@@ -106,7 +106,10 @@ export default async function FraudRiskPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+        <article
+          className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
+          title="Number of active fraud-risk cases in the current live window."
+        >
           <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
             Open Fraud Cases
           </p>
@@ -116,7 +119,10 @@ export default async function FraudRiskPage() {
           </p>
         </article>
 
-        <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+        <article
+          className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
+          title="Average risk score from correlated fraud indicators."
+        >
           <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
             Average Risk Score
           </p>
@@ -126,7 +132,10 @@ export default async function FraudRiskPage() {
           </p>
         </article>
 
-        <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+        <article
+          className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
+          title="Estimated financial exposure from active fraud cases."
+        >
           <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
             Potential Exposure
           </p>
@@ -138,7 +147,10 @@ export default async function FraudRiskPage() {
           </p>
         </article>
 
-        <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+        <article
+          className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container p-5"
+          title="Telemetry data quality signal for fraud analysis reliability."
+        >
           <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
             Data Quality
           </p>
@@ -221,7 +233,10 @@ export default async function FraudRiskPage() {
         </article>
 
         <div className="space-y-6">
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5">
+          <article
+            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container-low p-5"
+            title="Policy rule that forced human approval."
+          >
             <h4 className="text-sm font-semibold text-on-surface mb-3">Policy Evaluation</h4>
             <div className="space-y-2 text-xs text-on-surface-variant">
               <p>
@@ -237,7 +252,10 @@ export default async function FraudRiskPage() {
             </div>
           </article>
 
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5">
+          <article
+            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container-low p-5"
+            title="Data classification, compliance framework, and encryption requirements."
+          >
             <h4 className="text-sm font-semibold text-on-surface mb-3">Compliance & Governance</h4>
             <div className="space-y-2 text-xs text-on-surface-variant">
               <p>
@@ -252,7 +270,10 @@ export default async function FraudRiskPage() {
             </div>
           </article>
 
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5">
+          <article
+            className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container-low p-5"
+            title="Agent identity, capabilities, confidence, and human-loop mode."
+          >
             <h4 className="text-sm font-semibold text-on-surface mb-3">Agent Telemetry</h4>
             <div className="space-y-2 text-xs text-on-surface-variant">
               <p>
@@ -278,7 +299,10 @@ export default async function FraudRiskPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
-        <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5">
+        <article
+          className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container-low p-5"
+          title="Distribution of anomaly signal categories in active cases."
+        >
           <h3 className="text-lg font-semibold text-on-surface mb-4">Signal Mix</h3>
           <div className="space-y-3">
             {sortedSignals.length === 0 ? (
@@ -302,7 +326,10 @@ export default async function FraudRiskPage() {
           </div>
         </article>
 
-        <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5">
+        <article
+          className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container-low p-5"
+          title="Commercial packaging context for Fraud Risk Agent deployment."
+        >
           <h3 className="text-lg font-semibold text-on-surface mb-4">Commercial Fit (Pricing Context)</h3>
           <div className="space-y-2 text-sm text-on-surface-variant">
             <p>

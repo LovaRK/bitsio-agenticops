@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { submitApproval } from "@/lib/api";
+import { emitAppAlert } from "@/lib/uiAlerts";
 
 export function ApprovalPanel({
   workflowId,
@@ -31,14 +32,17 @@ export function ApprovalPanel({
       if (decision === "approved") {
         setStatus("approved");
         setMessage("Approval decision sent.");
+        emitAppAlert({ level: "success", message: "Approval submitted successfully." });
       } else {
         setStatus("rejected");
         setMessage("Rejection decision sent.");
+        emitAppAlert({ level: "warning", message: "Rejection submitted successfully." });
       }
     } catch (error) {
       console.error("Decision submission failed", error);
       setStatus("error");
       setMessage("Could not submit decision. Check API connection and retry.");
+      emitAppAlert({ level: "error", message: "Failed to submit decision. Retry after checking API." });
     } finally {
       setActiveDecision(null);
     }
@@ -50,6 +54,7 @@ export function ApprovalPanel({
     <div className="space-y-4" data-testid="decision-gate">
       <h2 className="text-lg font-semibold text-on-surface font-headline">Decision Gate</h2>
       <textarea
+        title="Add analyst context for your approval or rejection decision"
         className="mt-3 w-full rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-3 text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-1 focus:ring-primary/30"
         rows={4}
         placeholder="Add your approval comment and reasoning..."
@@ -58,6 +63,7 @@ export function ApprovalPanel({
       />
       <div className="mt-4 flex gap-3">
         <button
+          title="Approve to finalize this decision with human oversight"
           className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-secondary text-on-secondary px-4 py-3 text-sm font-bold transition-all active:scale-95 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
           disabled={isSubmitting}
           onClick={() => onDecision("approved")}
@@ -75,6 +81,7 @@ export function ApprovalPanel({
           </span>
         </button>
         <button
+          title="Reject to block this decision and require re-evaluation"
           className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-error text-on-error px-4 py-3 text-sm font-bold transition-all active:scale-95 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
           disabled={isSubmitting}
           onClick={() => onDecision("rejected")}
