@@ -38,8 +38,46 @@ function severityTone(score: number): { badge: string; dot: string; label: strin
 }
 
 export default async function FraudRiskPage() {
-  const data = await getFraudOverview("auto");
+  let data: Awaited<ReturnType<typeof getFraudOverview>>;
+  let liveError: string | null = null;
+
+  try {
+    data = await getFraudOverview("live");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    liveError = `Live Splunk data is required for Fraud Risk page. ${message}`;
+    return (
+      <section className="pt-6 pb-12 px-8" data-testid="fraud-risk-page">
+        <div className="max-w-4xl rounded-xl border border-error/30 bg-error/10 p-6">
+          <h2 className="text-2xl font-headline font-bold text-error">Live Fraud Data Unavailable</h2>
+          <p className="mt-3 text-sm text-on-surface-variant">
+            The Fraud Risk page is configured for live Splunk-only mode. Please start the Splunk
+            tunnel and verify runtime connections in Settings.
+          </p>
+          <p className="mt-3 text-xs text-on-surface-variant/90 font-mono break-all">{liveError}</p>
+          <div className="mt-4 flex gap-3">
+            <Link
+              href="/settings"
+              className="inline-flex items-center justify-center rounded-lg bg-primary-container px-3 py-2 text-xs font-bold text-on-primary-container"
+            >
+              Open Settings
+            </Link>
+            <Link
+              href="/monitoring"
+              className="inline-flex items-center justify-center rounded-lg border border-outline-variant/30 px-3 py-2 text-xs font-bold text-on-surface-variant hover:text-on-surface"
+            >
+              Open Monitoring
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   const sortedSignals = Object.entries(data.signal_breakdown).sort((a, b) => b[1] - a[1]);
+  const incidentContextHref = data.active_cases[0]?.incident_id
+    ? `/incidents/${data.active_cases[0].incident_id}`
+    : "/incidents/inc_20260408_44";
 
   return (
     <section className="pt-6 pb-12 px-8" data-testid="fraud-risk-page">
@@ -291,7 +329,7 @@ export default async function FraudRiskPage() {
               Open Approvals
             </Link>
             <Link
-              href="/incidents"
+              href={incidentContextHref}
               className="inline-flex items-center justify-center rounded-lg border border-outline-variant/30 px-3 py-2 text-xs font-bold text-on-surface-variant hover:text-on-surface"
             >
               View Incident Context

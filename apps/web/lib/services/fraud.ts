@@ -6,6 +6,10 @@ export async function getFraudOverview(mode: "auto" | "seed" | "live" = "auto"):
   try {
     return await apiFetch<FraudOverviewResponse>(`/api/v1/fraud/overview?mode=${mode}`);
   } catch (error) {
+    // In strict live mode, never silently downgrade to local mock data.
+    if (mode === "live") {
+      throw error;
+    }
     if (!canFallback()) {
       throw error;
     }
