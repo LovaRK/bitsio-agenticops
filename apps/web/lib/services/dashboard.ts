@@ -4,22 +4,15 @@
  */
 
 import type { DashboardSummaryResponse } from "@/types/api";
-import { USE_MOCK_FALLBACK } from "@/lib/config";
-import { apiFetch, canFallback } from "@/lib/http";
+import { MAIN_TABS_ALLOW_FALLBACK } from "@/lib/config";
 import { mockDashboardSummary } from "@/lib/mocks/dashboard";
+import { fetchWithFallback } from "@/lib/services/serviceFetch";
 
 export async function getDashboardSummary(): Promise<DashboardSummaryResponse> {
-  if (USE_MOCK_FALLBACK) {
-    return mockDashboardSummary();
-  }
-
-  try {
-    return await apiFetch<DashboardSummaryResponse>("/api/v1/dashboard/summary");
-  } catch (err) {
-    if (!canFallback()) {
-      throw err;
-    }
-    console.warn("[api] Could not fetch dashboard summary, using mock data.", err);
-    return mockDashboardSummary();
-  }
+  return fetchWithFallback<DashboardSummaryResponse>({
+    path: "/api/v1/dashboard/summary",
+    fallbackFactory: mockDashboardSummary,
+    warningMessage: "[api] Could not fetch dashboard summary, using mock data.",
+    allowFallback: MAIN_TABS_ALLOW_FALLBACK,
+  });
 }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { listPendingApprovals } from "@/lib/api";
+import { emitAppAlert } from "@/lib/uiAlerts";
 
 type NotificationItem = {
   id: string;
@@ -82,6 +83,7 @@ export function TopBar() {
     if (pathname.startsWith("/incidents/")) {
       router.push(`${pathname}#approval-section`);
       setActionMessage("Jumped to decision gate for this incident.");
+      emitAppAlert({ level: "info", message: "Opened decision gate for this incident." });
       setTimeout(() => setDeployLoading(false), 600);
       return;
     }
@@ -89,12 +91,14 @@ export function TopBar() {
     if (pendingApprovals > 0) {
       router.push("/approvals");
       setActionMessage("Opened approvals queue to deploy reviewed fix.");
+      emitAppAlert({ level: "info", message: "Opened approvals queue for deployment review." });
       setTimeout(() => setDeployLoading(false), 600);
       return;
     }
 
     router.push("/incidents");
     setActionMessage("Opened incident explorer to pick a fix candidate.");
+    emitAppAlert({ level: "info", message: "Opened incidents explorer to select a fix candidate." });
     setTimeout(() => setDeployLoading(false), 600);
   };
 
@@ -109,6 +113,7 @@ export function TopBar() {
       return;
     }
     setActionMessage("Sign out is not connected yet (mock boundary).");
+    emitAppAlert({ level: "warning", message: "Sign-out is not connected yet for this environment." });
   };
 
   return (
@@ -121,6 +126,7 @@ export function TopBar() {
               pathname === "/" ? "text-on-surface" : "text-on-surface-variant"
             }`}
             href="/"
+            title="Timeline view of active operations"
           >
             Timeline
           </Link>
@@ -129,6 +135,7 @@ export function TopBar() {
               pathname.startsWith("/monitoring") ? "text-on-surface" : "text-on-surface-variant"
             }`}
             href="/monitoring"
+            title="System logs and health metrics"
           >
             Logs
           </Link>
@@ -137,8 +144,18 @@ export function TopBar() {
               pathname.startsWith("/incidents") ? "text-on-surface" : "text-on-surface-variant"
             }`}
             href="/incidents"
+            title="Incident traces and reasoning flows"
           >
             Traces
+          </Link>
+          <Link
+            className={`hover:text-on-surface transition-opacity text-sm font-medium ${
+              pathname.startsWith("/fraud-risk") ? "text-on-surface" : "text-on-surface-variant"
+            }`}
+            href="/fraud-risk"
+            title="Fraud risk analysis and approvals"
+          >
+            Fraud
           </Link>
           <Link
             className={`hover:text-on-surface transition-opacity text-sm font-medium ${
@@ -147,6 +164,7 @@ export function TopBar() {
                 : "text-on-surface-variant"
             }`}
             href="/telemetry-value"
+            title="Telemetry value and cost optimization insights"
           >
             Metrics
           </Link>
@@ -157,6 +175,7 @@ export function TopBar() {
           <ThemeToggle compact />
           <button
             aria-label="Notifications"
+            title="Notifications and pending approvals"
             onClick={() => setIsOpen((current) => !current)}
             className="relative rounded-lg p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
             type="button"
@@ -170,6 +189,7 @@ export function TopBar() {
           </button>
           <Link
             aria-label="Recent activity"
+            title="Open incident activity stream"
             className="rounded-lg p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
             href="/incidents"
           >
@@ -180,6 +200,7 @@ export function TopBar() {
           type="button"
           onClick={handleDeployFix}
           disabled={deployLoading}
+          title="Smart action: open approval gate or incident explorer based on current context"
           className="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-xl text-sm font-bold glow-primary transition-all active:scale-95"
         >
           <span className="inline-flex items-center gap-2">
@@ -192,6 +213,7 @@ export function TopBar() {
         <button
           type="button"
           aria-label="Deploy Fix help"
+          title="See what Deploy Fix does in each page context"
           onClick={() => setShowDeployHelp((current) => !current)}
           className="rounded-lg p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
         >
@@ -200,6 +222,7 @@ export function TopBar() {
         <button
           type="button"
           aria-label="Profile menu"
+          title="Open profile actions"
           onClick={() => setIsProfileOpen((current) => !current)}
           className="w-8 h-8 rounded-full bg-surface-container overflow-hidden border border-outline-variant/30 hover:ring-2 hover:ring-primary/30 transition-all"
         >

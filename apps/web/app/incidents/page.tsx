@@ -9,7 +9,7 @@ export default async function IncidentsPage() {
     incidents = await listIncidents();
   } catch (e) {
     console.error("Failed to fetch incidents:", e);
-    error = "Unable to reach the AgenticOps API. Showing cached or mock data if available.";
+    error = "Unable to reach the AgenticOps API. Incidents tab is live-only; verify runtime connectivity in Settings.";
   }
 
   return (

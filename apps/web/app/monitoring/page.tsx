@@ -1,7 +1,22 @@
 import { getMonitoringOverview } from "@/lib/api";
 
 export default async function MonitoringPage() {
-  const monitoring = await getMonitoringOverview();
+  let monitoring: Awaited<ReturnType<typeof getMonitoringOverview>>;
+  try {
+    monitoring = await getMonitoringOverview();
+  } catch {
+    return (
+      <section className="pt-6 pb-12 px-8" data-testid="monitoring-page">
+        <div className="rounded-xl border border-error/25 bg-error/10 p-6">
+          <h2 className="text-xl font-semibold text-on-surface">Live monitoring data unavailable</h2>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            Monitoring is running in live-only mode. Check API/Splunk runtime connection from Settings,
+            then refresh this page.
+          </p>
+        </div>
+      </section>
+    );
+  }
   const services = monitoring.services;
   const runtime = monitoring.agent_runtime;
 

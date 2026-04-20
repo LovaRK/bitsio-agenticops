@@ -2,7 +2,18 @@ import Link from "next/link";
 
 import { ActionDock } from "@/components/ActionDock";
 import { getDashboardSummary, getSettingsSnapshot } from "@/lib/api";
+import { formatDateTimeUTC } from "@/lib/datetime";
 import { getTelemetryMetrics } from "@/lib/services/waste";
+
+function formatCompactUsd(value: number): string {
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(2)}M`;
+  }
+  if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(2)}K`;
+  }
+  return `$${value.toFixed(2)}`;
+}
 
 function getSeverityStyles(severity: string) {
   const normalized = severity.toLowerCase();
@@ -16,13 +27,45 @@ function getSeverityStyles(severity: string) {
 }
 
 export default async function DashboardPage() {
-  const [summary, settings, telemetryMetrics] = await Promise.all([
-    getDashboardSummary(),
-    getSettingsSnapshot(),
-    getTelemetryMetrics(),
-  ]);
+  let summary: Awaited<ReturnType<typeof getDashboardSummary>>;
+  let settings: Awaited<ReturnType<typeof getSettingsSnapshot>>;
+  let telemetryMetrics: Awaited<ReturnType<typeof getTelemetryMetrics>>;
+
+  try {
+    [summary, settings, telemetryMetrics] = await Promise.all([
+      getDashboardSummary(),
+      getSettingsSnapshot(),
+      getTelemetryMetrics(),
+    ]);
+  } catch {
+    return (
+      <section className="pt-6 pb-12 px-8" data-testid="dashboard-page">
+        <div className="rounded-xl border border-error/25 bg-error/10 p-6">
+          <h2 className="text-xl font-semibold text-on-surface">Live dashboard data unavailable</h2>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            Dashboard now runs in live-only mode for core tabs. Open Settings and verify API + Splunk
+            connectivity, then refresh this page.
+          </p>
+          <div className="mt-4 flex items-center gap-3">
+            <Link
+              href="/settings"
+              className="rounded-lg bg-primary-container px-3 py-2 text-xs font-bold text-on-primary-container"
+            >
+              Open Settings
+            </Link>
+            <Link
+              href="/monitoring"
+              className="rounded-lg border border-outline-variant/35 px-3 py-2 text-xs font-bold text-on-surface"
+            >
+              Open Monitoring
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
   const recent = summary.items.slice(0, 8);
-  const lastUpdated = new Date(summary.stats.last_updated).toLocaleString();
+  const lastUpdated = formatDateTimeUTC(summary.stats.last_updated);
 
   const stats = [
     {
@@ -114,7 +157,7 @@ export default async function DashboardPage() {
           <article className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
             <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Total Annual Spend</p>
             <p className="mt-2 text-2xl font-black text-on-surface">
-              ${(telemetryMetrics.summary.total_annual_spend_usd / 1000000).toFixed(2)}M
+              {formatCompactUsd(telemetryMetrics.summary.total_annual_spend_usd)}
             </p>
             <p className="mt-1 text-xs text-on-surface-variant">across all sources</p>
           </article>
@@ -122,7 +165,7 @@ export default async function DashboardPage() {
           <article className="rounded-xl border border-error/30 bg-error-container/10 p-4">
             <p className="text-[10px] uppercase tracking-widest text-error font-bold">Potential Savings</p>
             <p className="mt-2 text-2xl font-black text-error">
-              ${(telemetryMetrics.summary.total_potential_savings_usd / 1000000).toFixed(2)}M
+              {formatCompactUsd(telemetryMetrics.summary.total_potential_savings_usd)}
             </p>
             <p className="mt-1 text-xs text-on-surface-variant">with optimization</p>
           </article>
@@ -196,7 +239,7 @@ export default async function DashboardPage() {
                     </td>
                     <td className="px-6 py-4 text-xs text-on-surface-variant">{incident.status}</td>
                     <td className="px-6 py-4 text-xs text-on-surface-variant font-mono">
-                      {new Date(incident.timestamp).toLocaleString()}
+                      {formatDateTimeUTC(incident.timestamp)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link

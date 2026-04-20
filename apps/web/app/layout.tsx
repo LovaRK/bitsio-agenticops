@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import { SideNav } from "@/components/SideNav";
-import { TopBar } from "@/components/TopBar";
+import { AppShell } from "@/components/AppShell";
 import { THEME_KEY } from "@/constants/theme";
 
 export const metadata: Metadata = {
@@ -35,9 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-background text-on-surface">
-        <SideNav />
-        <TopBar />
-        <main className="pl-64 pt-16 min-h-screen">{children}</main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

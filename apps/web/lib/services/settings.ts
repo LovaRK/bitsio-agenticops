@@ -9,24 +9,17 @@ import type {
   RuntimeConfigResponse,
   RuntimeConnectivityResponse,
 } from "@/types/api";
-import { USE_MOCK_FALLBACK } from "@/lib/config";
-import { apiFetch, canFallback } from "@/lib/http";
+import type { RuntimeSettingsServiceContract } from "@/lib/services/contracts";
+import { apiFetch } from "@/lib/http";
 import { mockSettingsSnapshot } from "@/lib/mocks/settings";
+import { fetchWithFallback } from "@/lib/services/serviceFetch";
 
 export async function getSettingsSnapshot(): Promise<SettingsSnapshot> {
-  if (USE_MOCK_FALLBACK) {
-    return mockSettingsSnapshot();
-  }
-
-  try {
-    return await apiFetch<SettingsSnapshot>("/api/v1/settings");
-  } catch (err) {
-    if (!canFallback()) {
-      throw err;
-    }
-    console.warn("[api] Could not fetch settings snapshot, using mock data.", err);
-    return mockSettingsSnapshot();
-  }
+  return fetchWithFallback<SettingsSnapshot>({
+    path: "/api/v1/settings",
+    fallbackFactory: mockSettingsSnapshot,
+    warningMessage: "[api] Could not fetch settings snapshot, using mock data.",
+  });
 }
 
 export async function updateRuntimeConfig(
@@ -41,3 +34,9 @@ export async function updateRuntimeConfig(
 export async function checkRuntimeConnections(): Promise<RuntimeConnectivityResponse> {
   return apiFetch<RuntimeConnectivityResponse>("/api/v1/settings/runtime/check");
 }
+
+export const runtimeSettingsService: RuntimeSettingsServiceContract = {
+  getSettingsSnapshot,
+  updateRuntimeConfig,
+  checkRuntimeConnections,
+};

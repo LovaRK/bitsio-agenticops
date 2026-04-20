@@ -8,6 +8,7 @@ from agent_core.models.adapter import resolve_model_adapter
 from agent_core.services.baseline_service import SplunkBaselineService, StubBaselineService
 from agent_core.services.embedding_service import PgvectorEmbeddingService, StubEmbeddingService
 from agent_core.services.metadata_service import PostgresMetadataService, StubMetadataService
+from apps.api.app.services.contracts import IncidentServiceProtocol
 from apps.api.app.services.splunk_live import SplunkIncidentService
 from decision_tracing.store import InMemoryDecisionTraceStore
 from packages.shared.config.settings import get_settings
@@ -69,7 +70,7 @@ def get_splunk_adapter() -> SplunkAdapter:
     )
 
 
-def get_splunk_incident_service() -> SplunkIncidentService:
+def get_splunk_incident_service() -> IncidentServiceProtocol:
     settings = get_settings()
     runtime_mode = "local" if settings.model_provider.strip().lower() == "ollama" else "cloud"
     resolved_splunk_mode = _resolve_splunk_mode(

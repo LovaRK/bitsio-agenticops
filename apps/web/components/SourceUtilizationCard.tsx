@@ -47,6 +47,13 @@ export function SourceUtilizationCard({
   };
 
   const gauge = gaugePath();
+  const formattedDailyIngest = dailyIngestGb < 1 ? dailyIngestGb.toFixed(3) : dailyIngestGb.toFixed(1);
+  const formattedAnnualCost =
+    annualSpendUsd >= 1000 ? `$${(annualSpendUsd / 1000).toFixed(1)}K` : `$${annualSpendUsd.toFixed(2)}`;
+  const formattedPotentialSavings =
+    potentialSavingsUsd >= 1000
+      ? `$${(potentialSavingsUsd / 1000).toFixed(1)}K`
+      : `$${potentialSavingsUsd.toFixed(2)}`;
 
   return (
     <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6 space-y-4">
@@ -104,20 +111,20 @@ export function SourceUtilizationCard({
             <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
               Daily Ingest
             </p>
-            <p className="text-sm font-bold text-on-surface">{dailyIngestGb.toFixed(1)} GB</p>
+            <p className="text-sm font-bold text-on-surface">{formattedDailyIngest} GB</p>
           </div>
           <div>
             <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
               Annual Cost
             </p>
-            <p className="text-sm font-bold text-on-surface">${(annualSpendUsd / 1000).toFixed(1)}K</p>
+            <p className="text-sm font-bold text-on-surface">{formattedAnnualCost}</p>
           </div>
           {potentialSavingsUsd > 0 && (
             <div>
               <p className="text-[10px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
                 Potential Savings
               </p>
-              <p className="text-sm font-bold text-tertiary">${(potentialSavingsUsd / 1000).toFixed(1)}K</p>
+              <p className="text-sm font-bold text-tertiary">{formattedPotentialSavings}</p>
             </div>
           )}
         </div>

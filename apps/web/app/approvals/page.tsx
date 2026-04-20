@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { ApprovalPanel } from "@/components/ApprovalPanel";
 import { listPendingApprovals } from "@/lib/api";
+import { formatDateTimeUTC } from "@/lib/datetime";
 
 function getSeverityColor(severity: string) {
   if (severity.toLowerCase() === "high" || severity.toLowerCase() === "critical") {
@@ -14,7 +15,28 @@ function getSeverityColor(severity: string) {
 }
 
 export default async function ApprovalsPage() {
-  const pendingApprovals = await listPendingApprovals();
+  let pendingApprovals: Awaited<ReturnType<typeof listPendingApprovals>>;
+  try {
+    pendingApprovals = await listPendingApprovals();
+  } catch {
+    return (
+      <section className="pt-6 pb-12 px-8" data-testid="approvals-page">
+        <div className="rounded-xl border border-error/25 bg-error/10 p-6">
+          <h2 className="text-xl font-semibold text-on-surface">Approval queue unavailable</h2>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            Could not load live approval data from the API. Verify runtime connectivity in Settings and
+            retry.
+          </p>
+          <Link
+            href="/settings"
+            className="mt-4 inline-flex rounded-lg bg-primary-container px-3 py-2 text-xs font-bold text-on-primary-container"
+          >
+            Open Settings
+          </Link>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="pt-6 pb-12 px-8" data-testid="approvals-page">
@@ -70,7 +92,7 @@ export default async function ApprovalsPage() {
                     <span>
                       Confidence: <strong>{Math.round(approval.confidence * 100)}%</strong>
                     </span>
-                    <span>{new Date(approval.time_queued).toLocaleString()}</span>
+                    <span>{formatDateTimeUTC(approval.time_queued)}</span>
                     <Link
                       href={`/incidents/${approval.incident_id}`}
                       className="text-primary font-semibold hover:underline"

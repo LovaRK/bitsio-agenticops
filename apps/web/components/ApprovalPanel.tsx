@@ -58,32 +58,38 @@ export function ApprovalPanel({
       />
       <div className="mt-4 flex gap-3">
         <button
-          className="flex-1 rounded-xl bg-secondary text-on-secondary px-4 py-3 text-sm font-bold transition-all active:scale-95 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-secondary text-on-secondary px-4 py-3 text-sm font-bold transition-all active:scale-95 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
           disabled={isSubmitting}
           onClick={() => onDecision("approved")}
         >
           <span
-            className={`material-symbols-outlined text-sm mr-2 inline-block ${
+            className={`material-symbols-outlined text-[28px] leading-none ${
               isSubmitting && activeDecision === "approved" ? "animate-spin" : ""
             }`}
+            aria-hidden="true"
           >
             {isSubmitting && activeDecision === "approved" ? "progress_activity" : "check_circle"}
           </span>
-          {isSubmitting && activeDecision === "approved" ? "Approving..." : "Approve"}
+          <span className="text-base leading-none font-semibold">
+            {isSubmitting && activeDecision === "approved" ? "Approving..." : "Approve"}
+          </span>
         </button>
         <button
-          className="flex-1 rounded-xl bg-error text-on-error px-4 py-3 text-sm font-bold transition-all active:scale-95 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-error text-on-error px-4 py-3 text-sm font-bold transition-all active:scale-95 hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
           disabled={isSubmitting}
           onClick={() => onDecision("rejected")}
         >
           <span
-            className={`material-symbols-outlined text-sm mr-2 inline-block ${
+            className={`material-symbols-outlined text-[28px] leading-none ${
               isSubmitting && activeDecision === "rejected" ? "animate-spin" : ""
             }`}
+            aria-hidden="true"
           >
             {isSubmitting && activeDecision === "rejected" ? "progress_activity" : "cancel"}
           </span>
-          {isSubmitting && activeDecision === "rejected" ? "Rejecting..." : "Reject"}
+          <span className="text-base leading-none font-semibold">
+            {isSubmitting && activeDecision === "rejected" ? "Rejecting..." : "Reject"}
+          </span>
         </button>
       </div>
       {status === "approved" && <p className="mt-2 text-xs text-secondary font-medium">✓ {message}</p>}

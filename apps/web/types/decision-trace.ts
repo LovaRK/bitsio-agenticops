@@ -80,4 +80,32 @@ export type DecisionTrace = {
     run_time_ms?: number;
     source?: MetricSource;
   };
+  data_quality?: {
+    completeness_score: number;
+    freshness_seconds: number;
+    accuracy_confidence: number;
+    validation_passed: boolean;
+    source?: MetricSource;
+  };
+  policy_evaluation?: {
+    policy_id: string;
+    policy_version: string;
+    guardrail_triggered: string;
+    approval_reason: string;
+    source?: MetricSource;
+  };
+  data_classification?: {
+    classification: string;
+    compliance_frameworks: string[];
+    encryption_required: string;
+    source?: MetricSource;
+  };
+  agent_telemetry?: {
+    agent_id: string;
+    agent_version: string;
+    agent_capabilities: string;
+    action_confidence: number;
+    human_in_the_loop: boolean;
+    source?: MetricSource;
+  };
 };

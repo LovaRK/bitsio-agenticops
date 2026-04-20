@@ -61,8 +61,9 @@ def test_smoke_flow_rbac_rate_limit_and_lifecycle() -> None:
     # Hit a dedicated tenant until rate limit triggers.
     limited_status = 0
     for _ in range(110):
+        # Use an in-process route to avoid external latency from live Splunk calls.
         resp = client.get(
-            "/api/v1/incidents",
+            "/api/v1/decision-traces/wf_smoke_test_unit",
             headers={
                 "x-api-key": "dev-analyst",
                 "x-user-id": "smoke-analyst",

@@ -125,3 +125,34 @@ body {
 .glass-panel {
   @apply bg-surface-variant/60 backdrop-blur-xl;
 }
+
+@keyframes routeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes routeProgress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.route-fade-in {
+  animation: routeFadeIn 220ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.route-progress-bar {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, rgba(173, 198, 255, 0.2), rgba(173, 198, 255, 0.9));
+  animation: routeProgress 320ms ease-out;
+}

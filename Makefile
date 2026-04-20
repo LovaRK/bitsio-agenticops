@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap dev test lint seed eval load-test api-smoke verify-local tunnel-start tunnel-stop tunnel-status live-api live-web live-seed live-verify
+.PHONY: bootstrap dev test lint seed eval load-test api-smoke verify-local tunnel-start tunnel-stop tunnel-status live-api live-web live-seed live-verify local local-stop local-status share-web
 
 bootstrap:
 	uv sync --all-groups
@@ -52,30 +52,71 @@ live-verify:
 # SSH Tunnel to Splunk MCP (for live mode when 8089 is private)
 tunnel-start:
 	@echo "🔌 Starting SSH tunnel to Splunk MCP (144.202.48.85:8089)..."
-	@ssh -N -L 8089:localhost:8089 root@144.202.48.85 &
-	@echo "PID: $$!" > /tmp/splunk-tunnel.pid
-	@sleep 2
-	@echo "✅ Tunnel active: localhost:8089 → 144.202.48.85:8089"
-	@echo "   (SSH tunnel runs in background; use 'make tunnel-stop' to close)"
+	@if lsof -nP -iTCP:8089 -sTCP:LISTEN >/dev/null 2>&1; then \
+		echo "✅ Tunnel already active on localhost:8089"; \
+	else \
+		ssh -fN -L 8089:localhost:8089 root@144.202.48.85; \
+		sleep 1; \
+		echo "✅ Tunnel active: localhost:8089 → 144.202.48.85:8089"; \
+	fi
+	@echo "   (Use 'make tunnel-stop' to close)"
 
 tunnel-stop:
-	@if [ -f /tmp/splunk-tunnel.pid ]; then \
-		kill $$(cat /tmp/splunk-tunnel.pid) 2>/dev/null && \
-		rm /tmp/splunk-tunnel.pid && \
-		echo "✅ Tunnel stopped"; \
-	else \
-		echo "⚠️  No tunnel found"; \
-	fi
+	@pkill -f "ssh -fN -L 8089:localhost:8089 root@144.202.48.85" 2>/dev/null || true
+	@pkill -f "ssh -N -L 8089:localhost:8089 root@144.202.48.85" 2>/dev/null || true
+	@echo "✅ Tunnel stop command issued"
 
 tunnel-status:
-	@if [ -f /tmp/splunk-tunnel.pid ]; then \
-		PID=$$(cat /tmp/splunk-tunnel.pid); \
-		if ps -p $$PID > /dev/null; then \
-			echo "✅ Tunnel active (PID: $$PID)"; \
-		else \
-			echo "❌ Tunnel process dead"; \
-			rm /tmp/splunk-tunnel.pid; \
-		fi; \
+	@if lsof -nP -iTCP:8089 -sTCP:LISTEN >/dev/null 2>&1; then \
+		echo "✅ Tunnel active on localhost:8089"; \
 	else \
-		echo "❌ No tunnel"; \
+		echo "❌ Tunnel not active"; \
 	fi
+
+# Local live runner:
+# - ensures MCP tunnel
+# - starts API and Web in background
+# - validates health URLs
+local:
+	@echo "🚀 Starting local live stack (tunnel + API + Web)..."
+	@$(MAKE) tunnel-start
+	@lsof -ti tcp:8001 | xargs kill -9 2>/dev/null || true
+	@lsof -ti tcp:3000 | xargs kill -9 2>/dev/null || true
+	@pkill -f "run_live_api.py" 2>/dev/null || true
+	@pkill -f "pnpm --filter web dev" 2>/dev/null || true
+	@nohup uv run python scripts/run_live_api.py > .api-live.log 2>&1 & echo $$! > /tmp/bitsio-live-api.pid
+	@nohup env NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8001 INTERNAL_API_BASE_URL=http://127.0.0.1:8001 NEXT_PUBLIC_USE_MOCK=false NEXT_PUBLIC_REQUIRE_LIVE_API=true pnpm --filter web dev --hostname 127.0.0.1 --port 3000 > .web-live.log 2>&1 & echo $$! > /tmp/bitsio-live-web.pid
+	@sleep 6
+	@curl -fsS http://127.0.0.1:8001/health >/dev/null && echo "✅ API healthy: http://127.0.0.1:8001/health"
+	@curl -fsS http://127.0.0.1:3000 >/dev/null && echo "✅ Web ready: http://127.0.0.1:3000"
+	@echo "📍 Open: http://127.0.0.1:3000"
+
+local-stop:
+	@echo "🛑 Stopping local live stack..."
+	@lsof -ti tcp:8001 | xargs kill -9 2>/dev/null || true
+	@lsof -ti tcp:3000 | xargs kill -9 2>/dev/null || true
+	@pkill -f "run_live_api.py" 2>/dev/null || true
+	@pkill -f "pnpm --filter web dev" 2>/dev/null || true
+	@$(MAKE) tunnel-stop
+	@echo "✅ Local stack stopped"
+
+local-status:
+	@echo "🔎 Local status"
+	@if curl -fsS http://127.0.0.1:8001/health >/dev/null 2>&1; then \
+		echo "✅ API: up (8001)"; \
+	else \
+		echo "❌ API: down"; \
+	fi
+	@if curl -fsS http://127.0.0.1:3000 >/dev/null 2>&1; then \
+		echo "✅ Web: up (3000)"; \
+	else \
+		echo "❌ Web: down"; \
+	fi
+	@$(MAKE) tunnel-status
+
+# Free public share URL for quick demos.
+# Requires cloudflared installed: brew install cloudflared
+share-web:
+	@echo "🌐 Starting Cloudflare quick tunnel for http://127.0.0.1:3000 ..."
+	@command -v cloudflared >/dev/null 2>&1 || (echo "❌ cloudflared not found. Install with: brew install cloudflared" && exit 1)
+	@cloudflared tunnel --url http://127.0.0.1:3000

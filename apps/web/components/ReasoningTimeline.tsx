@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { DecisionTrace, MetricSource, NodeRun, ToolCall } from "@/types/decision-trace";
+import { formatDateTimeUTC } from "@/lib/datetime";
 
 function getStatusStyles(status: NodeRun["status"]) {
   switch (status) {
@@ -98,13 +99,9 @@ export function ReasoningTimeline({
 
   const formatTime = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString("en-US", {
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      });
+      const formatted = formatDateTimeUTC(dateString);
+      const timePart = formatted.split(", ")[1];
+      return timePart ?? formatted;
     } catch {
       return dateString;
     }

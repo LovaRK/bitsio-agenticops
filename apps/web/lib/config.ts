@@ -12,6 +12,8 @@ export const API_BASE_URL = typeof window === "undefined" ? INTERNAL_API_BASE_UR
 // Feature flags
 export const USE_MOCK_FALLBACK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 export const REQUIRE_LIVE_API = process.env.NEXT_PUBLIC_REQUIRE_LIVE_API === "true";
+export const MAIN_TABS_ALLOW_FALLBACK =
+  process.env.NEXT_PUBLIC_MAIN_TABS_ALLOW_FALLBACK === "true";
 export const ACTION_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_ACTION_TIMEOUT_MS ?? "3000");
 
 // Development keys (never exposed to browser in production)

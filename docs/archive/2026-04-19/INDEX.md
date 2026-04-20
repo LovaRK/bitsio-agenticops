@@ -1,6 +1,6 @@
 # BitsIO AgenticOps — Documentation Index
 
-Last updated: 2026-04-13
+Last updated: 2026-04-18
 
 ## Start Here
 
@@ -22,6 +22,7 @@ Phases 0–8 complete. Latest additions (2026-04-13):
 - `tests/unit/test_telemetry_nodes_negative.py`: 15 negative test cases added
 - Dual Splunk adapters: `SplunkMCPAdapter` (mock/MCP) + `NativeSplunkAdapter` (REST) with `auto` routing
 - Runtime switching available from `/settings` UI: scenario preset, model provider, adapter mode
+- Fraud Risk Analysis feature added at `/fraud-risk` with production-style API + policy/compliance/data-quality panels
 
 ## Verified Quality Snapshot
 
@@ -73,11 +74,14 @@ Phases 0–8 complete. Latest additions (2026-04-13):
 - [Live Splunk Mode](LIVE_SPLUNK_MODE_UPDATED.md) — Full live-data walkthrough
 - [SSH Tunnel Setup](SSH_TUNNEL_SETUP.md) — Tunnel to remote Splunk instance
 - [Load Testing Guide](LOAD_TESTING_GUIDE.md) — Locust scenarios, performance gates
+- [Git Branching Strategy](runbooks/GIT_BRANCHING_STRATEGY.md) — safe feature/develop/main workflow
+- [Free Public Test Deploy](runbooks/FREE_PUBLIC_TEST_DEPLOY.md) — quickest public demo URL flow
 - [Showcase Flow](runbooks/SHOWCASE_FLOW.md)
 - [Live Scenario Matrix](runbooks/LIVE_SCENARIO_MATRIX.md)
 - [System Design Flow](runbooks/SYSTEM_DESIGN_FLOW.md)
 - [Telemetry Value Local Demo](runbooks/TELEMETRY_VALUE_LOCAL_DEMO.md)
 - [Splunk Real Data Seeding](runbooks/SPLUNK_REAL_DATA_SEED.md)
+- [Fraud Risk Analysis](runbooks/FRAUD_RISK_AGENT.md)
 
 ## Security & Hardening
 
