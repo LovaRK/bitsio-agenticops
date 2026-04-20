@@ -4,7 +4,7 @@
  */
 
 import type { PendingApprovalItem } from "@/types/api";
-import { ACTION_TIMEOUT_MS } from "@/lib/config";
+import { ACTION_TIMEOUT_MS, MAIN_TABS_ALLOW_FALLBACK } from "@/lib/config";
 import { mockPendingApprovals } from "@/lib/mocks/approvals";
 import { fetchWithFallback } from "@/lib/services/serviceFetch";
 import { submitApproval } from "@/lib/services/traces";
@@ -16,6 +16,7 @@ export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
     warningMessage: "[api] Could not fetch pending approvals, using mock data.",
     timeoutMs: ACTION_TIMEOUT_MS,
     timeoutLabel: "listPendingApprovals",
+    allowFallback: MAIN_TABS_ALLOW_FALLBACK,
   });
   return response.items;
 }

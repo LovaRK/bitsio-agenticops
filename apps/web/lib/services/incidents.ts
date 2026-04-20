@@ -5,7 +5,7 @@
 
 import type { DecisionTrace } from "@/types/decision-trace";
 import type { IncidentSummary } from "@/types/api";
-import { USE_MOCK_FALLBACK } from "@/lib/config";
+import { MAIN_TABS_ALLOW_FALLBACK, USE_MOCK_FALLBACK } from "@/lib/config";
 import { apiFetch, canFallback } from "@/lib/http";
 import { mockIncidents, pickMockIncident } from "@/lib/mocks/incidents";
 import type { IncidentServiceContract } from "@/lib/services/contracts";
@@ -18,6 +18,7 @@ export async function listIncidents(): Promise<IncidentSummary[]> {
     path: "/api/v1/incidents",
     fallbackFactory: () => ({ items: mockIncidents() }),
     warningMessage: "[api] Could not fetch incidents, using mock data.",
+    allowFallback: MAIN_TABS_ALLOW_FALLBACK,
   });
   return response.items;
 }

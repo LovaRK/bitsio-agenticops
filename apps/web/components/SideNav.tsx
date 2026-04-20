@@ -130,6 +130,7 @@ export function SideNav() {
             <Link
               key={item.href}
               href={item.href}
+              title={`Open ${item.label}`}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-200 ${
                 isActive(item.href)
                   ? "text-on-surface bg-surface-container-high border-l-4 border-primary"
@@ -147,6 +148,7 @@ export function SideNav() {
             <button
               type="button"
               onClick={() => setIsPaletteOpen(true)}
+              title="Open command palette (Cmd/Ctrl + K)"
               className="w-full bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface-variant text-xs py-2 px-3 rounded flex items-center justify-between group transition-all"
             >
               <span>Command Palette</span>
@@ -157,6 +159,7 @@ export function SideNav() {
           </div>
           <Link
             href="/settings"
+            title="Open runtime and environment settings"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200"
           >
             <span className="material-symbols-outlined text-xl">settings</span>
@@ -164,6 +167,7 @@ export function SideNav() {
           </Link>
           <Link
             href="/support"
+            title="Open support and troubleshooting resources"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200"
           >
             <span className="material-symbols-outlined text-xl">help</span>

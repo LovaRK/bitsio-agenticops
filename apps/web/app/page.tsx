@@ -27,11 +27,43 @@ function getSeverityStyles(severity: string) {
 }
 
 export default async function DashboardPage() {
-  const [summary, settings, telemetryMetrics] = await Promise.all([
-    getDashboardSummary(),
-    getSettingsSnapshot(),
-    getTelemetryMetrics(),
-  ]);
+  let summary: Awaited<ReturnType<typeof getDashboardSummary>>;
+  let settings: Awaited<ReturnType<typeof getSettingsSnapshot>>;
+  let telemetryMetrics: Awaited<ReturnType<typeof getTelemetryMetrics>>;
+
+  try {
+    [summary, settings, telemetryMetrics] = await Promise.all([
+      getDashboardSummary(),
+      getSettingsSnapshot(),
+      getTelemetryMetrics(),
+    ]);
+  } catch {
+    return (
+      <section className="pt-6 pb-12 px-8" data-testid="dashboard-page">
+        <div className="rounded-xl border border-error/25 bg-error/10 p-6">
+          <h2 className="text-xl font-semibold text-on-surface">Live dashboard data unavailable</h2>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            Dashboard now runs in live-only mode for core tabs. Open Settings and verify API + Splunk
+            connectivity, then refresh this page.
+          </p>
+          <div className="mt-4 flex items-center gap-3">
+            <Link
+              href="/settings"
+              className="rounded-lg bg-primary-container px-3 py-2 text-xs font-bold text-on-primary-container"
+            >
+              Open Settings
+            </Link>
+            <Link
+              href="/monitoring"
+              className="rounded-lg border border-outline-variant/35 px-3 py-2 text-xs font-bold text-on-surface"
+            >
+              Open Monitoring
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
   const recent = summary.items.slice(0, 8);
   const lastUpdated = formatDateTimeUTC(summary.stats.last_updated);
 

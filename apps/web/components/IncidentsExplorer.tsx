@@ -52,6 +52,7 @@ export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] 
           <button
             type="button"
             data-testid="incidents-filter-toggle"
+            title="Show or hide filter controls for incidents"
             onClick={() => setShowFilters((current) => !current)}
             className="bg-surface-container border border-outline-variant/20 px-4 py-2 rounded-lg text-sm font-bold text-on-surface hover:bg-surface-container-high transition-all flex items-center gap-2"
           >
@@ -113,6 +114,7 @@ export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] 
             <button
               type="button"
               onClick={reset}
+              title="Clear all active filters"
               className="w-full rounded-lg border border-outline-variant/30 px-3 py-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             >
               Reset Filters
@@ -177,6 +179,7 @@ export function IncidentsExplorer({ incidents }: { incidents: IncidentSummary[] 
                     <td className="px-6 py-5 text-right">
                       <Link
                         href={`/incidents/${incident.id}`}
+                        title="Open full incident context and reasoning timeline"
                         className="text-primary hover:bg-primary/10 px-4 py-1.5 rounded-lg text-xs font-bold transition-all border border-primary/20 hover:border-primary/50"
                       >
                         Details

@@ -4,6 +4,7 @@
  */
 
 import { API_BASE_URL, DEV_ANALYST_KEY, REQUIRE_LIVE_API, USE_MOCK_FALLBACK } from "@/lib/config";
+import { emitAppAlert } from "@/lib/uiAlerts";
 
 const UI_TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || "tenant_ui_local";
 
@@ -43,14 +44,25 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     headers.set("x-tenant-id", UI_TENANT_ID);
   }
 
-  const res = await fetch(url, {
-    ...options,
-    cache: options.cache ?? "no-store",
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      cache: options.cache ?? "no-store",
+      headers,
+    });
+  } catch (error) {
+    const message = `Network error while reaching API (${path}).`;
+    emitAppAlert({ level: "error", message });
+    throw error;
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
+    emitAppAlert({
+      level: "error",
+      message: `API ${res.status} for ${path}. Check runtime connection in Settings.`,
+    });
     throw new Error(`API ${res.status} on ${path}: ${body}`);
   }
 

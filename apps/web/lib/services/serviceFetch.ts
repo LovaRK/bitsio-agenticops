@@ -1,5 +1,6 @@
 import { USE_MOCK_FALLBACK } from "@/lib/config";
 import { apiFetch, canFallback, withTimeout } from "@/lib/http";
+import { emitAppAlert } from "@/lib/uiAlerts";
 
 type FetchWithFallbackOptions<T> = {
   path: string;
@@ -25,6 +26,10 @@ export async function fetchWithFallback<T>(
   } = options;
 
   if (USE_MOCK_FALLBACK) {
+    emitAppAlert({
+      level: "warning",
+      message: `Using local mock mode for ${path}.`,
+    });
     return fallbackFactory();
   }
 
@@ -39,6 +44,10 @@ export async function fetchWithFallback<T>(
       throw err;
     }
     console.warn(warningMessage, err);
+    emitAppAlert({
+      level: "warning",
+      message: `${warningMessage} Falling back to local data.`,
+    });
     return fallbackFactory();
   }
 }

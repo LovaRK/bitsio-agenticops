@@ -1,5 +1,6 @@
 import type { WasteDemoResponse, TelemetryMetricsResponse } from "@/types/api";
 import type { TelemetryValueServiceContract } from "@/lib/services/contracts";
+import { MAIN_TABS_ALLOW_FALLBACK } from "@/lib/config";
 import { apiFetch, withTimeout } from "@/lib/http";
 import telemetryValueStory from "@/lib/mocks/telemetry_value_story.json";
 import { fetchWithFallback } from "@/lib/services/serviceFetch";
@@ -263,6 +264,7 @@ export async function getTelemetryMetrics(): Promise<TelemetryMetricsResponse> {
     path: "/api/v1/waste/telemetry/metrics",
     fallbackFactory: createMockTelemetryMetrics,
     warningMessage: "[api] Could not fetch telemetry metrics, using mock data.",
+    allowFallback: MAIN_TABS_ALLOW_FALLBACK,
   });
 }
 

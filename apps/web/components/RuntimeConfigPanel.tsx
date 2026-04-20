@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { SettingsSnapshot } from "@/lib/api";
 import { checkRuntimeConnections, updateRuntimeConfig } from "@/lib/api";
+import { emitAppAlert } from "@/lib/uiAlerts";
 
 type RuntimeConfigPanelProps = {
   settings: SettingsSnapshot;
@@ -156,9 +157,17 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
           ? ` Tunnel: ${result.tunnel_status} (${result.tunnel_message})`
           : "";
       setMessage(`Runtime updated successfully.${tunnelNote}`);
+      emitAppAlert({
+        level: "success",
+        message: `Runtime mode applied: ${runtimeMode}.`,
+      });
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update runtime config.");
+      emitAppAlert({
+        level: "error",
+        message: "Failed to apply runtime config. See details in settings panel.",
+      });
     } finally {
       setSaving(false);
     }
@@ -188,8 +197,18 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
       ].join(" | ");
       setConnectionReport(summary);
       setConnectionOk(result.model.connected && result.splunk.connected);
+      emitAppAlert({
+        level: result.model.connected && result.splunk.connected ? "success" : "warning",
+        message: result.model.connected && result.splunk.connected
+          ? "Runtime connections are healthy."
+          : "One or more runtime connections are not healthy.",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to run connection test.");
+      emitAppAlert({
+        level: "error",
+        message: "Connection test failed. Verify API endpoint and active services.",
+      });
     } finally {
       setTesting(false);
     }
@@ -310,6 +329,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             type="button"
             onClick={handleTestConnections}
             disabled={saving || testing}
+            title="Validate model and Splunk connectivity for the selected runtime mode"
             className="rounded-lg border border-outline-variant/30 px-4 py-2 text-xs font-bold text-on-surface disabled:opacity-60"
           >
             <span className="inline-flex items-center gap-2">
@@ -326,6 +346,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             type="button"
             onClick={handleApply}
             disabled={saving || testing}
+            title="Apply selected runtime profile and refresh data sources"
             className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
           >
             <span className="inline-flex items-center gap-2">

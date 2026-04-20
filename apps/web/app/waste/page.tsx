@@ -15,8 +15,67 @@ function formatCompactUsd(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
+function formatRangeWeeks(annualSavingsUsd: number): string {
+  if (annualSavingsUsd >= 200_000) return "4-6 weeks";
+  if (annualSavingsUsd >= 75_000) return "2-4 weeks";
+  return "1-2 weeks";
+}
+
 export default async function WastePage() {
-  const metrics = await getTelemetryMetrics();
+  let metrics: Awaited<ReturnType<typeof getTelemetryMetrics>>;
+  try {
+    metrics = await getTelemetryMetrics();
+  } catch {
+    return (
+      <section className="pt-6 pb-12 px-8" data-testid="waste-page">
+        <div className="rounded-xl border border-error/25 bg-error/10 p-6">
+          <h2 className="text-xl font-semibold text-on-surface">Telemetry metrics unavailable</h2>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            This page is configured for live API metrics. Connect Splunk/API in Settings and retry.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  const recommendedActions = metrics.sources
+    .filter((source) => source.potential_savings_usd > 0)
+    .sort((a, b) => b.potential_savings_usd - a.potential_savings_usd)
+    .slice(0, 4)
+    .map((source) => {
+      const recommendation =
+        source.recommendation === "Remove"
+          ? "Archive or remove low-utilization source after validation."
+          : source.recommendation === "Optimize"
+            ? "Optimize fields/retention to reduce ingest without losing value."
+            : "Keep source as high-value and focus on tuning queries.";
+
+      const tag =
+        source.recommendation === "Remove"
+          ? "High Impact"
+          : source.recommendation === "Optimize"
+            ? "Optimization"
+            : "Maintain";
+
+      return {
+        id: `${source.index}:${source.name}`,
+        title: `${source.name} (${source.index})`,
+        recommendation,
+        annualSavings: source.potential_savings_usd,
+        complexity:
+          source.recommendation === "Remove"
+            ? "High"
+            : source.recommendation === "Optimize"
+              ? "Medium"
+              : "Low",
+        timeline: formatRangeWeeks(source.potential_savings_usd),
+        tag,
+      };
+    });
+
+  const topFinding = metrics.security_findings
+    .slice()
+    .sort((a, b) => b.impact_on_savings_percent - a.impact_on_savings_percent)[0];
 
   return (
     <section className="pt-6 pb-12 px-8" data-testid="waste-page">
@@ -158,117 +217,36 @@ export default async function WastePage() {
           Recommended Optimization Actions
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5 space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h4 className="font-bold text-on-surface">Reduce Data Retention</h4>
-                <p className="text-xs text-on-surface-variant mt-1">
-                  Shorten retention policies from 90d to 30d for low-utilization sources
-                </p>
+          {recommendedActions.map((action) => (
+            <article
+              key={action.id}
+              className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5 space-y-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h4 className="font-bold text-on-surface">{action.title}</h4>
+                  <p className="text-xs text-on-surface-variant mt-1">{action.recommendation}</p>
+                </div>
+                <span className="text-xs font-bold px-2 py-1 rounded-full bg-secondary-container/20 text-secondary whitespace-nowrap">
+                  {action.tag}
+                </span>
               </div>
-              <span className="text-xs font-bold px-2 py-1 rounded-full bg-secondary-container/20 text-secondary whitespace-nowrap">
-                Quick Win
-              </span>
-            </div>
-            <div className="bg-surface-container-lowest rounded p-2 space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Annual Savings:</span>
-                <span className="font-bold text-secondary">~$180K</span>
+              <div className="bg-surface-container-lowest rounded p-2 space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-on-surface-variant">Annual Savings:</span>
+                  <span className="font-bold text-secondary">{formatCompactUsd(action.annualSavings)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-on-surface-variant">Complexity:</span>
+                  <span className="font-bold text-on-surface">{action.complexity}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-on-surface-variant">Timeline:</span>
+                  <span className="font-bold text-on-surface">{action.timeline}</span>
+                </div>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Complexity:</span>
-                <span className="font-bold text-on-surface">Low</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Timeline:</span>
-                <span className="font-bold text-on-surface">1-2 weeks</span>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5 space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h4 className="font-bold text-on-surface">Archive Low-Value Sources</h4>
-                <p className="text-xs text-on-surface-variant mt-1">
-                  Move Cisco Nexus data to cold storage or remove entirely
-                </p>
-              </div>
-              <span className="text-xs font-bold px-2 py-1 rounded-full bg-error-container/20 text-error whitespace-nowrap">
-                High Impact
-              </span>
-            </div>
-            <div className="bg-surface-container-lowest rounded p-2 space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Annual Savings:</span>
-                <span className="font-bold text-error">~$290K</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Complexity:</span>
-                <span className="font-bold text-on-surface">High</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Timeline:</span>
-                <span className="font-bold text-on-surface">4-6 weeks</span>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5 space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h4 className="font-bold text-on-surface">Field Filtering & Optimization</h4>
-                <p className="text-xs text-on-surface-variant mt-1">
-                  Remove unused fields from Windows Events and Application Logs
-                </p>
-              </div>
-              <span className="text-xs font-bold px-2 py-1 rounded-full bg-tertiary-container/20 text-tertiary whitespace-nowrap">
-                Medium Effort
-              </span>
-            </div>
-            <div className="bg-surface-container-lowest rounded p-2 space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Annual Savings:</span>
-                <span className="font-bold text-secondary">~$75K</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Complexity:</span>
-                <span className="font-bold text-on-surface">Medium</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Timeline:</span>
-                <span className="font-bold text-on-surface">2-3 weeks</span>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-5 space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h4 className="font-bold text-on-surface">Resolve Security Gaps</h4>
-                <p className="text-xs text-on-surface-variant mt-1">
-                  Add cloud access logs and mobile device telemetry for complete coverage
-                </p>
-              </div>
-              <span className="text-xs font-bold px-2 py-1 rounded-full bg-secondary-container/20 text-secondary whitespace-nowrap">
-                Security
-              </span>
-            </div>
-            <div className="bg-surface-container-lowest rounded p-2 space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Annual Savings:</span>
-                <span className="font-bold text-secondary">~$35K</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Complexity:</span>
-                <span className="font-bold text-on-surface">Medium</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-on-surface-variant">Timeline:</span>
-                <span className="font-bold text-on-surface">3-4 weeks</span>
-              </div>
-            </div>
-          </article>
+            </article>
+          ))}
         </div>
       </div>
 
@@ -277,21 +255,22 @@ export default async function WastePage() {
         <h4 className="font-bold text-on-surface">💡 Key Insights from AgenticOps Analysis</h4>
         <ul className="text-sm text-on-surface-variant space-y-2 list-disc list-inside">
           <li>
-            <span className="text-on-surface font-semibold">High-value sources</span> (Office 365, DNS) show strong
-            utilization (78-92%) and are candidates for retention given their security and operational value.
+            <span className="text-on-surface font-semibold">High-value sources</span> are determined from live
+            utilization, search usage, and dashboard/alert references in your current telemetry window.
           </li>
           <li>
-            <span className="text-on-surface font-semibold">Cisco Nexus</span> represents the largest optimization
-            opportunity at ~$290K annual savings with minimal operational impact (22% utilization, 0 searches).
+            <span className="text-on-surface font-semibold">Top optimization opportunity</span> currently indicates{" "}
+            {recommendedActions[0]?.title ?? "n/a"} with potential savings of{" "}
+            {formatCompactUsd(recommendedActions[0]?.annualSavings ?? 0)}.
           </li>
           <li>
-            <span className="text-on-surface font-semibold">Security posture improvement</span> can be achieved
-            alongside cost optimization by adding cloud access logs and mobile telemetry (+12% savings impact).
+            <span className="text-on-surface font-semibold">Security posture improvement</span> aligns with{" "}
+            {topFinding?.title ?? "current detection gaps"} ({topFinding?.severity ?? "n/a"}) and can unlock
+            additional value impact.
           </li>
           <li>
-            Phased implementation starting with retention policy updates and field filtering can deliver
-            <span className="text-on-surface font-semibold"> 50% of potential savings</span> within 30 days with low
-            operational risk.
+            All recommendations are generated from the live API payload so numbers evolve as ingest and query
+            behavior changes in Splunk.
           </li>
         </ul>
       </div>

@@ -1,6 +1,6 @@
 # BitsIO AgenticOps — Single Source of Truth
 
-Last updated: 2026-04-19
+Last updated: 2026-04-20
 Owner: Core Engineering (Codex-led)
 Status: Canonical
 
@@ -45,8 +45,19 @@ Splunk modes:
 
 ## 3. Live vs Mock Data Rules
 
-Incidents/Fraud/Telemetry should use live data only when Splunk is reachable.
-If live fetch fails, UI may fallback to seed data **with explicit degraded message**.
+Core tabs are now configured live-first:
+- Dashboard (`/`)
+- Incidents (`/incidents`)
+- Approvals (`/approvals`)
+- Monitoring (`/monitoring`)
+- Telemetry Value Impact (`/telemetry-value`)
+
+By default these routes do **not** silently fallback to mock payloads.
+If live data is unavailable, the UI shows an explicit live-data error panel and recovery actions.
+
+Optional development override:
+- `NEXT_PUBLIC_MAIN_TABS_ALLOW_FALLBACK=true`
+- only use this for local sandbox debugging, never for production-like demos
 
 Expected indicators:
 - `mode: live` and `degraded_reason: null` => true live data
@@ -141,6 +152,11 @@ pnpm --filter web lint
 ```
 
 Current baseline: tests must stay green and no runtime regression in core routes.
+
+Browser/runtime checks (required before release):
+- root + core tabs return HTTP 200 while local web/api are running
+- runtime settings actions emit success/error user alerts
+- route transition animation and hover help remain functional
 
 ## 9. Branching Strategy
 
