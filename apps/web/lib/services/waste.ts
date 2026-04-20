@@ -1,6 +1,8 @@
 import type { WasteDemoResponse, TelemetryMetricsResponse } from "@/types/api";
-import { apiFetch, canFallback, withTimeout } from "@/lib/http";
+import type { TelemetryValueServiceContract } from "@/lib/services/contracts";
+import { apiFetch, withTimeout } from "@/lib/http";
 import telemetryValueStory from "@/lib/mocks/telemetry_value_story.json";
+import { fetchWithFallback } from "@/lib/services/serviceFetch";
 
 const demoFallback: WasteDemoResponse = telemetryValueStory as WasteDemoResponse;
 
@@ -34,18 +36,15 @@ function normalizeWasteResponse(
 }
 
 export async function getWasteDemo(): Promise<WasteDemoResponse> {
-  try {
-    const payload = await apiFetch<WasteDemoResponse>("/api/v1/waste/demo");
-    return normalizeWasteResponse(payload, {
-      scenario: "Demo waste profile",
-      tenantId: "tenant_demo",
-    });
-  } catch (error) {
-    if (!canFallback()) {
-      throw error;
-    }
-    return demoFallback;
-  }
+  const payload = await fetchWithFallback<WasteDemoResponse>({
+    path: "/api/v1/waste/demo",
+    fallbackFactory: () => demoFallback,
+    warningMessage: "[api] Could not fetch waste demo, using mock data.",
+  });
+  return normalizeWasteResponse(payload, {
+    scenario: "Demo waste profile",
+    tenantId: "tenant_demo",
+  });
 }
 
 export async function getWasteLive(
@@ -260,14 +259,13 @@ function createMockTelemetryMetrics(): TelemetryMetricsResponse {
 }
 
 export async function getTelemetryMetrics(): Promise<TelemetryMetricsResponse> {
-  try {
-    const response = await apiFetch<TelemetryMetricsResponse>("/api/v1/waste/telemetry/metrics");
-    return response;
-  } catch (error) {
-    if (!canFallback()) {
-      throw error;
-    }
-    console.warn("[api] Could not fetch telemetry metrics, using mock data.", error);
-    return createMockTelemetryMetrics();
-  }
+  return fetchWithFallback<TelemetryMetricsResponse>({
+    path: "/api/v1/waste/telemetry/metrics",
+    fallbackFactory: createMockTelemetryMetrics,
+    warningMessage: "[api] Could not fetch telemetry metrics, using mock data.",
+  });
 }
+
+export const telemetryValueService: TelemetryValueServiceContract = {
+  getTelemetryMetrics,
+};

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from apps.api.app.services.splunk_live import SplunkIncidentService
+from apps.api.app.services.contracts import IncidentServiceProtocol
 from packages.shared.config.settings import get_settings
 
 LOGGER = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ def live_mode_enabled() -> bool:
     return get_settings().splunk_live_mode
 
 
-def load_incidents(splunk_service: SplunkIncidentService) -> list[dict]:
+def load_incidents(splunk_service: IncidentServiceProtocol) -> list[dict]:
     """Load incidents from live Splunk or return seed data."""
     if live_mode_enabled():
         try:

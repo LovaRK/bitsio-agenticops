@@ -4,30 +4,20 @@
  */
 
 import type { PendingApprovalItem } from "@/types/api";
-import { USE_MOCK_FALLBACK, ACTION_TIMEOUT_MS } from "@/lib/config";
-import { apiFetch, withTimeout, canFallback } from "@/lib/http";
+import { ACTION_TIMEOUT_MS } from "@/lib/config";
 import { mockPendingApprovals } from "@/lib/mocks/approvals";
+import { fetchWithFallback } from "@/lib/services/serviceFetch";
 import { submitApproval } from "@/lib/services/traces";
 
 export async function listPendingApprovals(): Promise<PendingApprovalItem[]> {
-  if (USE_MOCK_FALLBACK) {
-    return mockPendingApprovals();
-  }
-
-  try {
-    const response = await withTimeout(
-      apiFetch<{ items: PendingApprovalItem[] }>("/api/v1/approvals/pending"),
-      ACTION_TIMEOUT_MS,
-      "listPendingApprovals",
-    );
-    return response.items;
-  } catch (err) {
-    if (!canFallback()) {
-      throw err;
-    }
-    console.warn("[api] Could not fetch pending approvals, using mock data.", err);
-    return mockPendingApprovals();
-  }
+  const response = await fetchWithFallback<{ items: PendingApprovalItem[] }>({
+    path: "/api/v1/approvals/pending",
+    fallbackFactory: () => ({ items: mockPendingApprovals() }),
+    warningMessage: "[api] Could not fetch pending approvals, using mock data.",
+    timeoutMs: ACTION_TIMEOUT_MS,
+    timeoutLabel: "listPendingApprovals",
+  });
+  return response.items;
 }
 
 export async function quickResolvePendingApprovals(

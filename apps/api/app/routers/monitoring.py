@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends
 
 from apps.api.app.config import load_incidents
 from apps.api.app.dependencies import get_splunk_incident_service
-from apps.api.app.services.splunk_live import SplunkIncidentService
+from apps.api.app.services.contracts import IncidentServiceProtocol
+from apps.api.app.services.runtime_profiles import runtime_label_for_provider
 from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/api/v1", tags=["monitoring"])
 @router.get("/monitoring/overview")
 def monitoring_overview(
     _ctx: AuthContext = Depends(require_analyst),
-    splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
+    splunk_service: IncidentServiceProtocol = Depends(get_splunk_incident_service),
 ) -> dict:
     """Get monitoring overview with service health and index info."""
     settings = get_settings()
@@ -94,7 +95,7 @@ def monitoring_overview(
         },
     ]
 
-    runtime_mode = "local" if settings.model_provider.strip().lower() == "ollama" else "cloud"
+    runtime_mode = runtime_label_for_provider(settings.model_provider)
     llm_calls = max(0, len(incidents))
     retrieval_calls = max(1, len(incidents))
     policy_calls = sum(

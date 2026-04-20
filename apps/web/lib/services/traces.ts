@@ -4,8 +4,8 @@
  */
 
 import type { ApprovalPayload, ApprovalEvent } from "@/types/api";
-import { USE_MOCK_FALLBACK, ACTION_TIMEOUT_MS, DEV_ANALYST_KEY } from "@/lib/config";
-import { apiFetch, withTimeout, canFallback } from "@/lib/http";
+import { ACTION_TIMEOUT_MS, DEV_ANALYST_KEY } from "@/lib/config";
+import { fetchWithFallback } from "@/lib/services/serviceFetch";
 
 export async function submitApproval(workflowId: string, payload: ApprovalPayload): Promise<void> {
   const headers: Record<string, string> = {
@@ -16,43 +16,25 @@ export async function submitApproval(workflowId: string, payload: ApprovalPayloa
     headers["x-api-key"] = DEV_ANALYST_KEY;
   }
 
-  if (USE_MOCK_FALLBACK) {
-    return;
-  }
-
-  try {
-    await withTimeout(
-      apiFetch<void>(`/api/v1/decision-traces/${workflowId}/approvals`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      }),
-      ACTION_TIMEOUT_MS,
-      `submitApproval:${workflowId}`,
-    );
-  } catch (err) {
-    if (!canFallback()) {
-      throw err;
-    }
-    console.warn(`[api] Could not submit approval for ${workflowId} in dev mode.`, err);
-  }
+  await fetchWithFallback<void>({
+    path: `/api/v1/decision-traces/${workflowId}/approvals`,
+    init: {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    },
+    fallbackFactory: () => undefined,
+    warningMessage: `[api] Could not submit approval for ${workflowId} in dev mode.`,
+    timeoutMs: ACTION_TIMEOUT_MS,
+    timeoutLabel: `submitApproval:${workflowId}`,
+  });
 }
 
 export async function listApprovals(workflowId: string): Promise<ApprovalEvent[]> {
-  if (USE_MOCK_FALLBACK) {
-    return [];
-  }
-
-  try {
-    const response = await apiFetch<{ items: ApprovalEvent[] }>(
-      `/api/v1/decision-traces/${workflowId}/approvals`,
-    );
-    return response.items;
-  } catch (err) {
-    if (!canFallback()) {
-      throw err;
-    }
-    console.warn(`[api] Could not fetch approvals for ${workflowId}.`, err);
-    return [];
-  }
+  const response = await fetchWithFallback<{ items: ApprovalEvent[] }>({
+    path: `/api/v1/decision-traces/${workflowId}/approvals`,
+    fallbackFactory: () => ({ items: [] }),
+    warningMessage: `[api] Could not fetch approvals for ${workflowId}.`,
+  });
+  return response.items;
 }

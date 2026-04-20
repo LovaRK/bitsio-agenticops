@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from apps.api.app.config import load_incidents
 from apps.api.app.dependencies import get_splunk_incident_service
-from apps.api.app.services.splunk_live import SplunkIncidentService
+from apps.api.app.services.contracts import IncidentServiceProtocol
 from packages.shared.auth import AuthContext, require_analyst
 
 router = APIRouter(prefix="/api/v1", tags=["incidents"])
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/v1", tags=["incidents"])
 @router.get("/incidents")
 def list_incidents(
     _ctx: AuthContext = Depends(require_analyst),
-    splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
+    splunk_service: IncidentServiceProtocol = Depends(get_splunk_incident_service),
 ) -> dict:
     """List incidents from live Splunk or return seed data."""
     try:

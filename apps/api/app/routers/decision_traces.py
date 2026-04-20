@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from apps.api.app.config import SEED_INCIDENTS, live_mode_enabled
 from apps.api.app.dependencies import get_splunk_incident_service, get_trace_store
-from apps.api.app.services.splunk_live import SplunkIncidentService
+from apps.api.app.services.contracts import IncidentServiceProtocol
 from apps.api.app.services.trace_service import TraceService
 from decision_tracing.models import ApprovalRequest
 from decision_tracing.store import InMemoryDecisionTraceStore
@@ -99,7 +99,7 @@ def _derive_governance_fields(trace: dict) -> dict:
 
 def _build_fallback_trace(
     workflow_id: str,
-    splunk_service: SplunkIncidentService,
+    splunk_service: IncidentServiceProtocol,
     reason: str | None = None,
 ) -> dict:
     incident_id = workflow_id.removeprefix("wf_")
@@ -208,7 +208,7 @@ def get_decision_trace(
     workflow_id: str,
     _ctx: AuthContext = Depends(require_analyst),
     store: InMemoryDecisionTraceStore = Depends(get_trace_store),
-    splunk_service: SplunkIncidentService = Depends(get_splunk_incident_service),
+    splunk_service: IncidentServiceProtocol = Depends(get_splunk_incident_service),
 ) -> dict:
     """Get a decision trace by workflow ID."""
     trace = store.get(workflow_id)

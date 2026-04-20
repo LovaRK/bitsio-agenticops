@@ -173,7 +173,34 @@ Policy from now:
 - typed contracts at boundaries (Pydantic/TS types)
 - no hidden behavior; runtime mode and data source must be visible in UI
 
-## 12. Current Known Priorities
+## 12. Production Folder Structure (Current)
+
+```
+apps/
+  api/
+    app/
+      routers/                  # HTTP contracts only
+      services/                 # business/service logic (DI-friendly)
+        runtime_profiles.py     # runtime-mode matrix + resolver
+        runtime_connectivity.py # model/splunk health checks
+        splunk_tunnel.py        # local tunnel orchestration
+        splunk_live.py          # live incident/trace assembly from Splunk
+      middleware/
+  web/
+    app/                        # route handlers/pages
+    components/                 # UI composition
+    lib/
+      services/                 # route-independent data services
+        serviceFetch.ts         # shared fallback + timeout fetch helper
+```
+
+Module boundary rules:
+- `routers/*` should be thin (validation + orchestration only).
+- shared runtime logic must live in `services/*` and be reused by routers.
+- web services should use `serviceFetch.ts` for fallback/timeout behavior instead of duplicating try/catch blocks.
+- feature pages (`/incidents`, `/fraud-risk`, `/telemetry-value`) should depend on service modules, not raw fetch.
+
+## 13. Current Known Priorities
 
 1. Keep live Splunk connectivity stable for demo scenarios (tunnel + mode sync)
 2. Continue codebase refactor pass module-by-module without behavior regressions
