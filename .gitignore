@@ -26,3 +26,8 @@ playwright-report/
 dist/
 coverage/
 *.log
+
+# Artifacts & Backups
+artifacts/
+apps/web/artifacts/
+backups/
