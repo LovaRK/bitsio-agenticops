@@ -168,6 +168,15 @@ export function TopBar() {
           >
             Metrics
           </Link>
+          <Link
+            className={`hover:text-on-surface transition-opacity text-sm font-medium ${
+              pathname.startsWith("/agent-portfolio") ? "text-on-surface" : "text-on-surface-variant"
+            }`}
+            href="/agent-portfolio"
+            title="Customer Health, Recovery, and Migration agents"
+          >
+            Portfolio
+          </Link>
         </nav>
       </div>
       <div className="relative flex items-center gap-4" ref={panelRef}>

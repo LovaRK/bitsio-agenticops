@@ -1,0 +1,220 @@
+{
+  "workflow_id": "wf_mig_m1n2o3p4q5r6",
+  "final_output": {
+    "migration_program_id": "MIG-QRADAR-2026-001",
+    "phase": "parallel_run",
+    "risk_score": 0.84,
+    "risk_band": "red",
+    "coverage_summary": {
+      "total": 312,
+      "mapped": 287,
+      "partial": 19,
+      "unmapped": 6,
+      "compliance_gaps": 6
+    },
+    "blocking_issues": [
+      {
+        "type": "compliance_gap",
+        "rule_id": "QR-0001",
+        "title": "Privileged account used off-hours (v3.2)",
+        "framework": "pci-dss"
+      },
+      {
+        "type": "compliance_gap",
+        "rule_id": "QR-0002",
+        "title": "VPN from anomalous geolocation (v2.1)",
+        "framework": "gdpr"
+      },
+      {
+        "type": "compliance_gap",
+        "rule_id": "QR-0003",
+        "title": "Cleartext password in log (v4.0)",
+        "framework": "pci-dss"
+      },
+      {
+        "type": "compliance_gap",
+        "rule_id": "QR-0004",
+        "title": "Cardholder data in non-PCI zone (v1.8)",
+        "framework": "pci-dss"
+      },
+      {
+        "type": "compliance_gap",
+        "rule_id": "QR-0005",
+        "title": "Unauthorized database access (v2.5)",
+        "framework": "sox"
+      },
+      {
+        "type": "compliance_gap",
+        "rule_id": "QR-0006",
+        "title": "Data exfiltration to external host (v3.1)",
+        "framework": "gdpr"
+      },
+      {
+        "type": "field_gap",
+        "field": "bytes_in",
+        "target_coverage": 71.2,
+        "delta": -28.8
+      },
+      {
+        "type": "field_gap",
+        "field": "user",
+        "target_coverage": 52.0,
+        "delta": -35.0
+      },
+      {
+        "type": "perf_regression",
+        "sourcetype": "checkpoint:firewall",
+        "p95_lag": 312.0,
+        "delta_pct": 593.3
+      }
+    ],
+    "recommended_actions": [],
+    "cutover_readiness": "no-go",
+    "confidence": 0.16,
+    "evidence_refs": [
+      "ev_mig01",
+      "ev_mig02",
+      "ev_mig03",
+      "ev_mig04",
+      "ev_mig05"
+    ],
+    "guardrail_notes": [],
+    "approval_required": true
+  },
+  "detection_diffs_summary": {
+    "total": 312,
+    "mapped": 287,
+    "partial": 19,
+    "unmapped": 6
+  },
+  "field_diffs": [
+    {
+      "cim_field": "src_ip",
+      "source_coverage_pct": 100.0,
+      "target_coverage_pct": 100.0,
+      "delta_pct": 0.0,
+      "blocking": false
+    },
+    {
+      "cim_field": "dest_ip",
+      "source_coverage_pct": 100.0,
+      "target_coverage_pct": 100.0,
+      "delta_pct": 0.0,
+      "blocking": false
+    },
+    {
+      "cim_field": "action",
+      "source_coverage_pct": 100.0,
+      "target_coverage_pct": 98.4,
+      "delta_pct": -1.6,
+      "blocking": false
+    },
+    {
+      "cim_field": "bytes_in",
+      "source_coverage_pct": 100.0,
+      "target_coverage_pct": 71.2,
+      "delta_pct": -28.8,
+      "blocking": true
+    },
+    {
+      "cim_field": "user",
+      "source_coverage_pct": 87.0,
+      "target_coverage_pct": 52.0,
+      "delta_pct": -35.0,
+      "blocking": true
+    }
+  ],
+  "perf_deltas": [
+    {
+      "sourcetype": "pan:traffic",
+      "source_p95_lag_seconds": 45,
+      "target_p95_lag_seconds": 48.2,
+      "delta_pct": 7.1
+    },
+    {
+      "sourcetype": "checkpoint:firewall",
+      "source_p95_lag_seconds": 45,
+      "target_p95_lag_seconds": 312.0,
+      "delta_pct": 593.3
+    },
+    {
+      "sourcetype": "cisco:asa",
+      "source_p95_lag_seconds": 38,
+      "target_p95_lag_seconds": 41.5,
+      "delta_pct": 9.2
+    },
+    {
+      "sourcetype": "linux:audit",
+      "source_p95_lag_seconds": 42,
+      "target_p95_lag_seconds": 44.1,
+      "delta_pct": 5.0
+    }
+  ],
+  "node_runs": [
+    {
+      "node_name": "migration_scope_ingest",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "source_inventory_retrieval",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "target_inventory_retrieval",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "asset_mapping",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "parity_probe",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "detection_coverage_diff",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "data_integrity_diff",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "performance_delta",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "risk_scoring",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "cutover_readiness_classification",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "recommended_actions",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "approval_check",
+      "status": "success",
+      "note": ""
+    },
+    {
+      "node_name": "final_response",
+      "status": "success",
+      "note": ""
+    }
+  ]
+}

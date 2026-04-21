@@ -41,6 +41,9 @@ export function ActionDock() {
       if (resolvedCount === 0) {
         setToastMessage("No high-priority pending incidents to resolve.");
         emitAppAlert({ level: "info", message: "No high-priority pending incidents to resolve." });
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+        return;
       } else {
         setToastMessage(
           `Successfully resolved ${resolvedCount} pending high-priority incident${resolvedCount > 1 ? "s" : ""}.`,
@@ -50,8 +53,12 @@ export function ActionDock() {
           message: `Quick resolve completed: ${resolvedCount} incident${resolvedCount > 1 ? "s" : ""}.`,
         });
       }
-      const refreshed = await listPendingApprovals({ suppressAlerts: true });
-      setPendingItems(refreshed);
+      try {
+        const refreshed = await listPendingApprovals({ suppressAlerts: true });
+        setPendingItems(refreshed);
+      } catch {
+        // Keep latest known queue in-memory; do not hard-fail quick resolve after successful submit.
+      }
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     } catch {

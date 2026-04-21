@@ -29,11 +29,12 @@ test("home page renders dashboard and incident stream", async ({ page }) => {
 test("non-llm tool shows inline tool details without token cards", async ({ page }) => {
   await page.goto("/incidents/inc_20260408_42");
   await page.getByTestId("tool-chip-run_search").first().click();
-  await expect(page.getByTestId("tool-explainability-inline")).toBeVisible();
-  await expect(page.getByText("Tool Details")).toBeVisible();
-  await expect(page.getByText("What This Tool Is Responsible For")).toBeVisible();
-  await expect(page.getByText("Why no tokens/cost")).toBeVisible();
-  await expect(page.getByText("Prompt Tokens")).toHaveCount(0);
-  await expect(page.getByText("Completion Tokens")).toHaveCount(0);
-  await expect(page.getByText("Total Tokens")).toHaveCount(0);
+  await expect(page.getByTestId("tool-explainability-inline").first()).toBeVisible();
+  const runSearchPanel = page.getByTestId("tool-details-run-search").first();
+  await expect(runSearchPanel.getByText("Tool Details")).toBeVisible();
+  await expect(runSearchPanel.getByText("What This Tool Is Responsible For")).toBeVisible();
+  await expect(runSearchPanel.getByText("Why no tokens/cost")).toBeVisible();
+  await expect(runSearchPanel.getByText("Prompt Tokens")).toHaveCount(0);
+  await expect(runSearchPanel.getByText("Completion Tokens")).toHaveCount(0);
+  await expect(runSearchPanel.getByText("Total Tokens")).toHaveCount(0);
 });

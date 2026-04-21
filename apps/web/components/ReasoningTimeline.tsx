@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { DecisionTrace, MetricSource, NodeRun, ToolCall } from "@/types/decision-trace";
@@ -71,7 +71,7 @@ export function ReasoningTimeline({
   const router = useRouter();
   const [dockVisible, setDockVisible] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedToolKey, setSelectedToolKey] = useState<string | null>(null);
+  const [expandedToolKeys, setExpandedToolKeys] = useState<Record<string, boolean>>({});
 
   const toolCallDisplayByNode = useMemo(() => {
     const fallbackByNode: Record<string, Array<{ tool_name: string; status: string; tool_type?: ToolCall["tool_type"] }>> = {
@@ -210,6 +210,23 @@ export function ReasoningTimeline({
       ? `${runMetadata.model_provider}/${runMetadata.runtime_mode}`
       : "unknown";
 
+  useEffect(() => {
+    const allToolKeys = nodeRuns.flatMap((node) => {
+      const toolCalls = toolCallDisplayByNode[node.node_name] || [];
+      return toolCalls.map((tool, index) => `${node.node_name}-${tool.tool_name}-${index}`);
+    });
+    setExpandedToolKeys((prev) => {
+      const hasAnySelection = Object.keys(prev).length > 0;
+      if (hasAnySelection) {
+        return prev;
+      }
+      return allToolKeys.reduce<Record<string, boolean>>((acc, key) => {
+        acc[key] = true;
+        return acc;
+      }, {});
+    });
+  }, [nodeRuns, toolCallDisplayByNode]);
+
   return (
     <div className="col-span-12 lg:col-span-8 space-y-6">
       <div className="flex items-center justify-between mb-4">
@@ -230,23 +247,9 @@ export function ReasoningTimeline({
           const styles = getStatusStyles(node.status);
           const toolCalls = toolCallDisplayByNode[node.node_name] || [];
           const isLocked = node.status === "fail";
-          const selectedToolIndex = toolCalls.findIndex(
-            (tool, i) => `${node.node_name}-${tool.tool_name}-${i}` === selectedToolKey,
-          );
-          const selectedTool = selectedToolIndex >= 0 ? toolCalls[selectedToolIndex] : null;
-          const selectedExplainability = selectedTool
-            ? buildExplainability(node, selectedTool, selectedToolIndex)
-            : null;
-          const selectedToolIsLlm =
-            selectedTool?.tool_type === "llm" || selectedTool?.tool_name.toLowerCase().includes("llm");
-          const providerLabel =
-            selectedExplainability?.provider === "unknown" && selectedToolIsLlm
-              ? runtimeProviderLabel
-              : selectedExplainability?.provider ?? "unknown";
-          const modelLabel =
-            selectedExplainability?.modelName === "unknown" && selectedToolIsLlm
-              ? (runMetadata?.model_name ?? "unknown")
-              : selectedExplainability?.modelName ?? "unknown";
+          const expandedTools = toolCalls
+            .map((tool, i) => ({ tool, index: i, key: `${node.node_name}-${tool.tool_name}-${i}` }))
+            .filter((entry) => expandedToolKeys[entry.key]);
 
           return (
             <motion.div
@@ -305,12 +308,17 @@ export function ReasoningTimeline({
                         <div className="grid grid-cols-2 gap-2">
                           {toolCalls.map((tool, i) => {
                             const toolKey = `${node.node_name}-${tool.tool_name}-${i}`;
-                            const isSelected = toolKey === selectedToolKey;
+                            const isSelected = Boolean(expandedToolKeys[toolKey]);
                             return (
                               <button
                                 key={toolKey}
                                 type="button"
-                                onClick={() => setSelectedToolKey(isSelected ? null : toolKey)}
+                                onClick={() =>
+                                  setExpandedToolKeys((prev) => ({
+                                    ...prev,
+                                    [toolKey]: true,
+                                  }))
+                                }
                                 className={`bg-surface-container-lowest p-2 rounded text-[10px] font-mono flex items-center gap-2 border transition-all ${
                                   isSelected
                                     ? "border-primary text-primary ring-1 ring-primary/30"
@@ -339,151 +347,174 @@ export function ReasoningTimeline({
                           })}
                         </div>
 
-                        {selectedTool && selectedExplainability ? (
-                          <section
-                            className="mt-4 rounded-2xl border border-outline-variant/20 bg-surface-container p-4"
-                            data-testid="tool-explainability-inline"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-on-surface-variant">
-                                  {selectedToolIsLlm ? "AI Explainability" : "Tool Details"}
-                                </p>
-                                <h4 className="mt-1 text-base font-bold text-on-surface font-headline">
-                                  {selectedTool.tool_name}
-                                </h4>
-                                <p className="mt-1 text-xs text-on-surface-variant">
-                                  Node: <span className="font-mono">{node.node_name}</span> | Status:{" "}
-                                  <span className="font-semibold">{selectedTool.status}</span>
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedToolKey(null)}
-                                className="rounded-lg border border-outline-variant/30 px-2 py-1 text-xs text-on-surface-variant hover:bg-surface-container-high"
-                              >
-                                Close
-                              </button>
-                            </div>
+                        {expandedTools.length > 0 ? (
+                          <div data-testid="tool-explainability-inline">
+                            {expandedTools.map(({ tool, index, key }) => {
+                          const explainability = buildExplainability(node, tool, index);
+                          const toolIsLlm = tool.tool_type === "llm" || tool.tool_name.toLowerCase().includes("llm");
+                          const providerLabel =
+                            explainability.provider === "unknown" && toolIsLlm
+                              ? runtimeProviderLabel
+                              : explainability.provider ?? "unknown";
+                          const modelLabel =
+                            explainability.modelName === "unknown" && toolIsLlm
+                              ? (runMetadata?.model_name ?? "unknown")
+                              : explainability.modelName ?? "unknown";
 
-                            <div className="mt-3 rounded-lg border border-outline-variant/15 bg-surface-container-low p-3">
-                              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                What This Tool Is Responsible For
-                              </p>
-                              <p className="mt-1 text-sm text-on-surface">{getToolDescription(selectedTool)}</p>
-                            </div>
-
-                            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-                              <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
-                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Latency</p>
-                                <p className="mt-1 text-sm font-semibold text-on-surface">
-                                  {selectedExplainability.latencyMs}ms
-                                </p>
-                                <span
-                                  className={`inline-block mt-2 px-2 py-0.5 text-[10px] border rounded ${sourceBadgeClass(selectedExplainability.latencySource)}`}
+                          return (
+                            <section
+                              key={key}
+                              className="mt-4 rounded-2xl border border-outline-variant/20 bg-surface-container p-4"
+                              data-testid={`tool-details-${tool.tool_name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-on-surface-variant">
+                                    {toolIsLlm ? "AI Explainability" : "Tool Details"}
+                                  </p>
+                                  <h4 className="mt-1 text-base font-bold text-on-surface font-headline">
+                                    {tool.tool_name}
+                                  </h4>
+                                  <p className="mt-1 text-xs text-on-surface-variant">
+                                    Node: <span className="font-mono">{node.node_name}</span> | Status:{" "}
+                                    <span className="font-semibold">{tool.status}</span>
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedToolKeys((prev) => ({
+                                      ...prev,
+                                      [key]: false,
+                                    }))
+                                  }
+                                  className="rounded-lg border border-outline-variant/30 px-2 py-1 text-xs text-on-surface-variant hover:bg-surface-container-high"
                                 >
-                                  {sourceBadgeLabel(selectedExplainability.latencySource)}
-                                </span>
+                                  Close
+                                </button>
                               </div>
-                              <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+
+                              <div className="mt-3 rounded-lg border border-outline-variant/15 bg-surface-container-low p-3">
                                 <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                  Confidence Contribution
+                                  What This Tool Is Responsible For
                                 </p>
-                                <p className="mt-1 text-sm font-semibold text-on-surface">
-                                  +{Math.round(selectedExplainability.confidenceImpact * 100)}%
-                                </p>
-                                <span
-                                  className={`inline-block mt-2 px-2 py-0.5 text-[10px] border rounded ${sourceBadgeClass(selectedExplainability.confidenceSource)}`}
-                                >
-                                  {sourceBadgeLabel(selectedExplainability.confidenceSource)}
-                                </span>
+                                <p className="mt-1 text-sm text-on-surface">{getToolDescription(tool)}</p>
                               </div>
-                              <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
-                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Runtime</p>
-                                <p className="mt-1 text-sm font-mono text-on-surface">{providerLabel}</p>
-                                <p className="mt-1 text-xs font-mono text-on-surface-variant">Model: {modelLabel}</p>
-                              </div>
-                            </div>
 
-                            {selectedToolIsLlm ? (
-                              <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+                              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
-                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                    Prompt Tokens
-                                  </p>
+                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Latency</p>
                                   <p className="mt-1 text-sm font-semibold text-on-surface">
-                                    {selectedExplainability.promptTokensLabel}
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
-                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                    Completion Tokens
-                                  </p>
-                                  <p className="mt-1 text-sm font-semibold text-on-surface">
-                                    {selectedExplainability.completionTokensLabel}
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
-                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                    Total Tokens
-                                  </p>
-                                  <p className="mt-1 text-sm font-semibold text-on-surface">
-                                    {selectedExplainability.totalTokensLabel}
-                                  </p>
-                                </div>
-                                <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
-                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                    Token Source
+                                    {explainability.latencyMs}ms
                                   </p>
                                   <span
-                                    className={`inline-block mt-1 px-2 py-0.5 text-[10px] border rounded ${sourceBadgeClass(selectedExplainability.tokenSource)}`}
+                                    className={`inline-block mt-2 px-2 py-0.5 text-[10px] border rounded ${sourceBadgeClass(explainability.latencySource)}`}
                                   >
-                                    {sourceBadgeLabel(selectedExplainability.tokenSource)}
+                                    {sourceBadgeLabel(explainability.latencySource)}
                                   </span>
                                 </div>
+                                <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                                    Confidence Contribution
+                                  </p>
+                                  <p className="mt-1 text-sm font-semibold text-on-surface">
+                                    +{Math.round(explainability.confidenceImpact * 100)}%
+                                  </p>
+                                  <span
+                                    className={`inline-block mt-2 px-2 py-0.5 text-[10px] border rounded ${sourceBadgeClass(explainability.confidenceSource)}`}
+                                  >
+                                    {sourceBadgeLabel(explainability.confidenceSource)}
+                                  </span>
+                                </div>
+                                <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Runtime</p>
+                                  <p className="mt-1 text-sm font-mono text-on-surface">{providerLabel}</p>
+                                  <p className="mt-1 text-xs font-mono text-on-surface-variant">Model: {modelLabel}</p>
+                                </div>
                               </div>
-                            ) : (
-                              <div className="mt-3 rounded-lg border border-outline-variant/15 bg-surface-container p-3">
-                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                  Why no tokens/cost
-                                </p>
-                                <p className="mt-1 text-xs text-on-surface">
-                                  This tool is deterministic/retrieval-only and does not invoke an LLM, so token and
-                                  model cost accounting are not applicable.
-                                </p>
-                              </div>
-                            )}
 
-                            <div className="mt-3 grid md:grid-cols-2 gap-3">
-                              <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
-                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                  Input Used
-                                </p>
-                                <p className="mt-1 text-xs text-on-surface leading-relaxed">
-                                  {selectedExplainability.inputPreview}
-                                </p>
-                              </div>
-                              <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
-                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
-                                  Output Produced
-                                </p>
-                                <p className="mt-1 text-xs text-on-surface leading-relaxed">
-                                  {selectedExplainability.outputPreview}
-                                </p>
-                              </div>
-                            </div>
+                              {toolIsLlm ? (
+                                <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+                                  <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+                                    <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                                      Prompt Tokens
+                                    </p>
+                                    <p className="mt-1 text-sm font-semibold text-on-surface">
+                                      {explainability.promptTokensLabel}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+                                    <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                                      Completion Tokens
+                                    </p>
+                                    <p className="mt-1 text-sm font-semibold text-on-surface">
+                                      {explainability.completionTokensLabel}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+                                    <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                                      Total Tokens
+                                    </p>
+                                    <p className="mt-1 text-sm font-semibold text-on-surface">
+                                      {explainability.totalTokensLabel}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+                                    <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                                      Token Source
+                                    </p>
+                                    <span
+                                      className={`inline-block mt-1 px-2 py-0.5 text-[10px] border rounded ${sourceBadgeClass(explainability.tokenSource)}`}
+                                    >
+                                      {sourceBadgeLabel(explainability.tokenSource)}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="mt-3 rounded-lg border border-outline-variant/15 bg-surface-container p-3">
+                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                                    Why no tokens/cost
+                                  </p>
+                                  <p className="mt-1 text-xs text-on-surface">
+                                    This tool is deterministic/retrieval-only and does not invoke an LLM, so token and
+                                    model cost accounting are not applicable.
+                                  </p>
+                                </div>
+                              )}
 
-                            {selectedExplainability.notes.length > 0 ? (
-                              <div className="mt-3 rounded-lg border border-outline-variant/20 bg-surface-container p-3">
-                                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Notes</p>
-                                <ul className="mt-1 text-xs text-on-surface space-y-1">
-                                  {selectedExplainability.notes.map((note) => (
-                                    <li key={note}>{note}</li>
-                                  ))}
-                                </ul>
+                              <div className="mt-3 grid md:grid-cols-2 gap-3">
+                                <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                                    Input Used
+                                  </p>
+                                  <p className="mt-1 text-xs text-on-surface leading-relaxed">
+                                    {explainability.inputPreview}
+                                  </p>
+                                </div>
+                                <div className="rounded-lg bg-surface-container p-3 border border-outline-variant/15">
+                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">
+                                    Output Produced
+                                  </p>
+                                  <p className="mt-1 text-xs text-on-surface leading-relaxed">
+                                    {explainability.outputPreview}
+                                  </p>
+                                </div>
                               </div>
-                            ) : null}
-                          </section>
+
+                              {explainability.notes.length > 0 ? (
+                                <div className="mt-3 rounded-lg border border-outline-variant/20 bg-surface-container p-3">
+                                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Notes</p>
+                                  <ul className="mt-1 text-xs text-on-surface space-y-1">
+                                    {explainability.notes.map((note) => (
+                                      <li key={note}>{note}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : null}
+                            </section>
+                          );
+                            })}
+                          </div>
                         ) : null}
                       </>
                     )}

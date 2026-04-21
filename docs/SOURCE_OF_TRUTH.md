@@ -1,6 +1,6 @@
 # BitsIO AgenticOps — Single Source of Truth
 
-Last updated: 2026-04-20
+Last updated: 2026-04-20 (evening)
 Owner: Core Engineering (Codex-led)
 Status: Canonical
 
@@ -21,6 +21,7 @@ Current primary feature surfaces:
 - Monitoring (`/monitoring`)
 - Telemetry Value Impact (`/telemetry-value`)
 - Fraud Risk Analysis (`/fraud-risk`)
+- Agent Portfolio (`/agent-portfolio`) — Customer Health, Recovery Orchestrator, Migration Assurance
 - Settings (`/settings`)
 
 ## 2. Architecture
@@ -157,6 +158,9 @@ Browser/runtime checks (required before release):
 - root + core tabs return HTTP 200 while local web/api are running
 - runtime settings actions emit success/error user alerts
 - route transition animation and hover help remain functional
+- incident context enrichment failures must not spam global toast errors
+- quick resolve must return informative empty-state when no high-priority approvals exist
+- incident tool detail cards are expanded by default and user-collapsible
 
 ## 9. Branching Strategy
 
@@ -221,6 +225,66 @@ Module boundary rules:
 1. Keep live Splunk connectivity stable for demo scenarios (tunnel + mode sync)
 2. Continue codebase refactor pass module-by-module without behavior regressions
 3. Maintain this document as the source all coding agents read first
+
+## 14. Latest Implemented Behavior (2026-04-20)
+
+- Settings runtime apply action uses theme-aligned container styling for light/dark consistency.
+- Enrichment API calls (`/api/v1/incidents/{id}/enrich`) are handled as local context failures and no longer emit noisy global alert spam.
+- Action dock quick resolve:
+  - shows info state when no high-priority pending approvals are present
+  - avoids false failure after successful resolves if background refresh fails
+- Reasoning timeline tool details:
+  - open by default for visible tool chips
+  - user can collapse each panel via `Close`
+  - chip interaction is open-first (non-destructive to default-open behavior)
+- E2E contract updated to support multi-expanded tool details while preserving non-LLM token-visibility rules.
+
+## 15. Validation Snapshot (2026-04-20)
+
+Repository checkpoint:
+- baseline commit reference: `410328e` (plus current local unpushed changes)
+
+Automated checks:
+- `make test` -> 142 passed
+- `make eval` -> 6/6 passed (100.00%)
+- `make api-smoke` -> passed
+- `pnpm --filter web test:e2e` -> 11 passed
+- `pnpm --filter web lint` -> pass with 2 non-blocking warnings (`no-page-custom-font`, `no-img-element`)
+
+Route smoke checks (local web at `127.0.0.1:3000`):
+- `/` -> 200
+- `/incidents` -> 200
+- `/approvals` -> 200
+- `/monitoring` -> 200
+- `/telemetry-value` -> 200
+- `/fraud-risk` -> 200
+- `/agent-portfolio` -> 200
+- `/settings` -> 200
+
+API health:
+- `GET /health` on `127.0.0.1:8001` -> `{"status":"ok", ...}`
+
+## 16. Imported Dashboard Integration (2026-04-20)
+
+User-provided file integrated:
+- source file: `/Users/ramakrishna/Downloads/agenticops_dashboard.html`
+- packaged data source: `/Users/ramakrishna/Downloads/files.zip`
+
+Implementation in app:
+- new route: `/agent-portfolio`
+- page file: `apps/web/app/agent-portfolio/page.tsx`
+- data loader: `apps/web/lib/services/agentPortfolio.ts`
+- imported datasets:
+  - `apps/web/lib/mocks/agent_portfolio/customer_health.json`
+  - `apps/web/lib/mocks/agent_portfolio/recovery_orchestrator.json`
+  - `apps/web/lib/mocks/agent_portfolio/migration_assurance.json`
+- navigation integrated in:
+  - `apps/web/components/SideNav.tsx`
+  - `apps/web/components/TopBar.tsx`
+
+Scope note:
+- This integration preserves existing app architecture and theme.
+- It is currently a curated packaged-data portfolio view; it does not replace live incident/fraud/telemetry runtime flows.
 
 ---
 

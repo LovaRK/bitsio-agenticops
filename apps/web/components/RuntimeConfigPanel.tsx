@@ -349,7 +349,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             onClick={handleApply}
             disabled={saving || testing}
             title={TOOLTIP.settings.apply}
-            className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+            className="rounded-lg border border-primary/25 bg-primary-container px-4 py-2 text-xs font-bold text-on-primary-container transition-colors hover:bg-primary-container/90 disabled:opacity-60"
           >
             <span className="inline-flex items-center gap-2">
               {saving ? (
@@ -387,7 +387,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
               </button>
               <button
                 type="button"
-                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-60"
+                className="rounded-lg border border-primary/25 bg-primary-container px-4 py-2 text-xs font-bold text-on-primary-container transition-colors hover:bg-primary-container/90 disabled:opacity-60"
                 onClick={async () => {
                   setShowCloudLiveConfirm(false);
                   await performApply();

@@ -15,6 +15,7 @@ type NavItem = {
     | "/fraud-risk"
     | "/waste"
     | "/telemetry-value"
+    | "/agent-portfolio"
     | "/settings"
     | "/support";
 };
@@ -33,6 +34,7 @@ export function SideNav() {
     { label: "Monitoring", icon: "monitoring", href: "/monitoring" },
     { label: "Fraud Risk Agent", icon: "gpp_maybe", href: "/fraud-risk" },
     { label: "Telemetry Value Impact", icon: "paid", href: "/telemetry-value" },
+    { label: "Agent Portfolio", icon: "hub", href: "/agent-portfolio" },
   ];
 
   const isActive = (href: string) => {
@@ -48,6 +50,7 @@ export function SideNav() {
       { label: "Go to Monitoring", hint: "System health", href: "/monitoring" as const },
       { label: "Go to Fraud Risk Agent", hint: "CFO / Audit demo", href: "/fraud-risk" as const },
       { label: "Go to Telemetry Value Impact", hint: "ROI and savings", href: "/telemetry-value" as const },
+      { label: "Go to Agent Portfolio", hint: "Wave 4-6 agents", href: "/agent-portfolio" as const },
       { label: "Open Settings", hint: "Runtime control", href: "/settings" as const },
       { label: "Open Support", hint: "Help resources", href: "/support" as const },
     ],

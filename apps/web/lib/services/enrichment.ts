@@ -28,5 +28,6 @@ export async function fetchEnrichment(
   return apiFetch<EnrichedIncidentResponse>(`/api/v1/incidents/${incidentId}/enrich`, {
     method: "POST",
     body: JSON.stringify({ force_refresh: forceRefresh }),
+    suppressAlerts: true,
   });
 }
