@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from apps.api.app.dependencies import get_splunk_adapter
+from apps.api.app.dependencies import get_splunk_adapter_native_default
 from apps.api.app.main import app
 from packages.shared.config.settings import get_settings
 from splunk_mcp.dtos import IndexDTO, SearchResultDTO, ServerInfoDTO
@@ -58,14 +58,14 @@ def test_fraud_overview_seed_mode() -> None:
 
 
 def test_fraud_overview_live_uses_adapter_override() -> None:
-    app.dependency_overrides[get_splunk_adapter] = lambda: DummyLiveAdapter()
+    app.dependency_overrides[get_splunk_adapter_native_default] = lambda: DummyLiveAdapter()
     try:
         response = client.get(
             "/api/v1/fraud/overview?mode=live",
             headers={"x-api-key": "dev-analyst"},
         )
     finally:
-        app.dependency_overrides.pop(get_splunk_adapter, None)
+        app.dependency_overrides.pop(get_splunk_adapter_native_default, None)
 
     assert response.status_code == 200
     payload = response.json()
@@ -84,11 +84,11 @@ def test_fraud_analyze_live_requires_live_mode(monkeypatch) -> None:
 def test_fraud_analyze_live_success(monkeypatch) -> None:
     monkeypatch.setenv("SPLUNK_LIVE_MODE", "true")
     get_settings.cache_clear()
-    app.dependency_overrides[get_splunk_adapter] = lambda: DummyLiveAdapter()
+    app.dependency_overrides[get_splunk_adapter_native_default] = lambda: DummyLiveAdapter()
     try:
         response = client.post("/api/v1/fraud/analyze/live", headers={"x-api-key": "dev-analyst"})
     finally:
-        app.dependency_overrides.pop(get_splunk_adapter, None)
+        app.dependency_overrides.pop(get_splunk_adapter_native_default, None)
         monkeypatch.delenv("SPLUNK_LIVE_MODE", raising=False)
         get_settings.cache_clear()
 

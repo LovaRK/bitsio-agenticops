@@ -27,15 +27,18 @@ export function SideNav() {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const navItems: NavItem[] = [
-    { label: "Dashboard", icon: "dashboard", href: "/" },
-    { label: "Incidents", icon: "error_med", href: "/incidents" },
-    { label: "Approvals", icon: "check_circle", href: "/approvals" },
-    { label: "Monitoring", icon: "monitoring", href: "/monitoring" },
-    { label: "Fraud Risk Agent", icon: "gpp_maybe", href: "/fraud-risk" },
-    { label: "Telemetry Value Impact", icon: "paid", href: "/telemetry-value" },
-    { label: "Agent Portfolio", icon: "hub", href: "/agent-portfolio" },
-  ];
+  const navItems: NavItem[] = useMemo(
+    () => [
+      { label: "Dashboard", icon: "dashboard", href: "/" },
+      { label: "Incidents", icon: "error_med", href: "/incidents" },
+      { label: "Approvals", icon: "check_circle", href: "/approvals" },
+      { label: "Monitoring", icon: "monitoring", href: "/monitoring" },
+      { label: "Fraud Risk Agent", icon: "gpp_maybe", href: "/fraud-risk" },
+      { label: "Telemetry Value Impact", icon: "paid", href: "/telemetry-value" },
+      { label: "Agent Portfolio", icon: "hub", href: "/agent-portfolio" },
+    ],
+    []
+  );
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -107,9 +110,15 @@ export function SideNav() {
     setActiveIndex(0);
   }, [query, isPaletteOpen]);
 
+  useEffect(() => {
+    navItems.forEach((item) => router.prefetch(item.href));
+    router.prefetch("/settings");
+    router.prefetch("/support");
+  }, [navItems, router]);
+
   return (
     <>
-      <aside className="fixed top-0 left-0 h-screen w-64 border-r border-outline-variant/15 bg-surface-container-lowest flex flex-col py-6 px-4 z-50">
+      <aside className="fixed top-0 left-0 h-screen w-64 border-r border-outline-variant/15 bg-surface-container-lowest hidden lg:flex flex-col py-6 px-4 z-50">
         <div className="mb-10 px-2">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary-container flex items-center justify-center rounded-lg">
@@ -178,6 +187,35 @@ export function SideNav() {
           </Link>
         </div>
       </aside>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-outline-variant/20 bg-surface-container-low/95 backdrop-blur-xl lg:hidden">
+        <div className="grid grid-cols-5 px-2 py-1">
+          {navItems.slice(0, 5).map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={`Open ${item.label}`}
+              className={`flex flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-2 transition-colors ${
+                isActive(item.href)
+                  ? "text-on-surface bg-surface-container-high"
+                  : "text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
+              <span className="text-[10px] font-semibold tracking-tight">{item.label.split(" ")[0]}</span>
+            </Link>
+          ))}
+        </div>
+      </nav>
+
+      <button
+        type="button"
+        onClick={() => setIsPaletteOpen(true)}
+        title="Open command palette (Cmd/Ctrl + K)"
+        className="fixed bottom-20 right-4 z-[90] rounded-full bg-primary text-on-primary shadow-xl p-3 lg:hidden"
+      >
+        <span className="material-symbols-outlined text-lg">search</span>
+      </button>
 
       {isPaletteOpen && (
         <div

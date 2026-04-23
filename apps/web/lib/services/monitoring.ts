@@ -14,5 +14,7 @@ export async function getMonitoringOverview(): Promise<MonitoringOverview> {
     fallbackFactory: mockMonitoringOverview,
     warningMessage: "[api] Could not fetch monitoring overview, using mock data.",
     allowFallback: MAIN_TABS_ALLOW_FALLBACK,
+    timeoutMs: 30000,
+    timeoutLabel: "monitoring-overview",
   });
 }

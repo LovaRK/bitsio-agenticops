@@ -6,7 +6,7 @@ export default async function SupportPage() {
   const resources = await getSupportResources();
 
   return (
-    <section className="pt-6 pb-12 px-8" data-testid="support-page">
+    <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="support-page">
       <div className="mb-10 text-center max-w-2xl mx-auto">
         <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight mb-2">
           Knowledge Base & Support

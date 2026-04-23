@@ -24,7 +24,7 @@ def runtime_mode_config(mode: RuntimeMode) -> dict[str, str | bool]:
     if mode == RuntimeMode.LOCAL_DEV:
         return {
             "model_provider": "ollama",
-            "model_name": "qwen2.5:14b",
+            "model_name": "qwen2.5:7b",
             "model_mock_mode": False,
             "splunk_live_mode": False,
             "splunk_adapter_mode": "auto",
@@ -32,7 +32,7 @@ def runtime_mode_config(mode: RuntimeMode) -> dict[str, str | bool]:
     if mode == RuntimeMode.LOCAL_INTEGRATION:
         return {
             "model_provider": "ollama",
-            "model_name": "qwen2.5:14b",
+            "model_name": "qwen2.5:7b",
             "model_mock_mode": False,
             "splunk_live_mode": True,
             "splunk_adapter_mode": "native",

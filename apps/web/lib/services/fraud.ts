@@ -9,6 +9,8 @@ export async function getFraudOverview(mode: "auto" | "seed" | "live" = "auto"):
     fallbackFactory: mockFraudOverview,
     warningMessage: "[api] Could not fetch fraud overview, using mock fallback.",
     allowFallback: mode !== "live",
+    timeoutMs: mode === "live" ? 4500 : 2500,
+    timeoutLabel: mode === "live" ? "fraud-live-overview" : "fraud-overview",
   });
 }
 

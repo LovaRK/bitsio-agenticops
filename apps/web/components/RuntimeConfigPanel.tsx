@@ -16,7 +16,7 @@ type ModelProvider = "ollama" | "anthropic" | "stub";
 type AdapterMode = "mcp" | "native" | "auto";
 type RuntimeMode = "LOCAL_DEV" | "LOCAL_INTEGRATION" | "CLOUD_MODEL_TEST" | "CLOUD_LIVE";
 
-const OLLAMA_MODELS = ["qwen2.5:14b", "llama3.1:8b", "mistral:7b-instruct"];
+const OLLAMA_MODELS = ["qwen2.5:7b", "qwen2.5:14b", "llama3.1:8b", "mistral:7b-instruct"];
 const ANTHROPIC_MODELS = ["claude-haiku-4-5-20251001", "claude-sonnet-4-5-20251001"];
 
 function ToggleRow(props: {
@@ -79,12 +79,19 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [connectionReport, setConnectionReport] = useState<string | null>(null);
   const [connectionOk, setConnectionOk] = useState<boolean | null>(null);
+  const [adapterTruth, setAdapterTruth] = useState<{
+    configured: string;
+    deterministic: string;
+    agentic: string;
+    backend: string;
+  } | null>(null);
 
   const modelCandidates = modelProvider === "anthropic" ? ANTHROPIC_MODELS : OLLAMA_MODELS;
 
   useEffect(() => {
     setConnectionReport(null);
     setConnectionOk(null);
+    setAdapterTruth(null);
     setError(null);
   }, [runtimeMode, modelProvider, modelName, adapterMode, mockMode, liveDataMode]);
 
@@ -106,7 +113,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
 
     if (next === "LOCAL_DEV") {
       setModelProvider("ollama");
-      setModelName("qwen2.5:14b");
+      setModelName("qwen2.5:7b");
       setMockMode(false);
       setLiveDataMode(false);
       setAdapterMode("auto");
@@ -115,7 +122,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
 
     if (next === "LOCAL_INTEGRATION") {
       setModelProvider("ollama");
-      setModelName("qwen2.5:14b");
+      setModelName("qwen2.5:7b");
       setMockMode(false);
       setLiveDataMode(true);
       setAdapterMode("native");
@@ -189,6 +196,7 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
     setError(null);
     setConnectionReport(null);
     setConnectionOk(null);
+    setAdapterTruth(null);
 
     try {
       const result = await checkRuntimeConnections();
@@ -197,6 +205,19 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
         `Splunk: ${result.splunk.connected ? "Connected" : "Not connected"} (${result.splunk.detail})`,
       ].join(" | ");
       setConnectionReport(summary);
+      if (
+        result.splunk.configured_adapter_mode &&
+        result.splunk.resolved_adapter_mode &&
+        result.splunk.resolved_agentic_mode &&
+        result.splunk.backend
+      ) {
+        setAdapterTruth({
+          configured: result.splunk.configured_adapter_mode,
+          deterministic: result.splunk.resolved_adapter_mode,
+          agentic: result.splunk.resolved_agentic_mode,
+          backend: result.splunk.backend,
+        });
+      }
       setConnectionOk(result.model.connected && result.splunk.connected);
       emitAppAlert({
         level: result.model.connected && result.splunk.connected ? "success" : "warning",
@@ -284,9 +305,15 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
             onChange={(e) => setModelName(e.target.value)}
             list="model-candidate-list"
             placeholder="Pick from list or type custom model"
-            disabled
+            disabled={saving || testing}
             className="mt-2 w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
           />
+          {modelProvider === "ollama" ? (
+            <p className="mt-2 text-[11px] text-on-surface-variant normal-case tracking-normal">
+              Recommended: <span className="text-on-surface">qwen2.5:7b</span> for speed.
+              Use <span className="text-on-surface">qwen2.5:14b</span> for high-quality reasoning.
+            </p>
+          ) : null}
           <datalist id="model-candidate-list">
             {modelCandidates.map((candidate) => (
               <option key={candidate} value={candidate} />
@@ -323,6 +350,17 @@ export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
           >
             {connectionReport}
           </p>
+        ) : null}
+        {adapterTruth ? (
+          <div className="md:col-span-2 rounded-lg border border-outline-variant/20 bg-surface-container-lowest px-3 py-3">
+            <p className="text-[11px] uppercase tracking-wider text-on-surface-variant">Adapter Resolution</p>
+            <p className="mt-1 text-xs text-on-surface">
+              Configured: <span className="font-semibold">{adapterTruth.configured}</span> | Deterministic
+              effective: <span className="font-semibold">{adapterTruth.deterministic}</span> | Agentic
+              effective: <span className="font-semibold">{adapterTruth.agentic}</span> | Backend:{" "}
+              <span className="font-semibold">{adapterTruth.backend}</span>
+            </p>
+          </div>
         ) : null}
         {error ? <p className="md:col-span-2 text-xs text-error">{error}</p> : null}
 

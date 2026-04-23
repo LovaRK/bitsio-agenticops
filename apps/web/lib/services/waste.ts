@@ -1,6 +1,6 @@
 import type { WasteDemoResponse, TelemetryMetricsResponse } from "@/types/api";
 import type { TelemetryValueServiceContract } from "@/lib/services/contracts";
-import { MAIN_TABS_ALLOW_FALLBACK } from "@/lib/config";
+import { MAIN_TABS_ALLOW_FALLBACK, TELEMETRY_METRICS_TIMEOUT_MS } from "@/lib/config";
 import { apiFetch, withTimeout } from "@/lib/http";
 import telemetryValueStory from "@/lib/mocks/telemetry_value_story.json";
 import { fetchWithFallback } from "@/lib/services/serviceFetch";
@@ -69,6 +69,39 @@ export async function getWasteLive(
 }
 
 function createMockTelemetryMetrics(): TelemetryMetricsResponse {
+  const queryPlan: TelemetryMetricsResponse["query_plan"] = [
+    {
+      id: "index_volume_profile",
+      description: "Estimate ingest volume by index and source type.",
+      purpose: "Build annual spend baseline from observed ingest.",
+      query:
+        "search index=* earliest=-30d latest=now | eval event_bytes=len(_raw) | stats count AS total_events sum(event_bytes) AS total_bytes BY index, sourcetype",
+      window_days: 30,
+      status: "planned",
+      backend: "splunk-auto",
+    },
+    {
+      id: "search_usage_by_sourcetype",
+      description: "Measure search usage by source type from audit logs.",
+      purpose: "Detect under-utilized sources over the query window.",
+      query:
+        'index=_audit action=search earliest=-30d latest=now | rex field=search "sourcetype=(?<source_type>[^\\\\s|]+)" | stats count AS search_count_90d BY source_type',
+      window_days: 30,
+      status: "planned",
+      backend: "splunk-auto",
+    },
+    {
+      id: "search_usage_by_index",
+      description: "Measure search usage by index from audit logs.",
+      purpose: "Validate index-level demand and dashboard usage signal.",
+      query:
+        'index=_audit action=search earliest=-30d latest=now | rex field=search "index=(?<index_name>[^\\\\s|]+)" | stats count AS search_count_90d BY index_name',
+      window_days: 30,
+      status: "planned",
+      backend: "splunk-auto",
+    },
+  ];
+
   return {
     summary: {
       total_annual_spend_usd: 2400000,
@@ -256,6 +289,15 @@ function createMockTelemetryMetrics(): TelemetryMetricsResponse {
         optimized_trajectory_usd: 1820000,
       },
     ],
+    query_plan: queryPlan,
+    executed_steps: queryPlan.map((step) => ({ ...step, status: "fallback" })),
+    query_context: {
+      adapter_mode: "auto",
+      backend: "splunk-auto",
+      live_mode: false,
+      used_live_data: false,
+      fallback_reason: "Mock telemetry response path.",
+    },
   };
 }
 
@@ -265,6 +307,8 @@ export async function getTelemetryMetrics(): Promise<TelemetryMetricsResponse> {
     fallbackFactory: createMockTelemetryMetrics,
     warningMessage: "[api] Could not fetch telemetry metrics, using mock data.",
     allowFallback: MAIN_TABS_ALLOW_FALLBACK,
+    timeoutMs: TELEMETRY_METRICS_TIMEOUT_MS,
+    timeoutLabel: "telemetry-metrics",
   });
 }
 

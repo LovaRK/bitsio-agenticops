@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from apps.api.app.dependencies import _resolve_splunk_mode
 from apps.api.app.routers.settings import RuntimeMode, _resolve_runtime_mode, _runtime_mode_config
 
 
@@ -25,3 +26,26 @@ def test_runtime_mode_matrix_local_integration() -> None:
     assert cfg["model_provider"] == "ollama"
     assert cfg["splunk_live_mode"] is True
     assert cfg["splunk_adapter_mode"] == "native"
+
+
+def test_splunk_mode_auto_prefers_native_for_deterministic_workloads() -> None:
+    resolved = _resolve_splunk_mode(
+        "auto",
+        "https://splunk.example.com/services/mcp",
+        workload="deterministic",
+    )
+    assert resolved == "native"
+
+
+def test_splunk_mode_auto_prefers_mcp_for_agentic_workloads_when_available() -> None:
+    resolved = _resolve_splunk_mode(
+        "auto",
+        "https://splunk.example.com/services/mcp",
+        workload="agentic",
+    )
+    assert resolved == "mcp"
+
+
+def test_splunk_mode_auto_falls_back_to_native_for_agentic_without_mcp_path() -> None:
+    resolved = _resolve_splunk_mode("auto", "https://splunk.example.com", workload="agentic")
+    assert resolved == "native"

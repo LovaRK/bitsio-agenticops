@@ -56,7 +56,7 @@ export function AppAlertCenter() {
   const visibleAlerts = useMemo(() => alerts.slice(0, MAX_ALERTS), [alerts]);
 
   return (
-    <div className="fixed top-20 right-6 z-[120] flex w-96 max-w-[calc(100vw-2rem)] flex-col gap-2 pointer-events-none">
+    <div className="fixed top-20 right-2 sm:right-4 lg:right-6 z-[120] flex w-[min(24rem,calc(100vw-1rem))] sm:w-[min(24rem,calc(100vw-2rem))] flex-col gap-2 pointer-events-none">
       {visibleAlerts.map((item) => (
         <div
           key={item.id}

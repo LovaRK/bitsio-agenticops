@@ -10,6 +10,22 @@ export interface SecurityFinding {
   resolutionConfidencePercent: number;
   impactOnSavingsPercent: number;
   description: string;
+  reasonCodes?: string[];
+  decisionThresholds?: {
+    ingestMinGbPerDay: number;
+    searchCount90dMax: number;
+    dashboardRefsMax: number;
+    alertRefsMax: number;
+    actual: {
+      dailyIngestGb: number;
+      searchCount90d: number;
+      dashboardReferences: number;
+      alertReferences: number;
+    };
+  };
+  recommendedAction?: string;
+  riskIfRemoved?: string;
+  estimatedRealizedSavingsUsd?: number;
 }
 
 export function SecurityGapsList({ findings }: { findings: SecurityFinding[] }) {
@@ -124,6 +140,19 @@ export function SecurityGapsList({ findings }: { findings: SecurityFinding[] }) 
 
                       <p className="text-xs text-on-surface-variant leading-relaxed">{finding.description}</p>
 
+                      {finding.reasonCodes?.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {finding.reasonCodes.map((code) => (
+                            <span
+                              key={`${finding.id}-${code}`}
+                              className="text-[10px] font-bold px-2 py-1 rounded-full bg-primary-container/20 text-primary border border-primary/30"
+                            >
+                              {code}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+
                       <div className="grid grid-cols-2 gap-3 pt-2">
                         <div>
                           <p className="text-[9px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">
@@ -151,6 +180,70 @@ export function SecurityGapsList({ findings }: { findings: SecurityFinding[] }) 
                           </p>
                         </div>
                       </div>
+
+                      {finding.decisionThresholds ? (
+                        <div className="rounded-lg border border-outline-variant/15 bg-surface-container-lowest p-3">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant mb-2">
+                            Detection thresholds (actual vs rule)
+                          </p>
+                          <div className="grid grid-cols-2 gap-2 text-[11px] text-on-surface-variant">
+                            <p>
+                              Ingest/day:{" "}
+                              <span className="text-on-surface font-semibold">
+                                {finding.decisionThresholds.actual.dailyIngestGb.toFixed(3)} GB
+                              </span>{" "}
+                              (min {finding.decisionThresholds.ingestMinGbPerDay} GB)
+                            </p>
+                            <p>
+                              Searches/90d:{" "}
+                              <span className="text-on-surface font-semibold">
+                                {finding.decisionThresholds.actual.searchCount90d}
+                              </span>{" "}
+                              (max {finding.decisionThresholds.searchCount90dMax})
+                            </p>
+                            <p>
+                              Dashboard refs:{" "}
+                              <span className="text-on-surface font-semibold">
+                                {finding.decisionThresholds.actual.dashboardReferences}
+                              </span>{" "}
+                              (max {finding.decisionThresholds.dashboardRefsMax})
+                            </p>
+                            <p>
+                              Alert refs:{" "}
+                              <span className="text-on-surface font-semibold">
+                                {finding.decisionThresholds.actual.alertReferences}
+                              </span>{" "}
+                              (max {finding.decisionThresholds.alertRefsMax})
+                            </p>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {(finding.recommendedAction || finding.riskIfRemoved || finding.estimatedRealizedSavingsUsd) ? (
+                        <div className="rounded-lg border border-secondary/20 bg-secondary-container/10 p-3">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant mb-2">
+                            Remediation
+                          </p>
+                          {finding.recommendedAction ? (
+                            <p className="text-xs text-on-surface-variant">
+                              Action: <span className="text-on-surface font-semibold">{finding.recommendedAction}</span>
+                            </p>
+                          ) : null}
+                          {finding.riskIfRemoved ? (
+                            <p className="text-xs text-on-surface-variant mt-1">
+                              Risk if removed: <span className="text-on-surface font-semibold">{finding.riskIfRemoved}</span>
+                            </p>
+                          ) : null}
+                          {typeof finding.estimatedRealizedSavingsUsd === "number" ? (
+                            <p className="text-xs text-on-surface-variant mt-1">
+                              Estimated realized savings (phase-1):{" "}
+                              <span className="text-secondary font-semibold">
+                                ${finding.estimatedRealizedSavingsUsd.toLocaleString()}
+                              </span>
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   ))}
                 </div>

@@ -1,4 +1,4 @@
-import { USE_MOCK_FALLBACK } from "@/lib/config";
+import { PAGE_FETCH_TIMEOUT_MS, USE_MOCK_FALLBACK } from "@/lib/config";
 import { apiFetch, canFallback, withTimeout } from "@/lib/http";
 import { emitAppAlert } from "@/lib/uiAlerts";
 
@@ -26,6 +26,8 @@ export async function fetchWithFallback<T>(
     allowFallback = true,
     suppressAlerts = false,
   } = options;
+  const effectiveTimeoutMs = timeoutMs ?? PAGE_FETCH_TIMEOUT_MS;
+  const effectiveTimeoutLabel = timeoutLabel ?? `fetch:${path}`;
 
   if (USE_MOCK_FALLBACK) {
     emitAppAlert({
@@ -37,8 +39,8 @@ export async function fetchWithFallback<T>(
 
   try {
     const request = apiFetch<T>(path, { ...init, suppressAlerts });
-    if (timeoutMs && timeoutLabel) {
-      return await withTimeout(request, timeoutMs, timeoutLabel);
+    if (effectiveTimeoutMs > 0) {
+      return await withTimeout(request, effectiveTimeoutMs, effectiveTimeoutLabel);
     }
     return await request;
   } catch (err) {

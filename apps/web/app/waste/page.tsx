@@ -23,13 +23,17 @@ function formatRangeWeeks(annualSavingsUsd: number): string {
   return "1-2 weeks";
 }
 
+function formatUsd(value: number): string {
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
 export default async function WastePage() {
   let metrics: Awaited<ReturnType<typeof getTelemetryMetrics>>;
   try {
     metrics = await getTelemetryMetrics();
   } catch {
     return (
-      <section className="pt-6 pb-12 px-8" data-testid="waste-page">
+      <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="waste-page">
         <div className="rounded-xl border border-error/25 bg-error/10 p-6">
           <h2 className="text-xl font-semibold text-on-surface">Telemetry metrics unavailable</h2>
           <p className="mt-2 text-sm text-on-surface-variant">
@@ -79,8 +83,12 @@ export default async function WastePage() {
     .slice()
     .sort((a, b) => b.impact_on_savings_percent - a.impact_on_savings_percent)[0];
 
+  const executedSteps = metrics.executed_steps ?? [];
+  const queryContext = metrics.query_context;
+  const showQueryTrace = executedSteps.length > 0;
+
   return (
-    <section className="pt-6 pb-12 px-8" data-testid="waste-page">
+    <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="waste-page">
       {/* Header */}
       <div className="mb-12">
         <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight mb-2">
@@ -135,6 +143,61 @@ export default async function WastePage() {
         </div>
       </div>
 
+      {showQueryTrace ? (
+        <div className="mb-12">
+          <h3 className="text-xl font-headline font-semibold text-on-surface mb-3">
+            Live Query Trace
+          </h3>
+          <p className="text-xs text-on-surface-variant mb-4">
+            Adapter:{" "}
+            <span className="text-on-surface font-semibold">
+              {queryContext?.backend ?? "unknown"}
+            </span>{" "}
+            | Live mode:{" "}
+            <span className="text-on-surface font-semibold">
+              {queryContext?.live_mode ? "enabled" : "disabled"}
+            </span>{" "}
+            | Data source used:{" "}
+            <span className="text-on-surface font-semibold">
+              {queryContext?.used_live_data ? "live Splunk query results" : "fallback dataset"}
+            </span>
+          </p>
+          {queryContext?.fallback_reason ? (
+            <p className="text-xs text-warning mb-3">
+              Fallback reason: {queryContext.fallback_reason}
+            </p>
+          ) : null}
+
+          <div className="space-y-3">
+            {executedSteps.map((step, idx) => (
+              <article
+                key={`${step.id}-${idx}`}
+                className="rounded-xl border border-outline-variant/15 bg-surface-container-low p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-on-surface">{idx + 1}. {step.description}</p>
+                  <span
+                    className={`text-[10px] uppercase tracking-wide px-2 py-1 rounded-full ${
+                      step.status === "executed"
+                        ? "bg-secondary-container/20 text-secondary"
+                        : step.status === "fallback"
+                          ? "bg-error-container/20 text-error"
+                          : "bg-surface-container-high text-on-surface-variant"
+                    }`}
+                  >
+                    {step.status}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-on-surface-variant">{step.purpose}</p>
+                <p className="mt-2 text-xs font-mono rounded bg-surface-container-lowest border border-outline-variant/20 px-2 py-1 text-on-surface-variant overflow-x-auto">
+                  {step.query}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {/* Section 2: Source Value Analysis */}
       <div className="mb-12">
         <h3 className="text-xl font-headline font-semibold text-on-surface mb-6">
@@ -186,6 +249,48 @@ export default async function WastePage() {
         />
       </div>
 
+      {metrics.realized_savings ? (
+        <div className="mb-12">
+          <h3 className="text-xl font-headline font-semibold text-on-surface mb-6">
+            Value Realization Tracker
+          </h3>
+          <div className="rounded-xl border border-secondary/25 bg-secondary-container/10 p-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <MotionCard className="rounded-lg border border-outline-variant/15 bg-surface-container-low p-4">
+                <p className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
+                  Estimated Annual Savings
+                </p>
+                <p className="mt-2 text-2xl font-black text-on-surface">
+                  {formatUsd(metrics.realized_savings.estimated_annual_savings_usd)}
+                </p>
+              </MotionCard>
+              <MotionCard className="rounded-lg border border-outline-variant/15 bg-surface-container-low p-4">
+                <p className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
+                  Realized To Date
+                </p>
+                <p className="mt-2 text-2xl font-black text-secondary">
+                  {formatUsd(metrics.realized_savings.realized_to_date_usd)}
+                </p>
+                <p className="mt-1 text-xs text-on-surface-variant">
+                  {metrics.realized_savings.realization_pct}% of annual plan
+                </p>
+              </MotionCard>
+              <MotionCard className="rounded-lg border border-outline-variant/15 bg-surface-container-low p-4">
+                <p className="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">
+                  Next Milestone
+                </p>
+                <p className="mt-2 text-sm font-bold text-on-surface">
+                  {metrics.realized_savings.next_milestone}
+                </p>
+                <p className="mt-1 text-lg font-black text-tertiary">
+                  {formatUsd(metrics.realized_savings.next_milestone_target_usd)}
+                </p>
+              </MotionCard>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Section 4: Security & Compliance */}
       <div className="mb-12">
         <SecurityGapsList
@@ -197,6 +302,24 @@ export default async function WastePage() {
             resolutionConfidencePercent: f.resolution_confidence_percent,
             impactOnSavingsPercent: f.impact_on_savings_percent,
             description: f.description,
+            reasonCodes: f.reason_codes,
+            decisionThresholds: f.decision_thresholds
+              ? {
+                  ingestMinGbPerDay: f.decision_thresholds.ingest_min_gb_per_day,
+                  searchCount90dMax: f.decision_thresholds.search_count_90d_max,
+                  dashboardRefsMax: f.decision_thresholds.dashboard_refs_max,
+                  alertRefsMax: f.decision_thresholds.alert_refs_max,
+                  actual: {
+                    dailyIngestGb: f.decision_thresholds.actual.daily_ingest_gb,
+                    searchCount90d: f.decision_thresholds.actual.search_count_90d,
+                    dashboardReferences: f.decision_thresholds.actual.dashboard_references,
+                    alertReferences: f.decision_thresholds.actual.alert_references,
+                  },
+                }
+              : undefined,
+            recommendedAction: f.recommended_action,
+            riskIfRemoved: f.risk_if_removed,
+            estimatedRealizedSavingsUsd: f.estimated_realized_savings_usd,
           }))}
         />
       </div>

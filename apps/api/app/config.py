@@ -46,15 +46,20 @@ def live_mode_enabled() -> bool:
 
 
 def load_incidents(splunk_service: IncidentServiceProtocol) -> list[dict]:
-    """Load incidents from live Splunk or return seed data."""
+    """Load incidents.
+
+    Behavior:
+    - Live mode: return only live Splunk incidents (empty list if none or query fails).
+    - Non-live mode: return local seed incidents for safe local demos.
+    """
     if live_mode_enabled():
         try:
             incidents = splunk_service.list_incidents(limit=50)
             if not incidents:
-                LOGGER.warning("live_splunk_incident_fetch_returned_empty_falling_back_to_seed")
-                return SEED_INCIDENTS
+                LOGGER.warning("live_splunk_incident_fetch_returned_empty")
+                return []
             return incidents
         except Exception as exc:  # noqa: BLE001
-            LOGGER.warning("live_splunk_incident_fetch_failed_falling_back_to_seed error=%s", exc)
-            return SEED_INCIDENTS
+            LOGGER.warning("live_splunk_incident_fetch_failed error=%s", exc)
+            return []
     return SEED_INCIDENTS

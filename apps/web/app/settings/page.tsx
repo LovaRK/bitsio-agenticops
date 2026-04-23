@@ -51,7 +51,7 @@ export default async function SettingsPage() {
   ];
 
   return (
-    <section className="pt-6 pb-12 px-8" data-testid="settings-page">
+    <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="settings-page">
       <div className="mb-10">
         <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight mb-2">
           Platform Settings

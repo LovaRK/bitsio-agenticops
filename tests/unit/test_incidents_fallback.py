@@ -25,11 +25,11 @@ class _ServiceReturnsLive:
         ]
 
 
-def test_load_incidents_falls_back_when_live_empty(monkeypatch) -> None:
+def test_load_incidents_returns_empty_when_live_empty(monkeypatch) -> None:
     monkeypatch.setenv("SPLUNK_LIVE_MODE", "true")
     get_settings.cache_clear()
     incidents = load_incidents(_ServiceReturnsEmpty())
-    assert incidents == SEED_INCIDENTS
+    assert incidents == []
     get_settings.cache_clear()
 
 
@@ -39,4 +39,12 @@ def test_load_incidents_uses_live_when_available(monkeypatch) -> None:
     incidents = load_incidents(_ServiceReturnsLive())
     assert len(incidents) == 1
     assert incidents[0]["id"] == "inc_live_1"
+    get_settings.cache_clear()
+
+
+def test_load_incidents_uses_seed_when_live_disabled(monkeypatch) -> None:
+    monkeypatch.setenv("SPLUNK_LIVE_MODE", "false")
+    get_settings.cache_clear()
+    incidents = load_incidents(_ServiceReturnsEmpty())
+    assert incidents == SEED_INCIDENTS
     get_settings.cache_clear()

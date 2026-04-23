@@ -156,6 +156,10 @@ export interface RuntimeConnectivityResponse {
   splunk: {
     connected: boolean;
     detail: string;
+    configured_adapter_mode?: "mcp" | "native" | "auto" | string;
+    resolved_adapter_mode?: "mcp" | "native" | string;
+    resolved_agentic_mode?: "mcp" | "native" | string;
+    backend?: string;
   };
 }
 
@@ -237,6 +241,22 @@ export interface SecurityFindingDetail {
   resolution_confidence_percent: number;
   impact_on_savings_percent: number;
   description: string;
+  reason_codes?: string[];
+  decision_thresholds?: {
+    ingest_min_gb_per_day: number;
+    search_count_90d_max: number;
+    dashboard_refs_max: number;
+    alert_refs_max: number;
+    actual: {
+      daily_ingest_gb: number;
+      search_count_90d: number;
+      dashboard_references: number;
+      alert_references: number;
+    };
+  };
+  recommended_action?: string;
+  risk_if_removed?: string;
+  estimated_realized_savings_usd?: number;
 }
 
 export interface SavingsProjectionPoint {
@@ -244,6 +264,16 @@ export interface SavingsProjectionPoint {
   label: string;
   current_trajectory_usd: number;
   optimized_trajectory_usd: number;
+}
+
+export interface TelemetryQueryStep {
+  id: string;
+  description: string;
+  purpose: string;
+  query: string;
+  window_days: number;
+  status: "planned" | "executed" | "fallback";
+  backend: "splunk-native" | "splunk-mcp" | "splunk-auto";
 }
 
 export interface TelemetryMetricsResponse {
@@ -257,6 +287,22 @@ export interface TelemetryMetricsResponse {
   sources: SourceUtilizationMetrics[];
   security_findings: SecurityFindingDetail[];
   savings_projection: SavingsProjectionPoint[];
+  query_plan?: TelemetryQueryStep[];
+  executed_steps?: TelemetryQueryStep[];
+  query_context?: {
+    adapter_mode: "mcp" | "native" | "auto";
+    backend: "splunk-native" | "splunk-mcp" | "splunk-auto";
+    live_mode: boolean;
+    used_live_data: boolean;
+    fallback_reason: string;
+  };
+  realized_savings?: {
+    estimated_annual_savings_usd: number;
+    realized_to_date_usd: number;
+    realization_pct: number;
+    next_milestone: string;
+    next_milestone_target_usd: number;
+  };
 }
 
 export interface FraudCaseItem {

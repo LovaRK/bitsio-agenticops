@@ -1,6 +1,6 @@
 # BitsIO AgenticOps — Single Source of Truth
 
-Last updated: 2026-04-20 (evening)
+Last updated: 2026-04-22 (evening)
 Owner: Core Engineering (Codex-led)
 Status: Canonical
 
@@ -44,6 +44,11 @@ Splunk modes:
 - `native` for `/services/search/jobs/export`
 - `auto` inference
 
+Adapter policy (implemented):
+- deterministic API surfaces (Dashboard, Incidents, Fraud, Telemetry Value) use **native-first** resolution when `SPLUNK_ADAPTER_MODE=auto`
+- agentic workload surfaces use **MCP-preferred** resolution when `SPLUNK_ADAPTER_MODE=auto` and MCP endpoint is available
+- explicit mode selection (`mcp` or `native`) always overrides auto behavior
+
 ## 3. Live vs Mock Data Rules
 
 Core tabs are now configured live-first:
@@ -55,6 +60,11 @@ Core tabs are now configured live-first:
 
 By default these routes do **not** silently fallback to mock payloads.
 If live data is unavailable, the UI shows an explicit live-data error panel and recovery actions.
+
+Current live behavior (verified 2026-04-22):
+- live connectivity can be healthy while specific feature datasets are empty (query/time-window mismatch)
+- dashboard/incidents return empty-state payloads with explicit `degraded_reason` when no matching live incidents exist
+- fraud live route returns explicit `"degraded_reason":"No matching live fraud telemetry found in current search window."` when no matching fraud signals exist
 
 Optional development override:
 - `NEXT_PUBLIC_MAIN_TABS_ALLOW_FALLBACK=true`
@@ -81,11 +91,25 @@ make live-api
 make live-web
 ```
 
+Preferred one-shot local command:
+
+```bash
+make local
+```
+
+Current Splunk target profile:
+- host: `45.76.167.6`
+- API mode used by runtime: `native`
+- `SPLUNK_MCP_BASE_URL` still required for adapter base config
+
 Health checks:
 
 ```bash
 curl http://127.0.0.1:8001/health
 curl http://127.0.0.1:8001/api/v1/settings -H 'x-api-key: dev-analyst'
+curl http://127.0.0.1:8001/api/v1/settings/runtime/check -H 'x-api-key: dev-analyst'
+curl http://127.0.0.1:8001/api/v1/dashboard/summary -H 'x-api-key: dev-analyst'
+curl http://127.0.0.1:8001/api/v1/incidents -H 'x-api-key: dev-analyst'
 curl 'http://127.0.0.1:8001/api/v1/fraud/overview?mode=auto' -H 'x-api-key: dev-analyst'
 ```
 
@@ -223,7 +247,7 @@ Module boundary rules:
 ## 13. Current Known Priorities
 
 1. Keep live Splunk connectivity stable for demo scenarios (tunnel + mode sync)
-2. Continue codebase refactor pass module-by-module without behavior regressions
+2. Expand live-query coverage for incidents/fraud so empty datasets are less likely on valid Splunk environments
 3. Maintain this document as the source all coding agents read first
 
 ## 14. Latest Implemented Behavior (2026-04-20)
@@ -239,13 +263,13 @@ Module boundary rules:
   - chip interaction is open-first (non-destructive to default-open behavior)
 - E2E contract updated to support multi-expanded tool details while preserving non-LLM token-visibility rules.
 
-## 15. Validation Snapshot (2026-04-20)
+## 15. Validation Snapshot (2026-04-22)
 
 Repository checkpoint:
 - baseline commit reference: `410328e` (plus current local unpushed changes)
 
 Automated checks:
-- `make test` -> 142 passed
+- `make test` -> 143 passed
 - `make eval` -> 6/6 passed (100.00%)
 - `make api-smoke` -> passed
 - `pnpm --filter web test:e2e` -> 11 passed
@@ -263,6 +287,14 @@ Route smoke checks (local web at `127.0.0.1:3000`):
 
 API health:
 - `GET /health` on `127.0.0.1:8001` -> `{"status":"ok", ...}`
+
+Runtime/live connectivity checks:
+- `GET /api/v1/settings/runtime/check` -> model connected + splunk connected
+- `GET /api/v1/settings` -> `splunk.connected=true`, `index_count=18`
+- `GET /api/v1/incidents` -> empty list (no matching live incidents in current query)
+- `GET /api/v1/dashboard/summary` -> `data_source=reported` with explicit live empty-state reason
+- `GET /api/v1/waste/telemetry/metrics` -> live metrics populated from Splunk
+- `GET /api/v1/fraud/overview?mode=live` -> live mode reached, empty-state reason when no matching fraud signals
 
 ## 16. Imported Dashboard Integration (2026-04-20)
 
@@ -285,6 +317,24 @@ Implementation in app:
 Scope note:
 - This integration preserves existing app architecture and theme.
 - It is currently a curated packaged-data portfolio view; it does not replace live incident/fraud/telemetry runtime flows.
+
+## 17. Deployment Snapshot (2026-04-22)
+
+Production server:
+- web: `http://144.202.48.85:3000`
+- api: `http://144.202.48.85:8001`
+- runtime mode applied: `CLOUD_LIVE`
+- model: `anthropic / claude-haiku-4-5-20251001` (connectivity check = OK)
+- splunk adapter mode: `native` (connectivity check = OK, 18 indexes visible)
+
+Current observed live-data behavior on production:
+- `/api/v1/incidents` returns `[]` when no matching incident telemetry is found.
+- `/api/v1/dashboard/summary` returns live-reported payload with explicit empty-state `degraded_reason`.
+- `/api/v1/fraud/overview?mode=live` returns live payload with explicit empty-state reason when no matching fraud patterns are found.
+- `/api/v1/waste/telemetry/metrics` and `/api/v1/monitoring/overview` return populated live Splunk-derived metrics.
+
+Server note:
+- host port `5432` was already occupied on the Vultr machine; deployment remapped container host ports (`postgres`, `redis`, `mock-mcp`, `otel`) to avoid collision while preserving external app ports (`3000`, `8001`).
 
 ---
 

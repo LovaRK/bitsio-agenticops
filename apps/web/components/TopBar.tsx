@@ -60,6 +60,13 @@ export function TopBar() {
   }, []);
 
   useEffect(() => {
+    router.prefetch("/telemetry-value");
+    router.prefetch("/fraud-risk");
+    router.prefetch("/incidents");
+    router.prefetch("/approvals");
+  }, [router]);
+
+  useEffect(() => {
     function onOutsideClick(event: MouseEvent) {
       if (!panelRef.current) return;
       if (!panelRef.current.contains(event.target as Node)) {
@@ -117,10 +124,11 @@ export function TopBar() {
   };
 
   return (
-    <header className="fixed top-0 left-64 right-0 h-16 bg-surface/60 backdrop-blur-xl flex justify-between items-center px-6 md:px-8 border-b border-outline-variant/15 z-40">
-      <div className="flex items-center gap-8">
-        <div className="text-lg font-bold text-on-surface font-headline">AgenticOps</div>
-        <nav className="flex gap-6">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-surface/60 backdrop-blur-xl border-b border-outline-variant/15 z-40 lg:left-64">
+      <div className="h-full flex items-center justify-between gap-3 px-3 sm:px-4 lg:px-8">
+        <div className="min-w-0 flex items-center gap-3 md:gap-6">
+          <div className="text-base md:text-lg font-bold text-on-surface font-headline shrink-0">AgenticOps</div>
+          <nav className="hidden md:flex gap-4 lg:gap-6 overflow-x-auto whitespace-nowrap">
           <Link
             className={`hover:text-on-surface transition-opacity text-sm font-medium ${
               pathname === "/" ? "text-on-surface" : "text-on-surface-variant"
@@ -177,10 +185,10 @@ export function TopBar() {
           >
             Portfolio
           </Link>
-        </nav>
-      </div>
-      <div className="relative flex items-center gap-4" ref={panelRef}>
-        <div className="flex items-center gap-2 mr-2">
+          </nav>
+        </div>
+        <div className="relative flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0" ref={panelRef}>
+          <div className="flex items-center gap-1 sm:gap-2 mr-1 md:mr-2">
           <ThemeToggle compact />
           <button
             aria-label="Notifications"
@@ -199,7 +207,7 @@ export function TopBar() {
           <Link
             aria-label="Recent activity"
             title="Open incident activity stream"
-            className="rounded-lg p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+            className="hidden sm:inline-flex rounded-lg p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
             href="/incidents"
           >
             <span className="material-symbols-outlined">history_edu</span>
@@ -210,7 +218,7 @@ export function TopBar() {
           onClick={handleDeployFix}
           disabled={deployLoading}
           title="Smart action: open approval gate or incident explorer based on current context"
-          className="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-xl text-sm font-bold glow-primary transition-all active:scale-95"
+          className="bg-primary-container text-on-primary-container px-2.5 sm:px-3.5 md:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold glow-primary transition-all active:scale-95"
         >
           <span className="inline-flex items-center gap-2">
             {deployLoading ? (
@@ -224,7 +232,7 @@ export function TopBar() {
           aria-label="Deploy Fix help"
           title="See what Deploy Fix does in each page context"
           onClick={() => setShowDeployHelp((current) => !current)}
-          className="rounded-lg p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+          className="hidden md:inline-flex rounded-lg p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
         >
           <span className="material-symbols-outlined text-base">help</span>
         </button>
@@ -243,7 +251,7 @@ export function TopBar() {
         </button>
 
         {isOpen && (
-          <div className="absolute top-14 right-0 w-80 rounded-xl border border-outline-variant/20 bg-surface-container shadow-2xl p-2">
+          <div className="absolute top-14 right-0 w-[min(20rem,calc(100vw-1.5rem))] rounded-xl border border-outline-variant/20 bg-surface-container shadow-2xl p-2">
             <div className="px-3 py-2 text-xs font-bold tracking-widest uppercase text-outline">
               Notifications
             </div>
@@ -310,10 +318,11 @@ export function TopBar() {
         )}
 
         {actionMessage && (
-          <div className="absolute -bottom-10 right-0 max-w-sm rounded-lg bg-surface-container-high border border-outline-variant/20 px-3 py-2 text-xs text-on-surface-variant">
+          <div className="hidden sm:block absolute -bottom-10 right-0 max-w-sm rounded-lg bg-surface-container-high border border-outline-variant/20 px-3 py-2 text-xs text-on-surface-variant">
             {actionMessage}
           </div>
         )}
+      </div>
       </div>
     </header>
   );

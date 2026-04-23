@@ -11,7 +11,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <SideNav />
       <TopBar />
       <AppAlertCenter />
-      <main className="pl-64 pt-16 min-h-screen">
+      <main className="min-h-screen pt-16 pb-20 lg:pb-0 lg:pl-64">
         <RouteTransition>{children}</RouteTransition>
       </main>
     </>

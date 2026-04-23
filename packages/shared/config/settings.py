@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     # ── LLM ───────────────────────────────────────────────────────────────────
     model_provider: str = Field(default="ollama", alias="MODEL_PROVIDER")
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
-    model_name: str = Field(default="qwen2.5:14b", alias="MODEL_NAME")
+    model_name: str = Field(default="qwen2.5:7b", alias="MODEL_NAME")
     ollama_base_url: str = Field(default="http://127.0.0.1:11434", alias="OLLAMA_BASE_URL")
 
     # ── Splunk MCP ────────────────────────────────────────────────────────────
@@ -71,6 +71,14 @@ class Settings(BaseSettings):
     tenant_safe_id: str = Field(default="tenant_demo", alias="TENANT_SAFE_ID")
     app_timezone: str = Field(default="UTC", alias="APP_TIMEZONE")
     model_mock_mode: bool = Field(default=False, alias="MODEL_MOCK_MODE")
+    telemetry_metrics_search_window_days: int = Field(
+        default=30,
+        alias="TELEMETRY_METRICS_SEARCH_WINDOW_DAYS",
+    )
+    telemetry_metrics_cache_ttl_seconds: int = Field(
+        default=45,
+        alias="TELEMETRY_METRICS_CACHE_TTL_SECONDS",
+    )
 
     @field_validator("environment")
     @classmethod

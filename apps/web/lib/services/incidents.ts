@@ -6,7 +6,7 @@
 import type { DecisionTrace } from "@/types/decision-trace";
 import type { IncidentSummary } from "@/types/api";
 import { MAIN_TABS_ALLOW_FALLBACK, USE_MOCK_FALLBACK } from "@/lib/config";
-import { apiFetch, canFallback } from "@/lib/http";
+import { apiFetch, canFallback, withTimeout } from "@/lib/http";
 import { mockIncidents, pickMockIncident } from "@/lib/mocks/incidents";
 import type { IncidentServiceContract } from "@/lib/services/contracts";
 import { buildFallbackNodeRuns, deriveRuntimeMetadataFromSettings } from "@/lib/services/incidentTraceAssembly";
@@ -31,8 +31,10 @@ export async function getIncidentDetail(id: string): Promise<DecisionTrace> {
   try {
     const settings = await getSettingsSnapshot().catch(() => null);
     const derivedRuntime = deriveRuntimeMetadataFromSettings(settings);
-    const trace = await apiFetch<Partial<DecisionTrace>>(
-      `/api/v1/decision-traces/${id}`
+    const trace = await withTimeout(
+      apiFetch<Partial<DecisionTrace>>(`/api/v1/decision-traces/${id}`),
+      4500,
+      `decision-trace:${id}`,
     );
 
     // Ensure required fields exist (API may not return them yet)

@@ -57,7 +57,7 @@ class StubModelAdapter(ModelAdapter):
 
 class OllamaModelAdapter(ModelAdapter):
     def __init__(self, model_name: str | None = None, base_url: str | None = None) -> None:
-        self.model_name = model_name or os.getenv("MODEL_NAME", "qwen2.5:14b")
+        self.model_name = model_name or os.getenv("MODEL_NAME", "qwen2.5:7b")
         self.base_url = (base_url or os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")).rstrip(
             "/"
         )

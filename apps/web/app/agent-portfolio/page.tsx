@@ -27,7 +27,7 @@ export default function AgentPortfolioPage() {
   const mig = migration;
 
   return (
-    <main className="pt-6 pb-12 px-8" data-testid="agent-portfolio-page">
+    <main className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="agent-portfolio-page">
       <section className="mb-6">
         <h1 className="text-3xl font-black font-headline tracking-tight text-on-surface">Agent Portfolio</h1>
         <p className="mt-2 text-sm text-on-surface-variant">

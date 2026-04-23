@@ -7,7 +7,7 @@ type AppErrorProps = {
 
 export default function AppError({ error, reset }: AppErrorProps) {
   return (
-    <section className="pt-6 pb-12 px-8" data-testid="app-error-boundary">
+    <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="app-error-boundary">
       <div className="max-w-3xl rounded-xl border border-error/30 bg-error/5 p-6">
         <h2 className="text-xl font-semibold text-error">Something went wrong</h2>
         <p className="mt-2 text-sm text-on-surface-variant">

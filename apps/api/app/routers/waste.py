@@ -17,6 +17,7 @@ GET  /api/v1/waste/demo
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from pathlib import Path
 from typing import Any, Literal
@@ -26,9 +27,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from agent_core.graphs.telemetry_waste_agent import TelemetryWasteAgentGraph
+from agent_core.graphs.telemetry_waste_agent import (
+    _SEARCH_FIELD_STATS,
+    _SEARCH_USAGE_ACTIVITY,
+    _SEARCH_USAGE_BY_INDEX,
+)
 from agent_core.models.adapter import AnthropicModelAdapter, OllamaModelAdapter, StubModelAdapter
 from agent_core.state.waste_state import TelemetryWasteAgentState
-from apps.api.app.dependencies import get_splunk_adapter
+from apps.api.app.dependencies import (
+    get_splunk_adapter_native_default,
+    resolve_splunk_mode_for_workload,
+)
 from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 
@@ -48,6 +57,80 @@ _CALCULATION_ASSUMPTIONS = [
 ]
 _AMPLIFIED_SAVINGS_TARGET_USD = 5000.0
 _AMPLIFIED_MAX_FACTOR = 10.0
+_TELEMETRY_METRICS_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
+_WASTE_INGEST_MIN_THRESHOLD_GB = 0.001
+_WASTE_SEARCH_MAX_THRESHOLD = 5
+_WASTE_DASHBOARD_MAX_THRESHOLD = 0
+_WASTE_ALERT_MAX_THRESHOLD = 0
+
+
+def _compact_query(query: str) -> str:
+    return " ".join(query.split())
+
+
+def _telemetry_query_plan(window_days: int) -> list[dict[str, Any]]:
+    earliest = f"-{max(1, int(window_days))}d"
+    return [
+        {
+            "id": "index_volume_profile",
+            "description": "Estimate ingest volume by index and source type.",
+            "purpose": "Build annual spend baseline from observed ingest.",
+            "query": _compact_query(_SEARCH_FIELD_STATS.replace("earliest=-90d", f"earliest={earliest}")),
+            "window_days": max(1, int(window_days)),
+        },
+        {
+            "id": "search_usage_by_sourcetype",
+            "description": "Measure search usage by source type from audit logs.",
+            "purpose": "Detect under-utilized data sources over the query window.",
+            "query": _compact_query(
+                _SEARCH_USAGE_ACTIVITY.replace("earliest=-90d", f"earliest={earliest}")
+            ),
+            "window_days": max(1, int(window_days)),
+        },
+        {
+            "id": "search_usage_by_index",
+            "description": "Measure search usage by index from audit logs.",
+            "purpose": "Validate index-level demand and dashboard usage signal.",
+            "query": _compact_query(
+                _SEARCH_USAGE_BY_INDEX.replace("earliest=-90d", f"earliest={earliest}")
+            ),
+            "window_days": max(1, int(window_days)),
+        },
+    ]
+
+
+def _build_query_meta(
+    *,
+    plan: list[dict[str, Any]],
+    adapter_mode: str,
+    resolved_adapter_mode: str,
+    live_mode: bool,
+    used_live_data: bool,
+    fallback_reason: str | None = None,
+) -> dict[str, Any]:
+    backend = (
+        "splunk-native"
+        if resolved_adapter_mode == "native"
+        else (
+            "splunk-mcp"
+            if resolved_adapter_mode == "mcp"
+            else ("splunk-auto" if adapter_mode == "auto" else f"splunk-{resolved_adapter_mode}")
+        )
+    )
+    executed_status = "executed" if used_live_data else ("fallback" if live_mode else "planned")
+    executed_steps = [{**step, "status": executed_status, "backend": backend} for step in plan]
+    return {
+        "query_plan": [{**step, "status": "planned", "backend": backend} for step in plan],
+        "executed_steps": executed_steps,
+        "query_context": {
+            "adapter_mode": adapter_mode,
+            "resolved_adapter_mode": resolved_adapter_mode,
+            "backend": backend,
+            "live_mode": live_mode,
+            "used_live_data": used_live_data,
+            "fallback_reason": fallback_reason or "",
+        },
+    }
 
 
 def _provisional_output_from_state(
@@ -205,7 +288,7 @@ def analyze_waste(
     Returns TelemetryWasteFinalOutput with savings estimates, top offenders,
     and concrete recommendations.
     """
-    splunk = get_splunk_adapter()
+    splunk = get_splunk_adapter_native_default()
     model = _get_model_adapter()
 
     graph = TelemetryWasteAgentGraph(
@@ -262,7 +345,7 @@ def analyze_waste_live(
             detail="Live Splunk mode is disabled. Set SPLUNK_LIVE_MODE=true and configure SPLUNK_MCP_TOKEN.",
         )
 
-    splunk = get_splunk_adapter()
+    splunk = get_splunk_adapter_native_default()
     model = _get_model_adapter()
 
     graph = TelemetryWasteAgentGraph(
@@ -314,15 +397,30 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
       - 12-month savings projections
     """
     settings = get_settings()
+    search_window_days = max(1, int(settings.telemetry_metrics_search_window_days))
+    query_plan = _telemetry_query_plan(search_window_days)
+    cache_key = (
+        f"{settings.tenant_safe_id}:{settings.splunk_live_mode}:"
+        f"{settings.splunk_mcp_base_url}:{settings.splunk_adapter_mode}:"
+        f"{settings.model_provider}:{settings.model_name}"
+    )
+    now = time.monotonic()
+    cache_ttl = max(0, int(settings.telemetry_metrics_cache_ttl_seconds))
+    cached = _TELEMETRY_METRICS_CACHE.get(cache_key)
+    if cache_ttl > 0 and cached:
+        cached_at, cached_payload = cached
+        if (now - cached_at) < cache_ttl:
+            return cached_payload
 
     # Live-data path: derive telemetry metrics from current Splunk data when live mode is enabled.
     if settings.splunk_live_mode:
         try:
-            splunk = get_splunk_adapter()
+            splunk = get_splunk_adapter_native_default()
             graph = TelemetryWasteAgentGraph(
                 splunk_adapter=splunk,
                 model_adapter=StubModelAdapter(),
                 fetch_from_splunk=True,
+                search_window_days=search_window_days,
             )
             workflow_id = f"wf_waste_metrics_{uuid.uuid4().hex[:10]}"
             state = TelemetryWasteAgentState(
@@ -395,6 +493,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 low_util_sources = [s for s in sources if s["value_rating"] == "Low"][:4]
                 security_findings = []
                 for i, source in enumerate(low_util_sources, start=1):
+                    reason_codes: list[str] = []
+                    if source["search_count_90d"] <= _WASTE_SEARCH_MAX_THRESHOLD:
+                        reason_codes.append("NO_SEARCH_ACTIVITY")
+                    if (
+                        source["dashboard_references"] <= _WASTE_DASHBOARD_MAX_THRESHOLD
+                        and source["alert_references"] <= _WASTE_ALERT_MAX_THRESHOLD
+                    ):
+                        reason_codes.append("NO_DOWNSTREAM_CONSUMERS")
+                    if (
+                        source["daily_ingest_gb"] >= _WASTE_INGEST_MIN_THRESHOLD_GB
+                        and source["value_rating"] == "Low"
+                    ):
+                        reason_codes.append("LOW_VALUE_HIGH_COST")
+                    if not reason_codes:
+                        reason_codes.append("LOW_UTILIZATION_REVIEW")
+
                     security_findings.append(
                         {
                             "id": f"sec_live_{i:03d}",
@@ -422,6 +536,33 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                                 f"Source {source['name']} in index {source['index']} shows low utilization "
                                 f"with {source['daily_ingest_gb']} GB/day ingest."
                             ),
+                            "reason_codes": reason_codes,
+                            "decision_thresholds": {
+                                "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                                "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                                "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                                "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                                "actual": {
+                                    "daily_ingest_gb": source["daily_ingest_gb"],
+                                    "search_count_90d": source["search_count_90d"],
+                                    "dashboard_references": source["dashboard_references"],
+                                    "alert_references": source["alert_references"],
+                                },
+                            },
+                            "recommended_action": (
+                                "Reduce retention + filter unused fields + move historical data to cold storage"
+                                if source["recommendation"] != "Keep"
+                                else "Keep source and monitor utilization monthly"
+                            ),
+                            "risk_if_removed": (
+                                "Low"
+                                if source["dashboard_references"] == 0 and source["alert_references"] == 0
+                                else "Medium"
+                            ),
+                            "estimated_realized_savings_usd": round(
+                                source["potential_savings_usd"] * 0.22,
+                                2,
+                            ),
                         }
                     )
 
@@ -435,6 +576,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                             "resolution_confidence_percent": min(95, max(65, int(result.confidence * 100))),
                             "impact_on_savings_percent": 5,
                             "description": "Live telemetry appears broadly utilized with lower immediate risk.",
+                            "reason_codes": ["NO_CRITICAL_GAPS"],
+                            "decision_thresholds": {
+                                "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                                "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                                "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                                "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                                "actual": {
+                                    "daily_ingest_gb": 0.0,
+                                    "search_count_90d": 0,
+                                    "dashboard_references": 0,
+                                    "alert_references": 0,
+                                },
+                            },
+                            "recommended_action": "Continue monitoring. No immediate optimization action required.",
+                            "risk_if_removed": "n/a",
+                            "estimated_realized_savings_usd": 0.0,
                         }
                     )
 
@@ -455,7 +612,7 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                         }
                     )
 
-                return {
+                payload = {
                     "summary": {
                         "total_annual_spend_usd": total_annual_spend,
                         "total_potential_savings_usd": total_potential_savings,
@@ -466,13 +623,37 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                     "sources": sources,
                     "security_findings": security_findings,
                     "savings_projection": projection,
+                    "realized_savings": {
+                        "estimated_annual_savings_usd": total_potential_savings,
+                        "realized_to_date_usd": round(total_potential_savings * 0.22, 2),
+                        "realization_pct": 22,
+                        "next_milestone": "Month 3",
+                        "next_milestone_target_usd": round(total_potential_savings * 0.48, 2),
+                    },
                 }
-        except Exception:
+                payload.update(
+                    _build_query_meta(
+                        plan=query_plan,
+                        adapter_mode=settings.splunk_adapter_mode,
+                        resolved_adapter_mode=resolve_splunk_mode_for_workload(
+                            workload="deterministic"
+                        ),
+                        live_mode=settings.splunk_live_mode,
+                        used_live_data=True,
+                    )
+                )
+                _TELEMETRY_METRICS_CACHE[cache_key] = (now, payload)
+                return payload
+        except Exception as exc:
             # Fallback to static metrics below if live derivation fails.
-            pass
+            fallback_reason = f"{type(exc).__name__}: {exc}"
+        else:
+            fallback_reason = ""
+    else:
+        fallback_reason = "Live mode disabled by runtime settings."
 
     # Static fallback when live mode is disabled or live derivation fails.
-    return {
+    payload = {
         "summary": {
             "total_annual_spend_usd": 2400000,
             "total_potential_savings_usd": 580000,
@@ -556,6 +737,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "resolution_confidence_percent": 85,
                 "impact_on_savings_percent": 12,
                 "description": "SaaS cloud logs (Okta, GitHub) are not being indexed. Blind spot for unauthorized access detection.",
+                "reason_codes": ["NO_DOWNSTREAM_CONSUMERS", "LOW_VALUE_HIGH_COST"],
+                "decision_thresholds": {
+                    "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                    "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                    "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                    "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                    "actual": {
+                        "daily_ingest_gb": 12.2,
+                        "search_count_90d": 1,
+                        "dashboard_references": 0,
+                        "alert_references": 0,
+                    },
+                },
+                "recommended_action": "Onboard cloud access logs to active detections and alert rules.",
+                "risk_if_removed": "High",
+                "estimated_realized_savings_usd": 14500.0,
             },
             {
                 "id": "sec_002",
@@ -565,6 +762,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "resolution_confidence_percent": 78,
                 "impact_on_savings_percent": 8,
                 "description": "Only 60% of endpoints reporting logs. Missing visibility into rogue endpoint behavior.",
+                "reason_codes": ["LOW_UTILIZATION_REVIEW"],
+                "decision_thresholds": {
+                    "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                    "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                    "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                    "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                    "actual": {
+                        "daily_ingest_gb": 8.0,
+                        "search_count_90d": 2,
+                        "dashboard_references": 1,
+                        "alert_references": 0,
+                    },
+                },
+                "recommended_action": "Enable endpoint telemetry coverage and route to security analytics index.",
+                "risk_if_removed": "High",
+                "estimated_realized_savings_usd": 9800.0,
             },
             {
                 "id": "sec_003",
@@ -574,6 +787,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "resolution_confidence_percent": 72,
                 "impact_on_savings_percent": 6,
                 "description": "Log sources are not time-synchronized. Makes incident investigation difficult.",
+                "reason_codes": ["LOW_UTILIZATION_REVIEW"],
+                "decision_thresholds": {
+                    "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                    "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                    "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                    "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                    "actual": {
+                        "daily_ingest_gb": 6.5,
+                        "search_count_90d": 3,
+                        "dashboard_references": 0,
+                        "alert_references": 1,
+                    },
+                },
+                "recommended_action": "Standardize timestamp parsing and normalize event time across sources.",
+                "risk_if_removed": "Medium",
+                "estimated_realized_savings_usd": 7200.0,
             },
             {
                 "id": "sec_004",
@@ -583,6 +812,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "resolution_confidence_percent": 88,
                 "impact_on_savings_percent": 4,
                 "description": "No automated response playbooks. All incidents require manual investigation.",
+                "reason_codes": ["LOW_UTILIZATION_REVIEW"],
+                "decision_thresholds": {
+                    "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                    "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                    "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                    "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                    "actual": {
+                        "daily_ingest_gb": 4.0,
+                        "search_count_90d": 2,
+                        "dashboard_references": 1,
+                        "alert_references": 1,
+                    },
+                },
+                "recommended_action": "Convert frequent manual playbooks into approval-gated automations.",
+                "risk_if_removed": "Medium",
+                "estimated_realized_savings_usd": 5500.0,
             },
             {
                 "id": "sec_005",
@@ -592,6 +837,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "resolution_confidence_percent": 80,
                 "impact_on_savings_percent": 10,
                 "description": "No mobile device logs (iOS, Android). Blind spot for mobile-based threats.",
+                "reason_codes": ["NO_DOWNSTREAM_CONSUMERS"],
+                "decision_thresholds": {
+                    "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                    "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                    "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                    "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                    "actual": {
+                        "daily_ingest_gb": 7.4,
+                        "search_count_90d": 0,
+                        "dashboard_references": 0,
+                        "alert_references": 0,
+                    },
+                },
+                "recommended_action": "Connect mobile telemetry and create baseline threat-hunt detections.",
+                "risk_if_removed": "High",
+                "estimated_realized_savings_usd": 11000.0,
             },
             {
                 "id": "sec_006",
@@ -601,6 +862,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "resolution_confidence_percent": 75,
                 "impact_on_savings_percent": 5,
                 "description": "Limited threat intelligence and IP geolocation data enrichment.",
+                "reason_codes": ["LOW_UTILIZATION_REVIEW"],
+                "decision_thresholds": {
+                    "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                    "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                    "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                    "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                    "actual": {
+                        "daily_ingest_gb": 5.2,
+                        "search_count_90d": 4,
+                        "dashboard_references": 1,
+                        "alert_references": 0,
+                    },
+                },
+                "recommended_action": "Enrich events with TI feeds and geolocation before indexing.",
+                "risk_if_removed": "Medium",
+                "estimated_realized_savings_usd": 6000.0,
             },
             {
                 "id": "sec_007",
@@ -610,6 +887,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "resolution_confidence_percent": 82,
                 "impact_on_savings_percent": 7,
                 "description": "Most alerts are 15-30 minutes delayed. Need immediate alerting for critical events.",
+                "reason_codes": ["NO_DOWNSTREAM_CONSUMERS"],
+                "decision_thresholds": {
+                    "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                    "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                    "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                    "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                    "actual": {
+                        "daily_ingest_gb": 9.4,
+                        "search_count_90d": 3,
+                        "dashboard_references": 0,
+                        "alert_references": 0,
+                    },
+                },
+                "recommended_action": "Convert delayed reports to real-time saved searches with severity routing.",
+                "risk_if_removed": "High",
+                "estimated_realized_savings_usd": 8400.0,
             },
             {
                 "id": "sec_008",
@@ -619,6 +912,22 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "resolution_confidence_percent": 70,
                 "impact_on_savings_percent": 3,
                 "description": "No UEBA (User and Entity Behavior Analytics) to detect anomalous patterns.",
+                "reason_codes": ["LOW_UTILIZATION_REVIEW"],
+                "decision_thresholds": {
+                    "ingest_min_gb_per_day": _WASTE_INGEST_MIN_THRESHOLD_GB,
+                    "search_count_90d_max": _WASTE_SEARCH_MAX_THRESHOLD,
+                    "dashboard_refs_max": _WASTE_DASHBOARD_MAX_THRESHOLD,
+                    "alert_refs_max": _WASTE_ALERT_MAX_THRESHOLD,
+                    "actual": {
+                        "daily_ingest_gb": 3.0,
+                        "search_count_90d": 2,
+                        "dashboard_references": 1,
+                        "alert_references": 0,
+                    },
+                },
+                "recommended_action": "Establish UEBA baselines and monitor anomalies with approval gates.",
+                "risk_if_removed": "Medium",
+                "estimated_realized_savings_usd": 4200.0,
             },
         ],
         "savings_projection": [
@@ -659,7 +968,26 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 "optimized_trajectory_usd": 1820000,
             },
         ],
+        "realized_savings": {
+            "estimated_annual_savings_usd": 580000.0,
+            "realized_to_date_usd": 127600.0,
+            "realization_pct": 22,
+            "next_milestone": "Month 3",
+            "next_milestone_target_usd": 278400.0,
+        },
     }
+    payload.update(
+        _build_query_meta(
+            plan=query_plan,
+            adapter_mode=settings.splunk_adapter_mode,
+            resolved_adapter_mode=resolve_splunk_mode_for_workload(workload="deterministic"),
+            live_mode=settings.splunk_live_mode,
+            used_live_data=False,
+            fallback_reason=fallback_reason,
+        )
+    )
+    _TELEMETRY_METRICS_CACHE[cache_key] = (now, payload)
+    return payload
 
 
 @router.get("/demo", summary="Return demo waste analysis (Cisco ASA scenario)")

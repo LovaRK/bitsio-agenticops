@@ -1,0 +1,43 @@
+1
+00:00:00,000 --> 00:00:07,500
+Operations teams drown in telemetry, alerts, and fragmented workflows.
+
+2
+00:00:07,500 --> 00:00:14,500
+BitsIO AgenticOps turns Splunk data into explainable AI decisions with human control.
+
+3
+00:00:14,500 --> 00:00:23,000
+Dashboard shows live incidents, confidence, approvals, and runtime status in one place.
+
+4
+00:00:23,000 --> 00:00:31,000
+In Incidents, every conclusion is transparent: evidence, correlation, reasoning, and policy checks.
+
+5
+00:00:31,000 --> 00:00:39,000
+Decision Gate enforces human approval with clear approve and reject paths.
+
+6
+00:00:39,000 --> 00:00:46,500
+Approvals centralizes pending decisions for fast, accountable review.
+
+7
+00:00:46,500 --> 00:00:54,000
+Monitoring provides platform health, latency, and runtime quality signals.
+
+8
+00:00:54,000 --> 00:01:03,000
+Telemetry Value Impact quantifies ingest waste and annual savings opportunities.
+
+9
+00:01:03,000 --> 00:01:12,000
+Fraud Risk Agent correlates payment, identity, and approval anomalies into explainable risk actions.
+
+10
+00:01:12,000 --> 00:01:20,000
+Settings lets teams switch local and cloud runtime profiles and validate connections safely.
+
+11
+00:01:20,000 --> 00:01:30,000
+BitsIO AgenticOps: faster response, lower waste, and safer decisions for SRE, SOC, Audit, and Risk teams.

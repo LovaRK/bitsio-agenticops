@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from apps.api.app.dependencies import (
     get_splunk_adapter,
     get_splunk_incident_service,
+    resolve_splunk_mode_for_workload,
 )
 from apps.api.app.services.contracts import IncidentServiceProtocol
 from apps.api.app.services.runtime_connectivity import (
@@ -31,11 +32,11 @@ router = APIRouter(prefix="/api/v1", tags=["settings"])
 
 class RuntimeConfigPayload(BaseModel):
     runtime_mode: RuntimeMode | None = Field(default=None)
-    model_provider: str = Field(default="ollama")
-    model_name: str = Field(default="qwen2.5:14b")
-    splunk_adapter_mode: str = Field(default="auto")
-    model_mock_mode: bool = Field(default=False)
-    splunk_live_mode: bool = Field(default=False)
+    model_provider: str | None = Field(default=None)
+    model_name: str | None = Field(default=None)
+    splunk_adapter_mode: str | None = Field(default=None)
+    model_mock_mode: bool | None = Field(default=None)
+    splunk_live_mode: bool | None = Field(default=None)
 
 
 class RuntimeConfigResponse(BaseModel):
@@ -114,18 +115,26 @@ def update_runtime_settings(
     """Update runtime settings and clear dependency caches."""
     if payload.runtime_mode is not None:
         resolved = _runtime_mode_config(payload.runtime_mode)
-        model_provider = str(resolved["model_provider"])
-        model_name = str(resolved["model_name"])
-        model_mock_mode = bool(resolved["model_mock_mode"])
-        splunk_live_mode = bool(resolved["splunk_live_mode"])
-        adapter_mode = str(resolved["splunk_adapter_mode"])
+        model_provider = (payload.model_provider or str(resolved["model_provider"])).strip().lower()
+        model_name = (payload.model_name or str(resolved["model_name"])).strip()
+        model_mock_mode = (
+            bool(payload.model_mock_mode)
+            if payload.model_mock_mode is not None
+            else bool(resolved["model_mock_mode"])
+        )
+        splunk_live_mode = (
+            bool(payload.splunk_live_mode)
+            if payload.splunk_live_mode is not None
+            else bool(resolved["splunk_live_mode"])
+        )
+        adapter_mode = (payload.splunk_adapter_mode or str(resolved["splunk_adapter_mode"])).strip().lower()
         runtime_mode = payload.runtime_mode
     else:
-        model_provider = payload.model_provider.strip().lower()
-        adapter_mode = payload.splunk_adapter_mode.strip().lower()
-        model_name = payload.model_name.strip()
-        model_mock_mode = payload.model_mock_mode
-        splunk_live_mode = payload.splunk_live_mode
+        model_provider = (payload.model_provider or "ollama").strip().lower()
+        adapter_mode = (payload.splunk_adapter_mode or "auto").strip().lower()
+        model_name = (payload.model_name or "qwen2.5:7b").strip()
+        model_mock_mode = bool(payload.model_mock_mode)
+        splunk_live_mode = bool(payload.splunk_live_mode)
         runtime_mode = _resolve_runtime_mode(
             model_provider=model_provider,
             splunk_live_mode=splunk_live_mode,
@@ -190,6 +199,22 @@ def check_runtime_connections(
     cfg = get_settings()
     model_status = check_model_connectivity(cfg)
     splunk_status = check_splunk_connectivity(cfg, splunk_service=splunk_service)
+    configured_mode = cfg.splunk_adapter_mode.strip().lower()
+    resolved_deterministic = resolve_splunk_mode_for_workload(workload="deterministic")
+    resolved_agentic = resolve_splunk_mode_for_workload(workload="agentic")
+    backend = (
+        "splunk-native"
+        if resolved_deterministic == "native"
+        else ("splunk-mcp" if resolved_deterministic == "mcp" else f"splunk-{resolved_deterministic}")
+    )
+
+    splunk_status = {
+        **splunk_status,
+        "configured_adapter_mode": configured_mode,
+        "resolved_adapter_mode": resolved_deterministic,
+        "resolved_agentic_mode": resolved_agentic,
+        "backend": backend,
+    }
 
     return RuntimeConnectivityResponse(
         model=model_status,

@@ -81,16 +81,16 @@ export function ActionDock() {
     <>
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-secondary text-on-secondary px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 z-[60]">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[min(32rem,calc(100vw-1rem))] bg-secondary text-on-secondary px-4 sm:px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-300 z-[60]">
           <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-          <span className="text-sm font-bold">{toastMessage}</span>
+          <span className="text-xs sm:text-sm font-bold">{toastMessage}</span>
         </div>
       )}
 
       {/* Floating Action Dock */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-surface-variant/60 backdrop-blur-xl border border-outline-variant/30 px-6 py-3 rounded-full flex items-center gap-8 shadow-2xl z-50">
+      <div className="fixed bottom-20 sm:bottom-8 left-1/2 -translate-x-1/2 w-[min(44rem,calc(100vw-1rem))] sm:w-auto bg-surface-variant/60 backdrop-blur-xl border border-outline-variant/30 px-3 sm:px-6 py-2.5 sm:py-3 rounded-full flex items-center justify-between sm:justify-start gap-3 sm:gap-8 shadow-2xl z-50">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-on-surface uppercase tracking-wider">System Pulse</span>
+          <span className="text-[10px] sm:text-xs font-bold text-on-surface uppercase tracking-wider">System Pulse</span>
           <div className="flex gap-1 items-end h-6">
             {[1, 2, 3, 4].map((i) => (
               <div
@@ -107,15 +107,15 @@ export function ActionDock() {
           </div>
         </div>
         
-        <div className="h-6 w-px bg-outline-variant/30"></div>
+        <div className="hidden sm:block h-6 w-px bg-outline-variant/30"></div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <button
             onClick={handleQuickResolve}
             disabled={isResolving}
             title="Resolve high-priority pending approvals in one action"
             data-testid="quick-resolve-btn"
-            className={`flex items-center gap-2 text-xs font-bold transition-all active:scale-95 ${
+            className={`flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold transition-all active:scale-95 ${
               isResolving 
                 ? "text-outline bg-surface-container py-1.5 px-3 rounded-lg cursor-not-allowed" 
                 : "text-on-surface hover:text-primary"
@@ -131,7 +131,7 @@ export function ActionDock() {
             onClick={handleRecentActivity}
             disabled={isNavigating}
             title="Jump to incident activity feed"
-            className="flex items-center gap-2 text-xs font-bold text-primary hover:text-primary transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-primary hover:text-primary transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <span className={`material-symbols-outlined text-sm ${isNavigating ? "animate-spin" : ""}`}>
               {isNavigating ? "progress_activity" : "history"}

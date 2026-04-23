@@ -29,43 +29,78 @@ function getSeverityStyles(severity: string) {
 }
 
 export default async function DashboardPage() {
-  let summary: Awaited<ReturnType<typeof getDashboardSummary>>;
-  let settings: Awaited<ReturnType<typeof getSettingsSnapshot>>;
-  let telemetryMetrics: Awaited<ReturnType<typeof getTelemetryMetrics>>;
+  const [summaryResult, settingsResult, telemetryResult] = await Promise.allSettled([
+    getDashboardSummary(),
+    getSettingsSnapshot(),
+    getTelemetryMetrics(),
+  ]);
 
-  try {
-    [summary, settings, telemetryMetrics] = await Promise.all([
-      getDashboardSummary(),
-      getSettingsSnapshot(),
-      getTelemetryMetrics(),
-    ]);
-  } catch {
-    return (
-      <section className="pt-6 pb-12 px-8" data-testid="dashboard-page">
-        <div className="rounded-xl border border-error/25 bg-error/10 p-6">
-          <h2 className="text-xl font-semibold text-on-surface">Live dashboard data unavailable</h2>
-          <p className="mt-2 text-sm text-on-surface-variant">
-            Dashboard now runs in live-only mode for core tabs. Open Settings and verify API + Splunk
-            connectivity, then refresh this page.
-          </p>
-          <div className="mt-4 flex items-center gap-3">
-            <Link
-              href="/settings"
-              className="rounded-lg bg-primary-container px-3 py-2 text-xs font-bold text-on-primary-container"
-            >
-              Open Settings
-            </Link>
-            <Link
-              href="/monitoring"
-              className="rounded-lg border border-outline-variant/35 px-3 py-2 text-xs font-bold text-on-surface"
-            >
-              Open Monitoring
-            </Link>
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const summary =
+    summaryResult.status === "fulfilled"
+      ? summaryResult.value
+      : {
+          stats: {
+            active_incidents: 0,
+            pending_approvals: 0,
+            avg_confidence: 0,
+            source_indexes: [],
+            last_updated: new Date().toISOString(),
+          },
+          items: [],
+        };
+
+  const settings =
+    settingsResult.status === "fulfilled"
+      ? settingsResult.value
+      : {
+          platform_name: "BitsIO AgenticOps",
+          environment: "dev",
+          timezone: "UTC",
+          splunk: {
+            adapter_mode: "auto",
+            live_mode: false,
+            base_url: "",
+            web_base_url: "",
+            connected: false,
+            index_count: 0,
+          },
+          model: {
+            provider: "unknown",
+            name: "unknown",
+            runtime: "local",
+            base_url: "",
+            mock_mode: true,
+          },
+          runtime: {
+            mode: "LOCAL_DEV" as const,
+          },
+          security: {
+            rbac_enabled: true,
+            rate_limit_per_minute: 100,
+            oidc_boundary: true,
+          },
+        };
+
+  const telemetryMetrics =
+    telemetryResult.status === "fulfilled"
+      ? telemetryResult.value
+      : {
+          summary: {
+            total_annual_spend_usd: 0,
+            total_potential_savings_usd: 0,
+            avg_utilization_score: 0,
+            security_gap_count: 0,
+            recommendation_complexity: "Low" as const,
+          },
+          sources: [],
+          security_findings: [],
+          savings_projection: [],
+        };
+
+  const hasRuntimeFetchFailure =
+    summaryResult.status === "rejected" ||
+    settingsResult.status === "rejected" ||
+    telemetryResult.status === "rejected";
   const recent = summary.items.slice(0, 8);
   const lastUpdated = formatDateTimeUTC(summary.stats.last_updated);
 
@@ -94,7 +129,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <section className="pt-6 pb-12 px-8" data-testid="dashboard-page">
+    <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="dashboard-page">
       <div className="mb-10">
         <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight mb-2">
           Incident Dashboard
@@ -103,6 +138,13 @@ export default async function DashboardPage() {
           Live view from Splunk incidents, approval queues, and graph outcomes.
         </p>
       </div>
+
+      {hasRuntimeFetchFailure ? (
+        <div className="mb-6 rounded-xl border border-error/25 bg-error/10 p-4 text-sm text-on-surface-variant">
+          Some live dashboard sections could not be loaded. Open Settings to verify API + Splunk
+          connectivity.
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {stats.map((stat) => (

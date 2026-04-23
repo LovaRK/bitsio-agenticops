@@ -10,7 +10,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from apps.api.app.dependencies import get_splunk_adapter
+from apps.api.app.dependencies import get_splunk_adapter_native_default
 from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 from splunk_mcp.adapter import SplunkAdapter
@@ -418,7 +418,7 @@ def fraud_demo(_ctx: AuthContext = Depends(require_analyst)) -> FraudOverviewRes
 def fraud_overview(
     mode: Literal["auto", "seed", "live"] = Query(default="auto"),
     _ctx: AuthContext = Depends(require_analyst),
-    adapter: SplunkAdapter = Depends(get_splunk_adapter),
+    adapter: SplunkAdapter = Depends(get_splunk_adapter_native_default),
 ) -> FraudOverviewResponse:
     settings = get_settings()
 
@@ -454,7 +454,7 @@ def fraud_overview(
 @router.post("/analyze/live", response_model=FraudOverviewResponse, summary="Force live fraud analysis")
 def fraud_analyze_live(
     _ctx: AuthContext = Depends(require_analyst),
-    adapter: SplunkAdapter = Depends(get_splunk_adapter),
+    adapter: SplunkAdapter = Depends(get_splunk_adapter_native_default),
 ) -> FraudOverviewResponse:
     settings = get_settings()
     if not settings.splunk_live_mode:

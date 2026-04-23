@@ -305,7 +305,7 @@ export function ReasoningTimeline({
                         <p className="mb-2 text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">
                           Click a tool chip to expand details
                         </p>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {toolCalls.map((tool, i) => {
                             const toolKey = `${node.node_name}-${tool.tool_name}-${i}`;
                             const isSelected = Boolean(expandedToolKeys[toolKey]);
@@ -527,19 +527,19 @@ export function ReasoningTimeline({
       </div>
 
       {dockVisible ? (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-fit px-8 py-3 glass-panel rounded-full border border-outline-variant/20 shadow-2xl flex items-center gap-8 z-50" data-testid="timeline-status-dock">
+        <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 w-[min(44rem,calc(100vw-1rem))] sm:w-fit px-3 sm:px-8 py-2.5 sm:py-3 glass-panel rounded-full border border-outline-variant/20 shadow-2xl flex items-center justify-between sm:justify-start gap-3 sm:gap-8 z-50" data-testid="timeline-status-dock">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-secondary glow-success" />
             <span className="text-xs font-bold tracking-tight text-on-surface">
               Agent: <span className="text-on-surface-variant">Observer-Prime</span>
             </span>
           </div>
-          <div className="h-4 w-px bg-outline-variant/30" />
+          <div className="hidden sm:block h-4 w-px bg-outline-variant/30" />
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-sm text-on-surface-variant">memory</span>
-            <span className="text-xs font-mono text-on-surface-variant">Memory Usage: {memoryUsage}%</span>
+            <span className="text-[11px] sm:text-xs font-mono text-on-surface-variant">Memory: {memoryUsage}%</span>
           </div>
-          <div className="h-4 w-px bg-outline-variant/30" />
+          <div className="hidden sm:block h-4 w-px bg-outline-variant/30" />
           <div className="flex items-center gap-4">
             <button
               type="button"

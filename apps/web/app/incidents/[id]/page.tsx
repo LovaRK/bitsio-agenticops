@@ -96,7 +96,7 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
 
   if (!detail.node_runs.length) {
     return (
-      <main className="pt-6 pb-12 px-8">
+      <main className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12">
         <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6">
           <h1 className="text-xl font-semibold text-on-surface">No timeline data available</h1>
           <p className="mt-2 text-sm text-on-surface-variant">
@@ -108,7 +108,7 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
   }
 
   return (
-    <main className="pt-6 pb-12 px-8" data-testid="incident-detail-page">
+    <main className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="incident-detail-page">
       <ContextPanel incidentId={params.id} />
 
       {/* Incident Header */}

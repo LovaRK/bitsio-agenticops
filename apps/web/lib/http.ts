@@ -30,8 +30,25 @@ type ApiFetchOptions = RequestInit & {
   suppressAlerts?: boolean;
 };
 
+function buildApiUrl(base: string, path: string): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const normalizedBase = (base || "").trim().replace(/\/+$/, "");
+
+  if (!normalizedBase) {
+    return normalizedPath;
+  }
+
+  // Prevent duplicated API prefix when PUBLIC_API_BASE_URL="/api"
+  // and callers pass path="/api/v1/...".
+  if (normalizedBase.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    return `${normalizedBase}${normalizedPath.slice(4)}`;
+  }
+
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-  const url = `${API_BASE_URL}${path}`;
+  const url = buildApiUrl(API_BASE_URL, path);
   const { suppressAlerts = false, ...requestOptions } = options;
   const headers = new Headers(requestOptions.headers ?? {});
 
@@ -39,7 +56,9 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
     headers.set("Content-Type", "application/json");
   }
 
-  if (process.env.NODE_ENV !== "production" && !headers.has("x-api-key")) {
+  // Attach API key in all environments when no explicit auth is provided.
+  // This keeps RBAC behavior consistent between dev and production-like demos.
+  if (!headers.has("x-api-key") && !headers.has("Authorization") && DEV_ANALYST_KEY) {
     headers.set("x-api-key", DEV_ANALYST_KEY);
   }
 

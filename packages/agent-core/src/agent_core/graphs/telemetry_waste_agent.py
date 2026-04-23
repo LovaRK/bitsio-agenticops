@@ -80,6 +80,7 @@ class TelemetryWasteAgentGraph:
     splunk_adapter: SplunkMCPAdapter
     model_adapter: ModelAdapter = field(default_factory=StubModelAdapter)
     policy_evaluator: PolicyEvaluator | None = None
+    search_window_days: int = 90
     fetch_from_splunk: bool = False
 
     def run(
@@ -138,6 +139,8 @@ class TelemetryWasteAgentGraph:
         """Query Splunk for index stats and search activity."""
         next_state = state.model_copy(deep=True)
         try:
+            window_days = max(1, int(self.search_window_days))
+            earliest = f"-{window_days}d"
             index_meta = self.splunk_adapter.list_indexes()
             index_retention_days: dict[str, int] = {}
             index_size_mb: dict[str, float] = {}
@@ -147,7 +150,7 @@ class TelemetryWasteAgentGraph:
                 index_retention_days[item.name] = 90
 
             index_result = self.splunk_adapter.run_search(
-                query=_SEARCH_FIELD_STATS, earliest="-90d", latest="now"
+                query=_SEARCH_FIELD_STATS, earliest=earliest, latest="now"
             )
             mapped_profiles: list[dict[str, Any]] = []
             for row in index_result.results:
@@ -191,7 +194,7 @@ class TelemetryWasteAgentGraph:
             next_state.raw_index_profiles = mapped_profiles
 
             activity_result = self.splunk_adapter.run_search(
-                query=_SEARCH_USAGE_ACTIVITY, earliest="-90d", latest="now"
+                query=_SEARCH_USAGE_ACTIVITY, earliest=earliest, latest="now"
             )
             activity_by_sourcetype = [
                 {
@@ -208,7 +211,7 @@ class TelemetryWasteAgentGraph:
             ]
 
             activity_index_result = self.splunk_adapter.run_search(
-                query=_SEARCH_USAGE_BY_INDEX, earliest="-90d", latest="now"
+                query=_SEARCH_USAGE_BY_INDEX, earliest=earliest, latest="now"
             )
             activity_by_index = [
                 {
