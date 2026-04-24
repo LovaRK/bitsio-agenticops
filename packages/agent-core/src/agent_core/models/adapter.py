@@ -3,10 +3,91 @@ from __future__ import annotations
 import logging
 import os
 from abc import ABC, abstractmethod
+from datetime import datetime
+from enum import Enum
+from typing import Optional, Tuple
 
 import httpx
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
+
+
+class SecurityError(Exception):
+    """Raised when privacy contract is violated."""
+
+    pass
+
+
+class ModelProvider(str, Enum):
+    """Available model providers."""
+
+    OLLAMA = "ollama"
+    ANTHROPIC = "anthropic"
+    OPENAI = "openai"
+    STUB = "stub"
+
+
+class RuntimeMode(str, Enum):
+    """Privacy/security modes for model selection."""
+
+    LOCAL_ONLY = "local_only"  # Never cloud
+    LOCAL_FIRST = "local_first"  # Default local, user can enable cloud
+    CLOUD_ALLOWED = "cloud_allowed"  # Cloud available but not default
+
+
+class UserModelSettings(BaseModel):
+    """User preferences for model selection."""
+
+    use_cloud: bool = Field(False, description="User explicitly opted-in to cloud models")
+    preferred_cloud_provider: Optional[ModelProvider] = Field(
+        None, description="User's preferred cloud provider"
+    )
+
+
+class ModelMetadata(BaseModel):
+    """Metadata about which model was used for transparency."""
+
+    provider: str
+    model: str
+    mode: str  # "local" or "cloud"
+    user_opt_in: bool
+    runtime_mode: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+    def dict(self, **kwargs):
+        """Override to ensure timestamp is ISO format (deprecated, use model_dump)."""
+        data = super().model_dump(**kwargs)
+        data["timestamp"] = data["timestamp"].isoformat()
+        return data
+
+    def model_dump(self, **kwargs):
+        """Return dict with ISO timestamp."""
+        data = super().model_dump(**kwargs)
+        data["timestamp"] = data["timestamp"].isoformat()
+        return data
+
+
+def enforce_privacy_contract(
+    selected_provider: ModelProvider,
+    user_settings: UserModelSettings,
+    runtime_mode: RuntimeMode,
+) -> None:
+    """CRITICAL: Prevent cloud usage without explicit permission.
+
+    Raises SecurityError if cloud attempted without user permission.
+    This is the security boundary that cannot be bypassed.
+    """
+    if runtime_mode == RuntimeMode.LOCAL_ONLY:
+        if selected_provider != ModelProvider.OLLAMA:
+            raise SecurityError(
+                "LOCAL_ONLY mode enforced: Cloud models are disabled at the system level."
+            )
+
+    if selected_provider != ModelProvider.OLLAMA and not user_settings.use_cloud:
+        raise SecurityError(
+            "Cloud model usage not allowed. User has not explicitly opted-in to cloud models."
+        )
 
 
 class ModelAdapter(ABC):
@@ -85,7 +166,87 @@ class OllamaModelAdapter(ModelAdapter):
             return f"[fallback] Error: {type(exc).__name__} — {prompt[:200]}"
 
 
+class ModelSelectionEngine:
+    """Core engine for selecting models with local-first privacy enforcement."""
+
+    def __init__(
+        self,
+        runtime_mode: RuntimeMode = RuntimeMode.LOCAL_FIRST,
+        ollama_model: str | None = None,
+        ollama_url: str | None = None,
+        anthropic_model: str | None = None,
+    ):
+        self.runtime_mode = runtime_mode
+        self.ollama_model = ollama_model or os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+        self.ollama_url = (ollama_url or os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")).rstrip(
+            "/"
+        )
+        self.anthropic_model = anthropic_model or os.getenv(
+            "ANTHROPIC_MODEL", "claude-sonnet-4-20250514"
+        )
+        self.anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+
+    def _get_local_model(self) -> Tuple[ModelProvider, str, ModelAdapter]:
+        """Get local Ollama model."""
+        adapter = OllamaModelAdapter(model_name=self.ollama_model, base_url=self.ollama_url)
+        return ModelProvider.OLLAMA, self.ollama_model, adapter
+
+    def _get_cloud_model(
+        self, preferred_provider: Optional[ModelProvider] = None
+    ) -> Tuple[ModelProvider, str, ModelAdapter]:
+        """Get cloud model. Raises error if not configured."""
+        target = preferred_provider or ModelProvider.ANTHROPIC
+
+        if target == ModelProvider.ANTHROPIC:
+            if not self.anthropic_api_key:
+                raise SecurityError(
+                    f"Cloud model {target} requested but API key not configured. "
+                    "Set ANTHROPIC_API_KEY in environment."
+                )
+            adapter = AnthropicModelAdapter(model_name=self.anthropic_model)
+            return ModelProvider.ANTHROPIC, self.anthropic_model, adapter
+
+        if target == ModelProvider.OPENAI:
+            raise SecurityError("OpenAI model requested but not yet implemented.")
+
+        raise SecurityError(f"Unknown cloud provider: {target}")
+
+    def select_model(
+        self, user_settings: UserModelSettings
+    ) -> Tuple[ModelProvider, str, ModelAdapter]:
+        """Select model based on runtime mode and user preferences.
+
+        RULE 1: LOCAL_ONLY mode ALWAYS uses local
+        RULE 2: User must explicitly opt-in to cloud
+        RULE 3: DEFAULT is ALWAYS local
+        """
+        if self.runtime_mode == RuntimeMode.LOCAL_ONLY:
+            return self._get_local_model()
+
+        if user_settings.use_cloud:
+            return self._get_cloud_model(user_settings.preferred_cloud_provider)
+
+        return self._get_local_model()
+
+    def create_metadata(
+        self,
+        provider: ModelProvider,
+        model: str,
+        user_opt_in: bool,
+    ) -> ModelMetadata:
+        """Create transparency metadata for API responses."""
+        mode = "cloud" if provider != ModelProvider.OLLAMA else "local"
+        return ModelMetadata(
+            provider=provider.value,
+            model=model,
+            mode=mode,
+            user_opt_in=user_opt_in,
+            runtime_mode=self.runtime_mode.value,
+        )
+
+
 def resolve_model_adapter() -> ModelAdapter:
+    """Legacy function for backwards compatibility. Use ModelSelectionEngine for new code."""
     provider = os.getenv("MODEL_PROVIDER", "stub").strip().lower()
 
     if provider == "ollama":
