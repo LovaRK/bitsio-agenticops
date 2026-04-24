@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from apps.api.app.dependencies import get_splunk_adapter_native_default
+from apps.api.app.services.model_selector import Complexity, TaskType, select_model
 from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 from splunk_mcp.adapter import SplunkAdapter
@@ -82,6 +83,18 @@ class FraudPricingContext(BaseModel):
     optional_managed_tuning_usd_per_year: str
 
 
+class FraudModelMeta(BaseModel):
+    task: str
+    complexity: str
+    latency_budget_ms: int
+    context_size: int
+    requested: str
+    resolved: str
+    reason: str
+    llm_required: bool
+    source: Literal["policy"]
+
+
 class FraudOverviewResponse(BaseModel):
     mode: Literal["live", "seed"]
     degraded_reason: str | None
@@ -95,6 +108,7 @@ class FraudOverviewResponse(BaseModel):
     agent_telemetry: FraudAgentTelemetry
     pricing_context: FraudPricingContext
     narrative: str
+    model_meta: FraudModelMeta
 
 
 _SEED_CASES: list[FraudCase] = [
@@ -392,7 +406,12 @@ def _query_live_cases(adapter: SplunkAdapter, limit: int = 25) -> list[FraudCase
     return list(deduped.values())
 
 
-def _build_overview(cases: list[FraudCase], mode: Literal["live", "seed"], degraded_reason: str | None) -> FraudOverviewResponse:
+def _build_overview(
+    cases: list[FraudCase],
+    mode: Literal["live", "seed"],
+    degraded_reason: str | None,
+    model_meta: dict[str, str | int | bool],
+) -> FraudOverviewResponse:
     return FraudOverviewResponse(
         mode=mode,
         degraded_reason=degraded_reason,
@@ -406,12 +425,20 @@ def _build_overview(cases: list[FraudCase], mode: Literal["live", "seed"], degra
         agent_telemetry=_agent_telemetry(cases),
         pricing_context=_pricing_context(),
         narrative=_narrative(cases, mode),
+        model_meta=FraudModelMeta(**model_meta),
     )
 
 
 @router.get("/demo", response_model=FraudOverviewResponse, summary="Fraud risk demo response")
 def fraud_demo(_ctx: AuthContext = Depends(require_analyst)) -> FraudOverviewResponse:
-    return _build_overview(list(_SEED_CASES), mode="seed", degraded_reason=None)
+    settings = get_settings()
+    model_meta = select_model(
+        task=TaskType.FRAUD,
+        complexity=Complexity.HIGH,
+        latency_budget_ms=1200,
+        provider=settings.model_provider,
+    ).to_dict()
+    return _build_overview(list(_SEED_CASES), mode="seed", degraded_reason=None, model_meta=model_meta)
 
 
 @router.get("/overview", response_model=FraudOverviewResponse, summary="Fraud risk overview")
@@ -421,9 +448,21 @@ def fraud_overview(
     adapter: SplunkAdapter = Depends(get_splunk_adapter_native_default),
 ) -> FraudOverviewResponse:
     settings = get_settings()
+    latency_budget_ms = 1200 if mode == "live" else 1800
 
     if mode == "seed" or (mode == "auto" and not settings.splunk_live_mode):
-        return _build_overview(list(_SEED_CASES), mode="seed", degraded_reason=None)
+        model_meta = select_model(
+            task=TaskType.FRAUD,
+            complexity=Complexity.HIGH,
+            latency_budget_ms=latency_budget_ms,
+            provider=settings.model_provider,
+        ).to_dict()
+        return _build_overview(
+            list(_SEED_CASES),
+            mode="seed",
+            degraded_reason=None,
+            model_meta=model_meta,
+        )
 
     try:
         cases = _query_live_cases(adapter)
@@ -433,22 +472,52 @@ def fraud_overview(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=f"Fraud live analysis failed: {exc}",
             ) from exc
+        model_meta = select_model(
+            task=TaskType.FRAUD,
+            complexity=Complexity.HIGH,
+            latency_budget_ms=latency_budget_ms,
+            provider=settings.model_provider,
+        ).to_dict()
         return _build_overview(
             list(_SEED_CASES),
             mode="seed",
             degraded_reason=f"Live Splunk query failed. Using seeded fraud cases. ({exc})",
+            model_meta=model_meta,
         )
 
     if not cases:
+        model_meta = select_model(
+            task=TaskType.FRAUD,
+            complexity=Complexity.MEDIUM,
+            latency_budget_ms=latency_budget_ms,
+            provider=settings.model_provider,
+        ).to_dict()
         if mode == "live":
-            return _build_overview([], mode="live", degraded_reason="No matching live fraud telemetry found in current search window.")
+            return _build_overview(
+                [],
+                mode="live",
+                degraded_reason="No matching live fraud telemetry found in current search window.",
+                model_meta=model_meta,
+            )
         return _build_overview(
             list(_SEED_CASES),
             mode="seed",
             degraded_reason="Live Splunk query returned no fraud patterns. Using seeded fraud cases for continuity.",
+            model_meta=model_meta,
         )
 
-    return _build_overview(cases, mode="live", degraded_reason=None)
+    complexity = (
+        Complexity.HIGH
+        if any(case.risk_score >= 85 for case in cases)
+        else (Complexity.MEDIUM if any(case.risk_score >= 70 for case in cases) else Complexity.LOW)
+    )
+    model_meta = select_model(
+        task=TaskType.FRAUD,
+        complexity=complexity,
+        latency_budget_ms=latency_budget_ms,
+        provider=settings.model_provider,
+    ).to_dict()
+    return _build_overview(cases, mode="live", degraded_reason=None, model_meta=model_meta)
 
 
 @router.post("/analyze/live", response_model=FraudOverviewResponse, summary="Force live fraud analysis")
@@ -464,4 +533,15 @@ def fraud_analyze_live(
         )
 
     cases = _query_live_cases(adapter)
-    return _build_overview(cases, mode="live", degraded_reason=None)
+    complexity = (
+        Complexity.HIGH
+        if any(case.risk_score >= 85 for case in cases)
+        else (Complexity.MEDIUM if any(case.risk_score >= 70 for case in cases) else Complexity.LOW)
+    )
+    model_meta = select_model(
+        task=TaskType.FRAUD,
+        complexity=complexity,
+        latency_budget_ms=1200,
+        provider=settings.model_provider,
+    ).to_dict()
+    return _build_overview(cases, mode="live", degraded_reason=None, model_meta=model_meta)

@@ -1,6 +1,6 @@
 # BitsIO AgenticOps — Single Source of Truth
 
-Last updated: 2026-04-23 (afternoon)
+Last updated: 2026-04-24 (morning)
 Owner: Core Engineering (Codex-led)
 Status: Canonical
 
@@ -372,6 +372,95 @@ Non-negotiable acceptance criteria for guardrail rollout:
 4. every model/tool step is audit-logged with workflow_id and cost metadata
 5. deterministic API workloads use native adapter unless explicitly overridden
 6. prompt safety checks run before model invocation on risky surfaces
+
+## 19. Common Startup Failures + Prevention (2026-04-24)
+
+Two recurrent local failures were traced to process lifecycle drift (services not running, stale PIDs).
+
+### A. Browser error: `ERR_CONNECTION_REFUSED` on `localhost:3000`
+
+Root cause:
+- Web/API processes are not listening on `3000`/`8001` (often after terminal/session changes).
+
+Prevention:
+- use orchestrated startup instead of manual ad-hoc runs.
+- authoritative sequence:
+
+```bash
+cd /Users/ramakrishna/Desktop/OfficeWork/bitsio-agenticops
+make local
+make local-status
+```
+
+Expected status:
+- API up: `127.0.0.1:8001`
+- Web up: `127.0.0.1:3000`
+- Splunk tunnel up: `localhost:8089`
+
+Recovery if drift occurs:
+
+```bash
+make local-stop
+make local
+make local-status
+```
+
+### B. Runtime check error: `Model: Not connected (ConnectError: [Errno 61] Connection refused)`
+
+Root cause:
+- local Ollama server is down on `127.0.0.1:11434`.
+- Splunk connectivity can still be healthy, so model and Splunk status can diverge.
+
+Prevention:
+- `make local` now includes Ollama preflight startup.
+- new Makefile targets:
+  - `make ollama-start`
+  - `make ollama-stop`
+  - `make ollama-status`
+
+Verification:
+
+```bash
+make ollama-status
+curl -H 'x-api-key: dev-analyst' http://127.0.0.1:8001/api/v1/settings/runtime/check
+```
+
+Expected runtime check shape:
+- `model.connected=true`
+- `splunk.connected=true`
+
+Operational policy:
+- for local integration demos, startup must always be via `make local`.
+- avoid relying on stale `.pid` files as process truth; use port and health checks.
+
+### C. Ollama endpoint mapping (local vs containerized deploy)
+
+This project supports two valid Ollama base URL patterns, depending on where API runs:
+
+1. Local host process mode (default local dev):
+   - API runs on host machine (`127.0.0.1:8001`)
+   - Ollama must be reachable at:
+   - `OLLAMA_BASE_URL=http://127.0.0.1:11434`
+
+2. Containerized API mode (server/docker compose):
+   - API runs inside container
+   - Ollama on host is reachable from container via:
+   - `OLLAMA_BASE_URL=http://host.containers.internal:11434`
+
+If these are crossed (e.g., container URL in host mode or host URL in container mode),
+runtime check will report:
+- `Model: Not connected (ConnectError: [Errno 61] Connection refused)` (macOS)
+- or `[Errno 111] Connection refused` (Linux)
+
+Quick verification command:
+
+```bash
+curl -H 'x-api-key: dev-analyst' http://127.0.0.1:8001/api/v1/settings/runtime/check
+```
+
+Expected healthy shape:
+- `model.connected=true`
+- `splunk.connected=true`
 
 ---
 

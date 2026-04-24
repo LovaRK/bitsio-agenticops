@@ -128,6 +128,7 @@ export default async function WastePage() {
     coverage_pct: 92,
     source: "derived" as const,
   };
+  const modelMeta = metrics.model_meta;
   const governanceRisk: "low" | "medium" | "high" =
     governance.approval_status === "requires_review"
       ? "high"
@@ -294,6 +295,36 @@ export default async function WastePage() {
             <p className="mt-1 text-sm text-on-surface">Freshness: <span className="font-semibold">{trust.freshness}</span></p>
             <p className="mt-1 text-sm text-on-surface">Coverage: <span className="font-semibold">{trust.coverage_pct}%</span></p>
             <p className="mt-1 text-sm text-on-surface">Confidence: <span className="font-semibold">{Math.round(trust.confidence * 100)}%</span></p>
+            {modelMeta ? (
+              <>
+                <div className="mt-3 h-px w-full bg-outline-variant/20" />
+                <p className="mt-3 text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
+                  Model Selection Policy
+                </p>
+                <p className="mt-2 text-sm text-on-surface">
+                  Task: <span className="font-semibold">{modelMeta.task}</span> | Complexity:{" "}
+                  <span className="font-semibold">{modelMeta.complexity}</span>
+                </p>
+                <p className="mt-1 text-sm text-on-surface">
+                  Requested: <span className="font-semibold">{modelMeta.requested}</span>
+                </p>
+                <p className="mt-1 text-sm text-on-surface">
+                  Resolved: <span className="font-semibold">{modelMeta.resolved}</span>
+                </p>
+                <p className="mt-1 text-sm text-on-surface">
+                  Reason: <span className="font-semibold">{modelMeta.reason}</span>
+                </p>
+                <p className="mt-1 text-sm text-on-surface">
+                  Latency budget: <span className="font-semibold">{modelMeta.latency_budget_ms}ms</span> | LLM required:{" "}
+                  <span className="font-semibold">{modelMeta.llm_required ? "Yes" : "No"}</span>
+                </p>
+                {!modelMeta.llm_required ? (
+                  <p className="mt-1 text-xs text-on-surface-variant">
+                    Deterministic telemetry pipeline path selected. No LLM call is required for this route.
+                  </p>
+                ) : null}
+              </>
+            ) : null}
           </MotionCard>
 
           <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">

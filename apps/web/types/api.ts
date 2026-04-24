@@ -375,6 +375,17 @@ export interface TelemetryMetricsResponse {
     next_milestone: string;
     next_milestone_target_usd: number;
   };
+  model_meta?: {
+    task: string;
+    complexity: "low" | "medium" | "high";
+    latency_budget_ms: number;
+    context_size: number;
+    requested: string;
+    resolved: string;
+    reason: string;
+    llm_required: boolean;
+    source: "policy";
+  };
 }
 
 export interface FraudCaseItem {
@@ -454,4 +465,15 @@ export interface FraudOverviewResponse {
   agent_telemetry: FraudAgentTelemetry;
   pricing_context: FraudPricingContext;
   narrative: string;
+  model_meta?: {
+    task: string;
+    complexity: "low" | "medium" | "high";
+    latency_budget_ms: number;
+    context_size: number;
+    requested: string;
+    resolved: string;
+    reason: string;
+    llm_required: boolean;
+    source: "policy";
+  };
 }

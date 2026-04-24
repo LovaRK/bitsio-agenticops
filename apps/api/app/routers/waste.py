@@ -38,6 +38,7 @@ from apps.api.app.dependencies import (
     get_splunk_adapter_native_default,
     resolve_splunk_mode_for_workload,
 )
+from apps.api.app.services.model_selector import Complexity, TaskType, select_model
 from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 
@@ -646,6 +647,12 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
       - 12-month savings projections
     """
     settings = get_settings()
+    model_meta = select_model(
+        task=TaskType.TELEMETRY,
+        complexity=Complexity.LOW,
+        latency_budget_ms=1000,
+        provider=settings.model_provider,
+    ).to_dict()
     request_started = time.perf_counter()
     search_window_days = max(1, int(settings.telemetry_metrics_search_window_days))
     query_plan = _telemetry_query_plan(search_window_days)
@@ -916,6 +923,7 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                         "next_milestone": "Month 3",
                         "next_milestone_target_usd": round(total_potential_savings * 0.48, 2),
                     },
+                    "model_meta": model_meta,
                 }
                 payload.update(
                     _build_query_meta(
@@ -1263,6 +1271,7 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
             "next_milestone": "Month 3",
             "next_milestone_target_usd": 278400.0,
         },
+        "model_meta": model_meta,
         "governance": _derive_metrics_governance(
             approval_required=False,
             guardrail_notes=[],

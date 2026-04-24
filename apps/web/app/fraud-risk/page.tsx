@@ -99,6 +99,11 @@ export default async function FraudRiskPage() {
           <span className="rounded-full border border-outline-variant/30 bg-surface-container px-3 py-1 text-on-surface-variant">
             Generated: <strong className="text-on-surface">{formatDateTimeUTC(data.generated_at)}</strong>
           </span>
+          {data.model_meta ? (
+            <span className="rounded-full border border-outline-variant/30 bg-surface-container px-3 py-1 text-on-surface-variant">
+              Model: <strong className="text-on-surface">{data.model_meta.resolved}</strong> ({data.model_meta.reason})
+            </span>
+          ) : null}
           {data.degraded_reason ? (
             <span className="rounded-full border border-tertiary/30 bg-tertiary-container/20 px-3 py-1 text-tertiary">
               Fallback: {data.degraded_reason}
@@ -274,6 +279,28 @@ export default async function FraudRiskPage() {
                 <strong className="text-on-surface">Human in the Loop:</strong>{" "}
                 {data.agent_telemetry.human_in_the_loop ? "Required" : "Not required"}
               </p>
+              {data.model_meta ? (
+                <>
+                  <p className="mt-3 text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
+                    Model Selection Policy
+                  </p>
+                  <p>
+                    <strong className="text-on-surface">Task:</strong> {data.model_meta.task} ({data.model_meta.complexity})
+                  </p>
+                  <p>
+                    <strong className="text-on-surface">Requested:</strong> {data.model_meta.requested}
+                  </p>
+                  <p>
+                    <strong className="text-on-surface">Resolved:</strong> {data.model_meta.resolved}
+                  </p>
+                  <p>
+                    <strong className="text-on-surface">Reason:</strong> {data.model_meta.reason}
+                  </p>
+                  <p>
+                    <strong className="text-on-surface">Latency Budget:</strong> {data.model_meta.latency_budget_ms}ms
+                  </p>
+                </>
+              ) : null}
             </div>
           </MotionCard>
         </div>
