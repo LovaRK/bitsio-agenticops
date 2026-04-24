@@ -433,6 +433,35 @@ Operational policy:
 - for local integration demos, startup must always be via `make local`.
 - avoid relying on stale `.pid` files as process truth; use port and health checks.
 
+### C. Ollama endpoint mapping (local vs containerized deploy)
+
+This project supports two valid Ollama base URL patterns, depending on where API runs:
+
+1. Local host process mode (default local dev):
+   - API runs on host machine (`127.0.0.1:8001`)
+   - Ollama must be reachable at:
+   - `OLLAMA_BASE_URL=http://127.0.0.1:11434`
+
+2. Containerized API mode (server/docker compose):
+   - API runs inside container
+   - Ollama on host is reachable from container via:
+   - `OLLAMA_BASE_URL=http://host.containers.internal:11434`
+
+If these are crossed (e.g., container URL in host mode or host URL in container mode),
+runtime check will report:
+- `Model: Not connected (ConnectError: [Errno 61] Connection refused)` (macOS)
+- or `[Errno 111] Connection refused` (Linux)
+
+Quick verification command:
+
+```bash
+curl -H 'x-api-key: dev-analyst' http://127.0.0.1:8001/api/v1/settings/runtime/check
+```
+
+Expected healthy shape:
+- `model.connected=true`
+- `splunk.connected=true`
+
 ---
 
 If any other document conflicts with this file, this file wins.
