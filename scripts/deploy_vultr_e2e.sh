@@ -132,8 +132,10 @@ fi
 if ! command -v docker >/dev/null 2>&1; then
   curl -fsSL https://get.docker.com | sh
 fi
-systemctl enable docker
-systemctl start docker
+if systemctl list-unit-files 2>/dev/null | grep -q '^docker\.service'; then
+  systemctl enable docker
+  systemctl start docker
+fi
 
 if [[ "${MODEL_PROVIDER:-}" == "ollama" ]]; then
   if ! command -v ollama >/dev/null 2>&1; then
