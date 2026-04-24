@@ -26,8 +26,20 @@ playwright-report/
 dist/
 coverage/
 *.log
+*.pid
+*.tsbuildinfo
 
 # Artifacts & Backups
 artifacts/
 apps/web/artifacts/
 backups/
+apps/web/test-results/
+
+# Local tooling / generated workspace files
+.agents/
+.claude/
+.codex/
+.opencode/
+graphify-out/
+AGENTS.md
+scripts/vultr.deploy.env

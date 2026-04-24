@@ -186,6 +186,10 @@ def test_waste_final_response_assembles_output() -> None:
     assert result.final_output.total_wasteful_sources >= 4
     assert result.final_output.estimated_annual_savings_usd > 90_000
     assert "cisco:asa" in result.final_output.summary
+    assert result.final_output.governance.policy_id == "telemetry-waste-policy"
+    assert result.final_output.governance.source in {"reported", "derived"}
+    assert result.final_output.security.risk_level in {"low", "medium", "high"}
+    assert result.final_output.security.encryption_required == "in-transit + at-rest"
 
 
 def test_waste_final_response_halts_on_approval_required() -> None:
@@ -214,6 +218,8 @@ def test_waste_final_response_zero_waste_summary() -> None:
     result = waste_final_response(state)
     assert result.final_output is not None
     assert "No high-volume unused" in result.final_output.summary
+    assert result.final_output.security.risk_level == "low"
+    assert result.final_output.governance.rule_triggered == "allow"
 
 
 def test_waste_final_response_waste_pct_calculation() -> None:

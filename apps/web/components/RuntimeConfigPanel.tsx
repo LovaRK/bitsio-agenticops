@@ -59,7 +59,7 @@ function ToggleRow(props: {
 export function RuntimeConfigPanel({ settings }: RuntimeConfigPanelProps) {
   const router = useRouter();
 
-  const initialMode: RuntimeMode = settings.runtime?.mode || "LOCAL_DEV";
+  const initialMode: RuntimeMode = settings.runtime?.mode || "LOCAL_INTEGRATION";
   const [runtimeMode, setRuntimeMode] = useState<RuntimeMode>(initialMode);
   const [lastAppliedMode, setLastAppliedMode] = useState<RuntimeMode>(initialMode);
   const [showCloudLiveConfirm, setShowCloudLiveConfirm] = useState(false);

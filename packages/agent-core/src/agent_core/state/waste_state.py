@@ -41,6 +41,26 @@ class WasteRecommendation(BaseModel):
     rationale: str
 
 
+class WasteGovernance(BaseModel):
+    """Governance metadata for the waste decision."""
+
+    policy_id: str
+    policy_version: str
+    rule_triggered: str
+    approval_reason: str
+    source: str = "derived"
+
+
+class WasteSecurityPosture(BaseModel):
+    """Security/compliance posture for the waste decision."""
+
+    data_classification: str
+    compliance_frameworks: list[str] = Field(default_factory=list)
+    encryption_required: str
+    risk_level: str
+    source: str = "derived"
+
+
 class TelemetryWasteFinalOutput(BaseModel):
     """Final output of the waste detection agent."""
 
@@ -55,6 +75,8 @@ class TelemetryWasteFinalOutput(BaseModel):
     confidence: float
     approval_required: bool
     guardrail_notes: list[str] = Field(default_factory=list)
+    governance: WasteGovernance
+    security: WasteSecurityPosture
 
 
 class TelemetryWasteAgentState(BaseModel):

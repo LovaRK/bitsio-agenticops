@@ -13,6 +13,7 @@ make dev
 ## Canonical Docs (Read First)
 
 - `docs/SOURCE_OF_TRUTH.md`
+- `docs/runbooks/AGENT_GUARDRAILS_HARDENING_PLAN.md`
 
 ## Documentation Policy (From Now)
 
@@ -89,6 +90,7 @@ You can now switch runtime behavior directly from the app:
      - `Local Model + Live Splunk` (best for integration checks)
      - `Cloud Model + Live Splunk` (best for production-like demos)
    - `Runtime Profile`:
+     - default = `Local Integration` (ollama + live Splunk)
      - `Local Dev` = ollama + model mock on + live Splunk off
      - `Cloud Live` = anthropic + model mock off + live Splunk on
    - `Model Provider`: `ollama` (local) / `anthropic` (cloud) / `stub`

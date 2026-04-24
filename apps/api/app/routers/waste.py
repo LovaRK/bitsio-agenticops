@@ -64,6 +64,220 @@ _WASTE_DASHBOARD_MAX_THRESHOLD = 0
 _WASTE_ALERT_MAX_THRESHOLD = 0
 
 
+def _derive_metrics_governance(
+    *,
+    approval_required: bool,
+    guardrail_notes: list[str],
+    has_policy_checks: bool,
+    optimization_ratio: float,
+) -> dict[str, Any]:
+    rule_triggered = "require_approval" if approval_required else "allow"
+    if guardrail_notes:
+        approval_reason = guardrail_notes[0]
+    elif approval_required:
+        approval_reason = "Approval required due to policy threshold."
+    elif optimization_ratio >= 0.35:
+        approval_reason = "High optimization impact detected; governance review recommended."
+    else:
+        approval_reason = "No blocking policy violations."
+
+    return {
+        "policy_id": "telemetry-waste-policy",
+        "policy_version": "v1.0.0",
+        "rule_triggered": rule_triggered,
+        "approval_reason": approval_reason,
+        "approval_status": "requires_review" if approval_required else "approved",
+        "data_owner": "Platform Team",
+        "last_reviewed": "2026-04-22",
+        "source": "reported" if has_policy_checks else "derived",
+    }
+
+
+def _derive_metrics_security(*, security_gap_count: int, avg_utilization_score: int) -> dict[str, Any]:
+    if security_gap_count >= 6 or avg_utilization_score < 35:
+        risk_level = "high"
+    elif security_gap_count >= 3 or avg_utilization_score < 60:
+        risk_level = "medium"
+    else:
+        risk_level = "low"
+
+    return {
+        "data_classification": "internal",
+        "compliance_frameworks": ["SOX", "PCI-DSS"],
+        "encryption_required": "in-transit + at-rest",
+        "risk_level": risk_level,
+        "security_confidence": max(65, min(95, 100 - (security_gap_count * 4))),
+        "source": "derived",
+    }
+
+
+def _derive_metrics_conflicts(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    conflicts: list[dict[str, Any]] = []
+    for source in sources:
+        if source.get("recommendation") != "Remove":
+            continue
+        search_count = int(source.get("search_count_90d", 0))
+        dashboard_refs = int(source.get("dashboard_references", 0))
+        alert_refs = int(source.get("alert_references", 0))
+        if search_count <= _WASTE_SEARCH_MAX_THRESHOLD and dashboard_refs <= 1 and alert_refs <= 1:
+            conflicts.append(
+                {
+                    "source": str(source.get("name") or source.get("index") or "unknown"),
+                    "source_type": str(source.get("name") or ""),
+                    "recommendation": "Remove",
+                    "conflict_reason": "Retention/compliance checks require evidence-safe reduction, not hard delete.",
+                    "suggested_action": "Switch to Optimize: reduce retention + keep investigation-critical fields.",
+                    "severity": "high",
+                }
+            )
+        if len(conflicts) >= 4:
+            break
+    return conflicts
+
+
+def _derive_metrics_actions(
+    *,
+    conflicts: list[dict[str, Any]],
+    sources: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    def _source_action_savings(source: dict[str, Any] | None) -> float:
+        if not source:
+            return 0.0
+        explicit_savings = float(source.get("potential_savings_usd") or 0.0)
+        if explicit_savings > 0:
+            return round(explicit_savings, 2)
+        annual_spend = float(source.get("annual_spend_usd") or 0.0)
+        if annual_spend <= 0:
+            return 0.0
+        recommendation = str(source.get("recommendation") or "")
+        if recommendation == "Optimize":
+            return round(annual_spend * 0.22, 2)
+        if recommendation == "Remove":
+            return round(annual_spend * 0.35, 2)
+        return 0.0
+
+    actions: list[dict[str, Any]] = []
+    if conflicts:
+        primary_conflict = conflicts[0]
+        primary_conflict_source = next(
+            (s for s in sources if s.get("name") == primary_conflict.get("source")),
+            None,
+        )
+        conflict_savings = _source_action_savings(primary_conflict_source)
+        actions.append(
+            {
+                "id": "review_policy",
+                "label": f"Review Policy ({primary_conflict.get('source', 'source')})",
+                "description": "Resolve policy/optimization conflict before applying removal.",
+                "cta": "review_policy",
+                "severity": "high",
+                "source_target": str(primary_conflict.get("source") or "unknown"),
+                "issue": str(primary_conflict.get("conflict_reason") or "Policy conflict detected."),
+                "suggested_value": str(
+                    primary_conflict.get("suggested_action")
+                    or "Switch to optimize and keep compliance-safe retention."
+                ),
+                "decision_confidence": 0.82,
+                "impact_preview": {
+                    "savings_delta_usd": conflict_savings,
+                    "risk_before": "high",
+                    "risk_after": "medium",
+                    "compliance_safe": True,
+                },
+                "source": "derived",
+            }
+        )
+    optimize_sources = sorted(
+        [s for s in sources if s.get("recommendation") == "Optimize"],
+        key=lambda s: (_source_action_savings(s), float(s.get("annual_spend_usd") or 0.0)),
+        reverse=True,
+    )
+    if optimize_sources:
+        optimize_source = optimize_sources[0]
+        optimize_savings = _source_action_savings(optimize_source)
+        utilization_score = int(optimize_source.get("utilization_score") or 0)
+        actions.append(
+            {
+                "id": f"adjust_retention_{optimize_source.get('index', 'source')}",
+                "label": f"Adjust Retention ({optimize_source.get('name', 'source')})",
+                "description": "Tune retention to reduce ingest cost while preserving decision-critical fields.",
+                "cta": "adjust_retention",
+                "severity": "medium",
+                "source_target": str(optimize_source.get("name") or optimize_source.get("index") or "unknown"),
+                "issue": (
+                    f"Low utilization ({utilization_score}%) with annual spend "
+                    f"${round(float(optimize_source.get('annual_spend_usd') or 0.0), 2):,.2f}."
+                ),
+                "current_value": "30 days",
+                "suggested_value": "7 days",
+                "estimated_savings_usd": optimize_savings,
+                "decision_confidence": 0.78,
+                "impact_preview": {
+                    "savings_delta_usd": optimize_savings,
+                    "risk_before": "medium",
+                    "risk_after": "low" if utilization_score <= 15 else "medium",
+                    "compliance_safe": True,
+                },
+                "source": "derived",
+            }
+        )
+    owner_source = next(
+        iter(
+            sorted(
+                [s for s in sources if int(s.get("utilization_score") or 0) < 50],
+                key=lambda s: (_source_action_savings(s), float(s.get("annual_spend_usd") or 0.0)),
+                reverse=True,
+            )
+        ),
+        None,
+    )
+    actions.append(
+        {
+            "id": f"assign_owner_{(owner_source or {}).get('index', 'source')}",
+            "label": f"Assign Owner ({(owner_source or {}).get('name', 'source')})",
+            "description": "Set accountable source owners for optimization follow-through.",
+            "cta": "assign_owner",
+            "severity": "low",
+            "source_target": str((owner_source or {}).get("name") or (owner_source or {}).get("index") or "unknown"),
+            "issue": "No explicit accountability recorded for optimization workflow.",
+            "owner": "Unassigned",
+            "decision_confidence": 0.74,
+            "impact_preview": {
+                "savings_delta_usd": _source_action_savings(owner_source),
+                "risk_before": "medium",
+                "risk_after": "low",
+                "compliance_safe": True,
+            },
+            "source": "derived",
+        }
+    )
+    return actions
+
+
+def _derive_metrics_trust(
+    *,
+    data_source: Literal["live", "fallback"],
+    fallback_used: bool,
+    adapter_mode: str,
+    backend: str,
+    latency_ms: int,
+    confidence: float,
+    coverage_pct: int,
+    freshness: str,
+) -> dict[str, Any]:
+    return {
+        "data_source": data_source,
+        "fallback_used": fallback_used,
+        "adapter_mode": adapter_mode,
+        "backend": backend,
+        "latency_ms": latency_ms,
+        "confidence": round(max(0.0, min(1.0, confidence)), 2),
+        "freshness": freshness,
+        "coverage_pct": max(0, min(100, int(coverage_pct))),
+        "source": "derived",
+    }
+
+
 def _compact_query(query: str) -> str:
     return " ".join(query.split())
 
@@ -150,6 +364,39 @@ def _provisional_output_from_state(
         if total_daily_ingest_gb > 0
         else 0.0
     )
+    policy_check = state.policy_checks[0] if state.policy_checks else {}
+    governance = {
+        "policy_id": str(policy_check.get("policy_id") or "telemetry-waste-policy"),
+        "policy_version": str(policy_check.get("policy_version") or "v1.0.0"),
+        "rule_triggered": str(
+            policy_check.get("action")
+            or ("require_approval" if state.approval_required else "allow")
+        ),
+        "approval_reason": str(
+            policy_check.get("reason")
+            or (
+                state.guardrail_notes[0]
+                if state.guardrail_notes
+                else (
+                    "Approval required due to policy threshold."
+                    if state.approval_required
+                    else "No blocking policy violations."
+                )
+            )
+        ),
+        "source": "reported" if state.policy_checks else "derived",
+    }
+    security = {
+        "data_classification": "internal",
+        "compliance_frameworks": ["SOX", "PCI-DSS"],
+        "encryption_required": "in-transit + at-rest",
+        "risk_level": (
+            "high"
+            if (waste_pct >= 0.50 or state.approval_required)
+            else ("medium" if waste_pct >= 0.20 else "low")
+        ),
+        "source": "derived",
+    }
 
     return {
         "workflow_id": workflow_id,
@@ -181,6 +428,8 @@ def _provisional_output_from_state(
         "confidence": state.confidence,
         "approval_required": state.approval_required,
         "guardrail_notes": state.guardrail_notes,
+        "governance": governance,
+        "security": security,
         "calculation_assumptions": _CALCULATION_ASSUMPTIONS,
         "provisional": True,
         "demo_profile": "standard",
@@ -397,6 +646,7 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
       - 12-month savings projections
     """
     settings = get_settings()
+    request_started = time.perf_counter()
     search_window_days = max(1, int(settings.telemetry_metrics_search_window_days))
     query_plan = _telemetry_query_plan(search_window_days)
     cache_key = (
@@ -612,6 +862,20 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                         }
                     )
 
+                resolved_adapter_mode = resolve_splunk_mode_for_workload(workload="deterministic")
+                backend = (
+                    "splunk-native"
+                    if resolved_adapter_mode == "native"
+                    else (
+                        "splunk-mcp"
+                        if resolved_adapter_mode == "mcp"
+                        else ("splunk-auto" if settings.splunk_adapter_mode == "auto" else f"splunk-{resolved_adapter_mode}")
+                    )
+                )
+                conflicts = _derive_metrics_conflicts(sources)
+                actions = _derive_metrics_actions(conflicts=conflicts, sources=sources)
+                live_latency_ms = int(round((time.perf_counter() - request_started) * 1000))
+
                 payload = {
                     "summary": {
                         "total_annual_spend_usd": total_annual_spend,
@@ -623,6 +887,28 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                     "sources": sources,
                     "security_findings": security_findings,
                     "savings_projection": projection,
+                    "governance": _derive_metrics_governance(
+                        approval_required=result.approval_required,
+                        guardrail_notes=result.guardrail_notes,
+                        has_policy_checks=bool(result.policy_checks),
+                        optimization_ratio=optimization_ratio,
+                    ),
+                    "security": _derive_metrics_security(
+                        security_gap_count=len(security_findings),
+                        avg_utilization_score=avg_utilization_score,
+                    ),
+                    "conflicts": conflicts,
+                    "actions": actions,
+                    "trust": _derive_metrics_trust(
+                        data_source="live",
+                        fallback_used=False,
+                        adapter_mode=settings.splunk_adapter_mode,
+                        backend=backend,
+                        latency_ms=live_latency_ms,
+                        confidence=float(result.confidence),
+                        coverage_pct=min(100, max(20, int((len(sources) / max(1, len(profiles))) * 100))),
+                        freshness="live",
+                    ),
                     "realized_savings": {
                         "estimated_annual_savings_usd": total_potential_savings,
                         "realized_to_date_usd": round(total_potential_savings * 0.22, 2),
@@ -635,9 +921,7 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                     _build_query_meta(
                         plan=query_plan,
                         adapter_mode=settings.splunk_adapter_mode,
-                        resolved_adapter_mode=resolve_splunk_mode_for_workload(
-                            workload="deterministic"
-                        ),
+                        resolved_adapter_mode=resolved_adapter_mode,
                         live_mode=settings.splunk_live_mode,
                         used_live_data=True,
                     )
@@ -653,6 +937,76 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
         fallback_reason = "Live mode disabled by runtime settings."
 
     # Static fallback when live mode is disabled or live derivation fails.
+    static_sources: list[dict[str, Any]] = [
+        {
+            "name": "Office 365",
+            "index": "office365",
+            "daily_ingest_gb": 45.2,
+            "utilization_score": 92,
+            "value_rating": "High",
+            "annual_spend_usd": 820000,
+            "potential_savings_usd": 45000,
+            "search_count_90d": 2150,
+            "dashboard_references": 18,
+            "alert_references": 12,
+            "recommendation": "Keep",
+        },
+        {
+            "name": "DNS Logs",
+            "index": "dns",
+            "daily_ingest_gb": 15.3,
+            "utilization_score": 78,
+            "value_rating": "High",
+            "annual_spend_usd": 420000,
+            "potential_savings_usd": 95000,
+            "search_count_90d": 890,
+            "dashboard_references": 7,
+            "alert_references": 5,
+            "recommendation": "Keep",
+        },
+        {
+            "name": "Cisco Nexus",
+            "index": "cisco_nexus",
+            "daily_ingest_gb": 120.8,
+            "utilization_score": 22,
+            "value_rating": "Low",
+            "annual_spend_usd": 680000,
+            "potential_savings_usd": 290000,
+            "search_count_90d": 45,
+            "dashboard_references": 1,
+            "alert_references": 0,
+            "recommendation": "Remove",
+        },
+        {
+            "name": "Windows Events",
+            "index": "windows_events",
+            "daily_ingest_gb": 62.5,
+            "utilization_score": 56,
+            "value_rating": "Medium",
+            "annual_spend_usd": 290000,
+            "potential_savings_usd": 120000,
+            "search_count_90d": 340,
+            "dashboard_references": 4,
+            "alert_references": 3,
+            "recommendation": "Optimize",
+        },
+        {
+            "name": "Application Logs",
+            "index": "app_logs",
+            "daily_ingest_gb": 28.9,
+            "utilization_score": 68,
+            "value_rating": "Medium",
+            "annual_spend_usd": 190000,
+            "potential_savings_usd": 30000,
+            "search_count_90d": 560,
+            "dashboard_references": 3,
+            "alert_references": 2,
+            "recommendation": "Optimize",
+        },
+    ]
+    static_conflicts = _derive_metrics_conflicts(static_sources)
+    static_actions = _derive_metrics_actions(conflicts=static_conflicts, sources=static_sources)
+    fallback_latency_ms = int(round((time.perf_counter() - request_started) * 1000))
     payload = {
         "summary": {
             "total_annual_spend_usd": 2400000,
@@ -661,73 +1015,7 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
             "security_gap_count": 8,
             "recommendation_complexity": "Medium",
         },
-        "sources": [
-            {
-                "name": "Office 365",
-                "index": "office365",
-                "daily_ingest_gb": 45.2,
-                "utilization_score": 92,
-                "value_rating": "High",
-                "annual_spend_usd": 820000,
-                "potential_savings_usd": 45000,
-                "search_count_90d": 2150,
-                "dashboard_references": 18,
-                "alert_references": 12,
-                "recommendation": "Keep",
-            },
-            {
-                "name": "DNS Logs",
-                "index": "dns",
-                "daily_ingest_gb": 15.3,
-                "utilization_score": 78,
-                "value_rating": "High",
-                "annual_spend_usd": 420000,
-                "potential_savings_usd": 95000,
-                "search_count_90d": 890,
-                "dashboard_references": 7,
-                "alert_references": 5,
-                "recommendation": "Keep",
-            },
-            {
-                "name": "Cisco Nexus",
-                "index": "cisco_nexus",
-                "daily_ingest_gb": 120.8,
-                "utilization_score": 22,
-                "value_rating": "Low",
-                "annual_spend_usd": 680000,
-                "potential_savings_usd": 290000,
-                "search_count_90d": 45,
-                "dashboard_references": 1,
-                "alert_references": 0,
-                "recommendation": "Remove",
-            },
-            {
-                "name": "Windows Events",
-                "index": "windows_events",
-                "daily_ingest_gb": 62.5,
-                "utilization_score": 56,
-                "value_rating": "Medium",
-                "annual_spend_usd": 290000,
-                "potential_savings_usd": 120000,
-                "search_count_90d": 340,
-                "dashboard_references": 4,
-                "alert_references": 3,
-                "recommendation": "Optimize",
-            },
-            {
-                "name": "Application Logs",
-                "index": "app_logs",
-                "daily_ingest_gb": 28.9,
-                "utilization_score": 68,
-                "value_rating": "Medium",
-                "annual_spend_usd": 190000,
-                "potential_savings_usd": 30000,
-                "search_count_90d": 560,
-                "dashboard_references": 3,
-                "alert_references": 2,
-                "recommendation": "Optimize",
-            },
-        ],
+        "sources": static_sources,
         "security_findings": [
             {
                 "id": "sec_001",
@@ -975,6 +1263,28 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
             "next_milestone": "Month 3",
             "next_milestone_target_usd": 278400.0,
         },
+        "governance": _derive_metrics_governance(
+            approval_required=False,
+            guardrail_notes=[],
+            has_policy_checks=False,
+            optimization_ratio=580000 / 2400000,
+        ),
+        "security": _derive_metrics_security(
+            security_gap_count=8,
+            avg_utilization_score=62,
+        ),
+        "conflicts": static_conflicts,
+        "actions": static_actions,
+        "trust": _derive_metrics_trust(
+            data_source="fallback",
+            fallback_used=True,
+            adapter_mode=settings.splunk_adapter_mode,
+            backend="splunk-auto",
+            latency_ms=fallback_latency_ms,
+            confidence=0.82,
+            coverage_pct=92,
+            freshness="5 minutes ago",
+        ),
     }
     payload.update(
         _build_query_meta(

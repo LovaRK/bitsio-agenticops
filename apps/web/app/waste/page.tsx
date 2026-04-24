@@ -4,6 +4,7 @@ import { SourceValueMatrix } from "@/components/SourceValueMatrix";
 import { ROIBreakdown } from "@/components/ROIBreakdown";
 import { SecurityGapsList } from "@/components/SecurityGapsList";
 import { StorageSavingsTimeline } from "@/components/StorageSavingsTimeline";
+import { TelemetryActionWorkflow } from "@/components/TelemetryActionWorkflow";
 import { MotionCard } from "@/components/ui/MotionCard";
 import { TOOLTIP } from "@/lib/uiTooltips";
 
@@ -25,6 +26,12 @@ function formatRangeWeeks(annualSavingsUsd: number): string {
 
 function formatUsd(value: number): string {
   return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function riskTone(level: "low" | "medium" | "high") {
+  if (level === "high") return "text-error border-error/40 bg-error-container/20";
+  if (level === "medium") return "text-warning border-warning/40 bg-warning/20";
+  return "text-secondary border-secondary/40 bg-secondary-container/20";
 }
 
 export default async function WastePage() {
@@ -86,6 +93,66 @@ export default async function WastePage() {
   const executedSteps = metrics.executed_steps ?? [];
   const queryContext = metrics.query_context;
   const showQueryTrace = executedSteps.length > 0;
+  const governance = metrics.governance ?? {
+    policy_id: "telemetry-waste-policy",
+    policy_version: "v1.0.0",
+    rule_triggered: "allow",
+    approval_reason: "No blocking policy violations.",
+    approval_status: "approved" as const,
+    data_owner: "Platform Team",
+    last_reviewed: "2026-04-22",
+    source: "derived" as const,
+  };
+  const security = metrics.security ?? {
+    data_classification: "internal" as const,
+    compliance_frameworks: ["SOX", "PCI-DSS"],
+    encryption_required: "in-transit + at-rest",
+    risk_level:
+      metrics.summary.security_gap_count >= 6
+        ? ("high" as const)
+        : metrics.summary.security_gap_count >= 3
+          ? ("medium" as const)
+          : ("low" as const),
+    security_confidence: 78,
+    source: "derived" as const,
+  };
+  const conflicts = metrics.conflicts ?? [];
+  const trust = metrics.trust ?? {
+    data_source: queryContext?.used_live_data ? ("live" as const) : ("fallback" as const),
+    fallback_used: !queryContext?.used_live_data,
+    adapter_mode: queryContext?.adapter_mode ?? ("auto" as const),
+    backend: queryContext?.backend ?? ("splunk-auto" as const),
+    latency_ms: 0,
+    confidence: 0.82,
+    freshness: "unknown",
+    coverage_pct: 92,
+    source: "derived" as const,
+  };
+  const governanceRisk: "low" | "medium" | "high" =
+    governance.approval_status === "requires_review"
+      ? "high"
+      : security.risk_level === "high"
+        ? "medium"
+        : "low";
+  const actions = metrics.actions ?? [
+    {
+      id: "review_policy",
+      label: "Review Policy",
+      description: "Validate policy constraints before telemetry reduction actions.",
+      cta: "review_policy" as const,
+      severity: "high" as const,
+      source_target: "unknown",
+      issue: "No explicit issue metadata.",
+      decision_confidence: 0.75,
+      impact_preview: {
+        savings_delta_usd: 0,
+        risk_before: "medium" as const,
+        risk_after: "medium" as const,
+        compliance_safe: true,
+      },
+      source: "derived" as const,
+    },
+  ];
 
   return (
     <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="waste-page">
@@ -139,6 +206,101 @@ export default async function WastePage() {
             <p className="mt-2 text-xs text-on-surface-variant">
               improvement opportunities
             </p>
+          </MotionCard>
+        </div>
+      </div>
+
+      <div className="mb-12">
+        <h3 className="text-xl font-headline font-semibold text-on-surface mb-6">
+          Governance & Security
+        </h3>
+        <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5 mb-4">
+          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">
+            Risk & Impact Summary
+          </p>
+          <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div>
+              <p className="text-on-surface-variant">Risk Level</p>
+              <span className={`inline-block mt-1 rounded-full border px-2 py-1 text-xs font-semibold ${riskTone(governanceRisk)}`}>
+                {governanceRisk.toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="text-on-surface-variant">Policy Impact</p>
+              <p className="mt-1 font-semibold text-on-surface">{governance.approval_status === "requires_review" ? "High" : "Normal"}</p>
+            </div>
+            <div>
+              <p className="text-on-surface-variant">Confidence</p>
+              <p className="mt-1 font-semibold text-on-surface">{Math.round(trust.confidence * 100)}%</p>
+            </div>
+            <div>
+              <p className="text-on-surface-variant">Data Source</p>
+              <p className="mt-1 font-semibold text-on-surface capitalize">{trust.data_source} + {trust.source}</p>
+            </div>
+          </div>
+        </MotionCard>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Policy Governance</p>
+            <p className="mt-3 text-sm text-on-surface">
+              Policy <span className="font-semibold">{governance.policy_id}</span> ({governance.policy_version})
+            </p>
+            <p className="mt-1 text-sm text-on-surface">Rule: <span className="font-semibold">{governance.rule_triggered}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Approval: <span className="font-semibold">{governance.approval_status ?? "approved"}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Data owner: <span className="font-semibold">{governance.data_owner ?? "Platform Team"}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Last reviewed: <span className="font-semibold">{governance.last_reviewed ?? "n/a"}</span></p>
+            <p className="mt-2 text-xs text-on-surface-variant">{governance.approval_reason}</p>
+            <p className="mt-2 text-[10px] uppercase tracking-wider text-on-surface-variant">source: {governance.source}</p>
+          </MotionCard>
+
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Security Posture</p>
+            <p className="mt-3 text-sm text-on-surface">Classification: <span className="font-semibold">{security.data_classification}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Compliance: <span className="font-semibold">{security.compliance_frameworks.join(", ")}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Encryption: <span className="font-semibold">{security.encryption_required}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Risk: <span className="font-semibold">{security.risk_level}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Security confidence: <span className="font-semibold">{security.security_confidence ?? 0}%</span></p>
+            <p className="mt-2 text-[10px] uppercase tracking-wider text-on-surface-variant">source: {security.source}</p>
+          </MotionCard>
+        </div>
+
+        <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5 mb-4">
+          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Policy vs Optimization Conflicts</p>
+          {conflicts.length === 0 ? (
+            <p className="mt-3 text-sm text-on-surface-variant">No policy conflicts detected for current recommendations.</p>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {conflicts.map((conflict, idx) => (
+                <div key={`${conflict.source}-${idx}`} className="rounded-lg border border-warning/30 bg-warning/10 p-3">
+                  <p className="text-sm text-on-surface">
+                    <span className="font-semibold">{conflict.source}</span> recommends <span className="font-semibold">{conflict.recommendation}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-on-surface-variant">{conflict.conflict_reason}</p>
+                  <p className="mt-1 text-xs text-secondary">Action: {conflict.suggested_action}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </MotionCard>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Trust & Data Quality</p>
+            <p className="mt-3 text-sm text-on-surface">Data source: <span className="font-semibold capitalize">{trust.data_source}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Fallback used: <span className="font-semibold">{trust.fallback_used ? "Yes" : "No"}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Adapter mode: <span className="font-semibold">{trust.adapter_mode}</span> ({trust.backend})</p>
+            <p className="mt-1 text-sm text-on-surface">Latency: <span className="font-semibold">{trust.latency_ms}ms</span></p>
+            <p className="mt-1 text-sm text-on-surface">Freshness: <span className="font-semibold">{trust.freshness}</span></p>
+            <p className="mt-1 text-sm text-on-surface">Coverage: <span className="font-semibold">{trust.coverage_pct}%</span></p>
+            <p className="mt-1 text-sm text-on-surface">Confidence: <span className="font-semibold">{Math.round(trust.confidence * 100)}%</span></p>
+          </MotionCard>
+
+          <MotionCard className="rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Recommended Actions</p>
+            <div className="mt-3">
+              <TelemetryActionWorkflow actions={actions} />
+            </div>
           </MotionCard>
         </div>
       </div>
@@ -334,46 +496,6 @@ export default async function WastePage() {
             optimizedTrajectoryUsd: p.optimized_trajectory_usd,
           }))}
         />
-      </div>
-
-      {/* Section 6: Recommended Actions */}
-      <div className="mb-12">
-        <h3 className="text-xl font-headline font-semibold text-on-surface mb-6">
-          Recommended Optimization Actions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recommendedActions.map((action) => (
-            <article
-              key={action.id}
-              className="card-lift rounded-xl border border-outline-variant/10 bg-surface-container-low p-5 space-y-3"
-              title={`Recommendation for ${action.title}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h4 className="font-bold text-on-surface">{action.title}</h4>
-                  <p className="text-xs text-on-surface-variant mt-1">{action.recommendation}</p>
-                </div>
-                <span className="text-xs font-bold px-2 py-1 rounded-full bg-secondary-container/20 text-secondary whitespace-nowrap">
-                  {action.tag}
-                </span>
-              </div>
-              <div className="bg-surface-container-lowest rounded p-2 space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-on-surface-variant">Annual Savings:</span>
-                  <span className="font-bold text-secondary">{formatCompactUsd(action.annualSavings)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-on-surface-variant">Complexity:</span>
-                  <span className="font-bold text-on-surface">{action.complexity}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-on-surface-variant">Timeline:</span>
-                  <span className="font-bold text-on-surface">{action.timeline}</span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
       </div>
 
       {/* Key Insights */}

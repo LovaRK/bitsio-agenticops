@@ -1,6 +1,6 @@
 # BitsIO AgenticOps — Single Source of Truth
 
-Last updated: 2026-04-22 (evening)
+Last updated: 2026-04-23 (afternoon)
 Owner: Core Engineering (Codex-led)
 Status: Canonical
 
@@ -151,6 +151,17 @@ Connectivity check:
 - `GET /api/v1/settings`
 - `PUT /api/v1/settings/runtime`
 - `GET /api/v1/settings/runtime/check`
+
+Telemetry waste response contract (applies to `GET /api/v1/waste/demo`, `POST /api/v1/waste/analyze/live`, and provisional `POST /api/v1/waste/analyze`):
+- `governance`: `policy_id`, `policy_version`, `rule_triggered`, `approval_reason`, `source`
+- `security`: `data_classification`, `compliance_frameworks`, `encryption_required`, `risk_level`, `source`
+
+Telemetry metrics contract (`GET /api/v1/waste/telemetry/metrics`) also includes:
+- `governance`: `policy_id`, `policy_version`, `rule_triggered`, `approval_reason`, `approval_status`, `data_owner`, `last_reviewed`, `source`
+- `security`: `data_classification`, `compliance_frameworks`, `encryption_required`, `risk_level`, `security_confidence`, `source`
+- `conflicts[]`: policy-vs-optimization conflicts (`source`, `recommendation`, `conflict_reason`, `suggested_action`, `severity`)
+- `trust`: runtime provenance (`data_source`, `fallback_used`, `adapter_mode`, `backend`, `latency_ms`, `confidence`, `freshness`, `coverage_pct`, `source`)
+- `actions[]`: recommended governance/security follow-up actions (`label`, `description`, `cta`, `severity`, `source`)
 
 ## 7. Fraud Risk Feature Contract
 
@@ -335,6 +346,32 @@ Current observed live-data behavior on production:
 
 Server note:
 - host port `5432` was already occupied on the Vultr machine; deployment remapped container host ports (`postgres`, `redis`, `mock-mcp`, `otel`) to avoid collision while preserving external app ports (`3000`, `8001`).
+
+## 18. DefenseClaw Lessons Applied to BitsIO (2026-04-23)
+
+Operational lessons from Cisco DefenseClaw/OpenClaw are now treated as first-class hardening requirements in this codebase.
+
+Direct mapping:
+- Agents retried endlessly -> add circuit breakers + retry caps
+- Overnight token/cost burn -> add cost guards + token limits
+- Logging was critical -> add full LLM + Splunk query logging with run IDs
+- Prompt security blocked bad inputs -> add prompt safety filters
+- Cron jobs kept running after edits -> add runtime kill-switch + safe fallback behavior
+- MCP loops increased cost -> route deterministic workloads to native adapter by default
+
+Current status in this repo:
+- adapter-routing policy is already implemented (deterministic -> native-first in auto mode)
+- telemetry query context now exposes adapter mode + resolved backend + fallback reason
+- remaining guardrail hardening is planned as a dedicated runbook:
+  - `/Users/ramakrishna/Desktop/OfficeWork/bitsio-agenticops/docs/runbooks/AGENT_GUARDRAILS_HARDENING_PLAN.md`
+
+Non-negotiable acceptance criteria for guardrail rollout:
+1. no workflow can execute unbounded retries
+2. every workflow has explicit max tokens and max wall-time
+3. kill-switch can stop new executions immediately without deploy
+4. every model/tool step is audit-logged with workflow_id and cost metadata
+5. deterministic API workloads use native adapter unless explicitly overridden
+6. prompt safety checks run before model invocation on risky surfaces
 
 ---
 

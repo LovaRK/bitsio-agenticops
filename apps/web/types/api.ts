@@ -214,6 +214,20 @@ export interface WasteDemoResponse {
   confidence: number;
   approval_required: boolean;
   guardrail_notes: string[];
+  governance: {
+    policy_id: string;
+    policy_version: string;
+    rule_triggered: string;
+    approval_reason: string;
+    source: "reported" | "derived";
+  };
+  security: {
+    data_classification: "internal" | "confidential" | "restricted";
+    compliance_frameworks: string[];
+    encryption_required: string;
+    risk_level: "low" | "medium" | "high";
+    source: "reported" | "derived";
+  };
   calculation_assumptions?: string[];
   demo_profile?: "standard" | "amplified";
   amplification_factor?: number;
@@ -296,6 +310,64 @@ export interface TelemetryMetricsResponse {
     used_live_data: boolean;
     fallback_reason: string;
   };
+  governance?: {
+    policy_id: string;
+    policy_version: string;
+    rule_triggered: string;
+    approval_reason: string;
+    approval_status?: "approved" | "requires_review";
+    data_owner?: string;
+    last_reviewed?: string;
+    source: "reported" | "derived";
+  };
+  security?: {
+    data_classification: "internal" | "confidential" | "restricted";
+    compliance_frameworks: string[];
+    encryption_required: string;
+    risk_level: "low" | "medium" | "high";
+    security_confidence?: number;
+    source: "reported" | "derived";
+  };
+  conflicts?: Array<{
+    source: string;
+    recommendation: "Keep" | "Optimize" | "Remove";
+    conflict_reason: string;
+    suggested_action: string;
+    severity: "low" | "medium" | "high";
+    source_type?: string;
+  }>;
+  trust?: {
+    data_source: "live" | "fallback";
+    fallback_used: boolean;
+    adapter_mode: "mcp" | "native" | "auto";
+    backend: "splunk-native" | "splunk-mcp" | "splunk-auto";
+    latency_ms: number;
+    confidence: number;
+    freshness: string;
+    coverage_pct: number;
+    source: "reported" | "derived";
+  };
+  actions?: Array<{
+    id: string;
+    label: string;
+    description: string;
+    cta: "review_policy" | "adjust_retention" | "assign_owner" | "open_source";
+    severity: "low" | "medium" | "high";
+    source: "reported" | "derived";
+    source_target?: string;
+    issue?: string;
+    current_value?: string;
+    suggested_value?: string;
+    estimated_savings_usd?: number;
+    owner?: string;
+    decision_confidence?: number;
+    impact_preview?: {
+      savings_delta_usd: number;
+      risk_before: "low" | "medium" | "high";
+      risk_after: "low" | "medium" | "high";
+      compliance_safe: boolean;
+    };
+  }>;
   realized_savings?: {
     estimated_annual_savings_usd: number;
     realized_to_date_usd: number;

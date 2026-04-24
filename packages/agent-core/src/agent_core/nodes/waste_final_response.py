@@ -7,7 +7,56 @@ Halts (returns None output) if approval is required.
 
 from __future__ import annotations
 
-from agent_core.state.waste_state import TelemetryWasteAgentState, TelemetryWasteFinalOutput
+from agent_core.state.waste_state import (
+    TelemetryWasteAgentState,
+    TelemetryWasteFinalOutput,
+    WasteGovernance,
+    WasteSecurityPosture,
+)
+
+
+def _derive_governance(state: TelemetryWasteAgentState) -> WasteGovernance:
+    policy_check = state.policy_checks[0] if state.policy_checks else {}
+    rule_triggered = str(
+        policy_check.get("action")
+        or ("require_approval" if state.approval_required else "allow")
+    )
+    approval_reason = str(
+        policy_check.get("reason")
+        or (
+            state.guardrail_notes[0]
+            if state.guardrail_notes
+            else (
+                "Approval required due to policy threshold."
+                if state.approval_required
+                else "No blocking policy violations."
+            )
+        )
+    )
+    return WasteGovernance(
+        policy_id=str(policy_check.get("policy_id") or "telemetry-waste-policy"),
+        policy_version=str(policy_check.get("policy_version") or "v1.0.0"),
+        rule_triggered=rule_triggered,
+        approval_reason=approval_reason,
+        source="reported" if state.policy_checks else "derived",
+    )
+
+
+def _derive_security_posture(*, waste_pct: float, approval_required: bool) -> WasteSecurityPosture:
+    if waste_pct >= 0.50 or approval_required:
+        risk_level = "high"
+    elif waste_pct >= 0.20:
+        risk_level = "medium"
+    else:
+        risk_level = "low"
+
+    return WasteSecurityPosture(
+        data_classification="internal",
+        compliance_frameworks=["SOX", "PCI-DSS"],
+        encryption_required="in-transit + at-rest",
+        risk_level=risk_level,
+        source="derived",
+    )
 
 
 def waste_final_response(state: TelemetryWasteAgentState) -> TelemetryWasteAgentState:
@@ -40,6 +89,11 @@ def waste_final_response(state: TelemetryWasteAgentState) -> TelemetryWasteAgent
             f"${total_savings:,.0f} across {len(next_state.recommendations)} recommendation(s)."
         )
 
+    governance = _derive_governance(next_state)
+    security = _derive_security_posture(
+        waste_pct=waste_pct, approval_required=next_state.approval_required
+    )
+
     next_state.final_output = TelemetryWasteFinalOutput(
         summary=summary,
         total_wasteful_sources=len(wasteful),
@@ -52,6 +106,8 @@ def waste_final_response(state: TelemetryWasteAgentState) -> TelemetryWasteAgent
         confidence=next_state.confidence,
         approval_required=next_state.approval_required,
         guardrail_notes=next_state.guardrail_notes,
+        governance=governance,
+        security=security,
     )
 
     return next_state
