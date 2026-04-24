@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     splunk_mcp_role: str = Field(default="read_only", alias="SPLUNK_MCP_ROLE")
     splunk_mcp_ssl_verify: bool = Field(default=True, alias="SPLUNK_MCP_SSL_VERIFY")
     splunk_auth_scheme: str = Field(default="Bearer", alias="SPLUNK_AUTH_SCHEME")
-    splunk_adapter_mode: str = Field(default="auto", alias="SPLUNK_ADAPTER_MODE")
+    splunk_adapter_mode: str = Field(default="native", alias="SPLUNK_ADAPTER_MODE")
     splunk_web_base_url: str = Field(default="", alias="SPLUNK_WEB_BASE_URL")
     splunk_live_mode: bool = Field(default=True, alias="SPLUNK_LIVE_MODE")
 
