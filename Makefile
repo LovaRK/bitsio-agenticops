@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap dev test lint seed eval load-test api-smoke verify-local tunnel-start tunnel-stop tunnel-status live-api live-web live-seed live-verify local local-stop local-status share-web
+.PHONY: bootstrap dev test lint seed eval load-test api-smoke verify-local tunnel-start tunnel-stop tunnel-status ollama-start ollama-stop ollama-status live-api live-web live-seed live-verify local local-stop local-status share-web
 
 bootstrap:
 	uv sync --all-groups
@@ -73,12 +73,40 @@ tunnel-status:
 		echo "❌ Tunnel not active"; \
 	fi
 
+ollama-start:
+	@echo "🧠 Ensuring Ollama server is running on localhost:11434..."
+	@if lsof -nP -iTCP:11434 -sTCP:LISTEN >/dev/null 2>&1; then \
+		echo "✅ Ollama already active on localhost:11434"; \
+	else \
+		command -v ollama >/dev/null 2>&1 || (echo "❌ ollama not found. Install from https://ollama.com/download" && exit 1); \
+		nohup ollama serve >/tmp/bitsio-ollama.log 2>&1 & echo $$! > /tmp/bitsio-ollama.pid; \
+		sleep 2; \
+		if lsof -nP -iTCP:11434 -sTCP:LISTEN >/dev/null 2>&1; then \
+			echo "✅ Ollama started on localhost:11434"; \
+		else \
+			echo "❌ Failed to start Ollama. Check /tmp/bitsio-ollama.log"; \
+			exit 1; \
+		fi \
+	fi
+
+ollama-stop:
+	@pkill -f "ollama serve" 2>/dev/null || true
+	@echo "✅ Ollama stop command issued"
+
+ollama-status:
+	@if lsof -nP -iTCP:11434 -sTCP:LISTEN >/dev/null 2>&1; then \
+		echo "✅ Ollama: up (11434)"; \
+	else \
+		echo "❌ Ollama: down"; \
+	fi
+
 # Local live runner:
 # - ensures MCP tunnel
 # - starts API and Web in background
 # - validates health URLs
 local:
 	@echo "🚀 Starting local live stack (tunnel + API + Web)..."
+	@$(MAKE) ollama-start
 	@$(MAKE) tunnel-start
 	@lsof -ti tcp:8001 | xargs kill -9 2>/dev/null || true
 	@lsof -ti tcp:3000 | xargs kill -9 2>/dev/null || true
@@ -112,6 +140,7 @@ local-status:
 	else \
 		echo "❌ Web: down"; \
 	fi
+	@$(MAKE) ollama-status
 	@$(MAKE) tunnel-status
 
 # Free public share URL for quick demos.
