@@ -97,8 +97,9 @@ SPLUNK_MCP_TOKEN=${SPLUNK_MCP_TOKEN}
 
 # Model
 ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-MODEL_PROVIDER=${MODEL_PROVIDER:-anthropic}
-MODEL_NAME=${MODEL_NAME:-claude-haiku-4-5-20251001}
+MODEL_PROVIDER=${MODEL_PROVIDER:-ollama}
+MODEL_NAME=${MODEL_NAME:-qwen2.5:7b}
+OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.containers.internal:11434}
 MODEL_MOCK_MODE=${MODEL_MOCK_MODE:-false}
 
 # Runtime
@@ -114,7 +115,7 @@ TMP_ENV_B64="$(base64 < "$TMP_ENV" | tr -d '\n')"
 rm -f "$TMP_ENV"
 
 echo "[3/8] Connecting server and installing dependencies..."
-"${SSH_CMD[@]}" "$REMOTE" "bash -s" <<'REMOTE_BOOTSTRAP'
+"${SSH_CMD[@]}" "$REMOTE" "bash -s" <<REMOTE_BOOTSTRAP
 set -euo pipefail
 
 if command -v apt >/dev/null 2>&1; then
@@ -133,6 +134,14 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 systemctl enable docker
 systemctl start docker
+
+if [[ "${MODEL_PROVIDER:-}" == "ollama" ]]; then
+  if ! command -v ollama >/dev/null 2>&1; then
+    curl -fsSL https://ollama.com/install.sh | sh
+  fi
+  systemctl enable ollama || true
+  systemctl restart ollama || true
+fi
 REMOTE_BOOTSTRAP
 
 echo "[4/8] Syncing repo on server..."
@@ -177,6 +186,9 @@ echo "[6/8] Starting application stack..."
 "${SSH_CMD[@]}" "$REMOTE" "bash -s" <<REMOTE_UP
 set -euo pipefail
 cd "$REMOTE_APP_DIR"
+if [[ "${MODEL_PROVIDER:-}" == "ollama" ]]; then
+  ollama pull "${MODEL_NAME}" || true
+fi
 docker compose down || true
 docker compose up -d --build
 REMOTE_UP

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import httpx
+
 from agent_core.models.adapter import AnthropicModelAdapter, OllamaModelAdapter
 from apps.api.app.services.contracts import IncidentServiceProtocol
 from packages.shared.config.settings import Settings
@@ -27,12 +29,24 @@ def check_model_connectivity(cfg: Settings) -> dict[str, str | bool]:
 
     if provider == "ollama":
         try:
-            sample = OllamaModelAdapter(
-                model_name=cfg.model_name,
-                base_url=cfg.ollama_base_url,
-            ).generate("Respond with OK only.", temperature=0.0)
-            ok = not sample.startswith("[fallback]")
-            return {"connected": ok, "detail": "OK" if ok else sample[:120]}
+            base_url = cfg.ollama_base_url.rstrip("/")
+            response = httpx.get(f"{base_url}/api/tags", timeout=10.0)
+            response.raise_for_status()
+            payload = response.json()
+            models = {
+                str(model.get("name", "")).strip()
+                for model in payload.get("models", [])
+                if isinstance(model, dict)
+            }
+            if cfg.model_name in models:
+                return {"connected": True, "detail": f"OK ({cfg.model_name} available)"}
+            if models:
+                preview = ", ".join(sorted(models)[:4])
+                return {
+                    "connected": False,
+                    "detail": f"model '{cfg.model_name}' not installed; available: {preview}",
+                }
+            return {"connected": False, "detail": "Ollama reachable but no models installed"}
         except Exception as exc:  # noqa: BLE001
             return {"connected": False, "detail": f"{type(exc).__name__}: {exc}"}
 
