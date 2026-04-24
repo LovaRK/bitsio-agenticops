@@ -116,6 +116,7 @@ export interface SettingsSnapshot {
     runtime: string;
     base_url: string;
     mock_mode: boolean;
+    use_cloud?: boolean;
   };
   runtime: {
     mode: "LOCAL_DEV" | "LOCAL_INTEGRATION" | "CLOUD_MODEL_TEST" | "CLOUD_LIVE";
@@ -161,6 +162,15 @@ export interface RuntimeConnectivityResponse {
     resolved_agentic_mode?: "mcp" | "native" | string;
     backend?: string;
   };
+}
+
+export interface ModelSettingsPayload {
+  use_cloud: boolean;
+}
+
+export interface ModelSettingsResponse {
+  updated: boolean;
+  use_cloud: boolean;
 }
 
 export interface SupportResourcesResponse {

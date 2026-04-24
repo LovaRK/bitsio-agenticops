@@ -186,6 +186,22 @@ class PostgresDecisionTraceStore:
             for row in rows
         ]
 
+    # ── Async alias methods (same interface as InMemoryDecisionTraceStore) ────
+
+    async def aget(self, workflow_id: str) -> DecisionTrace | None:
+        return await self.get(workflow_id)
+
+    async def aupsert(
+        self, trace: DecisionTrace, *, force_merge: bool = False
+    ) -> tuple[DecisionTrace, bool]:
+        return await self.upsert(trace, force_merge=force_merge)
+
+    async def aadd_approval(self, workflow_id: str, request: ApprovalRequest) -> ApprovalEvent:
+        return await self.add_approval(workflow_id, request)
+
+    async def alist_approvals(self, workflow_id: str) -> list[ApprovalEvent]:
+        return await self.list_approvals(workflow_id)
+
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     @staticmethod

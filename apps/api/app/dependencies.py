@@ -4,6 +4,8 @@ import logging
 from functools import lru_cache
 from typing import Literal
 
+from fastapi import Request
+
 from agent_core.graphs.incident_context_agent import IncidentContextAgentGraph
 from agent_core.models.adapter import resolve_model_adapter
 from agent_core.services.baseline_service import SplunkBaselineService, StubBaselineService
@@ -26,10 +28,14 @@ LOGGER = logging.getLogger(__name__)
 
 SplunkWorkload = Literal["configured", "deterministic", "agentic"]
 
+# Fallback singleton used when app.state is not initialized (tests without lifespan).
+_fallback_store = InMemoryDecisionTraceStore()
 
-@lru_cache(maxsize=1)
-def get_trace_store() -> InMemoryDecisionTraceStore:
-    return InMemoryDecisionTraceStore()
+
+def get_trace_store(request: Request) -> object:
+    """Return the active trace store from app.state, or fallback to in-memory."""
+    store = getattr(request.app.state, "trace_store", None)
+    return store if store is not None else _fallback_store
 
 
 def _resolve_splunk_mode(

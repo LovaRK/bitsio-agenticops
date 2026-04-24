@@ -56,8 +56,10 @@ class DecisionTrace(BaseModel):
     started_at: datetime
     completed_at: datetime | None = None
     actor_type: str = "agent"
-    model_provider: str = "anthropic"
-    model_name: str = "claude"
+    model_provider: str = "ollama"
+    model_name: str = "qwen2.5:7b"
+    model_mode: Literal["local", "cloud", "unknown"] = "local"
+    user_opt_in: bool = False
     prompt_version: str = "v1"
     node_runs: list[NodeRun]
     final_assessment: str

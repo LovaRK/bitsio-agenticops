@@ -12,7 +12,6 @@ from apps.api.app.dependencies import get_splunk_incident_service, get_trace_sto
 from apps.api.app.services.contracts import IncidentServiceProtocol
 from apps.api.app.services.trace_service import TraceService
 from decision_tracing.models import ApprovalRequest
-from decision_tracing.store import InMemoryDecisionTraceStore
 from packages.shared.auth import AuthContext, require_analyst, require_approver
 
 router = APIRouter(prefix="/api/v1", tags=["decision-traces"])
@@ -178,17 +177,17 @@ def _build_fallback_trace(
 
 
 @router.post("/decision-traces")
-def create_decision_trace(
+async def create_decision_trace(
     payload: dict,
     force_merge: bool = Query(default=False),
     _ctx: AuthContext = Depends(require_analyst),
-    store: InMemoryDecisionTraceStore = Depends(get_trace_store),
+    store: object = Depends(get_trace_store),
 ) -> JSONResponse:
     """Create or merge a decision trace."""
     service = TraceService(store)
 
     try:
-        trace, created = service.create_or_merge_trace(payload, force_merge=force_merge)
+        trace, created = await service.create_or_merge_trace(payload, force_merge=force_merge)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
@@ -204,18 +203,17 @@ def create_decision_trace(
 
 
 @router.get("/decision-traces/{workflow_id}")
-def get_decision_trace(
+async def get_decision_trace(
     workflow_id: str,
     _ctx: AuthContext = Depends(require_analyst),
-    store: InMemoryDecisionTraceStore = Depends(get_trace_store),
+    store: object = Depends(get_trace_store),
     splunk_service: IncidentServiceProtocol = Depends(get_splunk_incident_service),
 ) -> dict:
     """Get a decision trace by workflow ID."""
-    trace = store.get(workflow_id)
+    trace = await store.aget(workflow_id)  # type: ignore[union-attr]
     if trace is not None:
         return _derive_governance_fields(trace.model_dump(mode="json"))
 
-    # Try live mode
     if live_mode_enabled():
         try:
             return _derive_governance_fields(splunk_service.get_decision_trace(workflow_id))
@@ -228,17 +226,17 @@ def get_decision_trace(
 
 
 @router.post("/decision-traces/{workflow_id}/approvals")
-def create_approval_event(
+async def create_approval_event(
     workflow_id: str,
     payload: ApprovalRequest,
     ctx: AuthContext = Depends(require_approver),
-    store: InMemoryDecisionTraceStore = Depends(get_trace_store),
+    store: object = Depends(get_trace_store),
 ) -> dict:
     """Create an approval event for a decision trace."""
     service = TraceService(store)
 
     try:
-        event = service.add_approval(workflow_id, payload, actor_from_auth=ctx.user_id)
+        event = await service.add_approval(workflow_id, payload, actor_from_auth=ctx.user_id)
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
@@ -246,13 +244,16 @@ def create_approval_event(
 
 
 @router.get("/decision-traces/{workflow_id}/approvals")
-def list_approval_events(
+async def list_approval_events(
     workflow_id: str,
     _ctx: AuthContext = Depends(require_analyst),
-    store: InMemoryDecisionTraceStore = Depends(get_trace_store),
+    store: object = Depends(get_trace_store),
 ) -> dict:
     """List approval events for a decision trace."""
     service = TraceService(store)
     return {
-        "items": [event.model_dump(mode="json") for event in service.list_approvals(workflow_id)]
+        "items": [
+            event.model_dump(mode="json")
+            for event in await service.list_approvals(workflow_id)
+        ]
     }

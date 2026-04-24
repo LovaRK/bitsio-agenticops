@@ -16,6 +16,8 @@ export type {
   RuntimeConfigPayload,
   RuntimeConfigResponse,
   RuntimeConnectivityResponse,
+  ModelSettingsPayload,
+  ModelSettingsResponse,
   SupportResourcesResponse,
   WasteDemoResponse,
   FraudOverviewResponse,
@@ -27,7 +29,7 @@ export { getDashboardSummary } from "@/lib/services/dashboard";
 export { submitApproval, listApprovals } from "@/lib/services/traces";
 export { listPendingApprovals, quickResolvePendingApprovals } from "@/lib/services/approvals";
 export { getMonitoringOverview } from "@/lib/services/monitoring";
-export { getSettingsSnapshot, updateRuntimeConfig, checkRuntimeConnections } from "@/lib/services/settings";
+export { getSettingsSnapshot, updateRuntimeConfig, checkRuntimeConnections, updateModelSettings } from "@/lib/services/settings";
 export { getSupportResources } from "@/lib/services/support";
 export { getWasteDemo, getWasteDemoLocal, getWasteLive } from "@/lib/services/waste";
 export { getFraudOverview, getFraudDemo } from "@/lib/services/fraud";

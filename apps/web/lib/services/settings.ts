@@ -8,6 +8,8 @@ import type {
   RuntimeConfigPayload,
   RuntimeConfigResponse,
   RuntimeConnectivityResponse,
+  ModelSettingsPayload,
+  ModelSettingsResponse,
 } from "@/types/api";
 import type { RuntimeSettingsServiceContract } from "@/lib/services/contracts";
 import { apiFetch } from "@/lib/http";
@@ -33,6 +35,15 @@ export async function updateRuntimeConfig(
 
 export async function checkRuntimeConnections(): Promise<RuntimeConnectivityResponse> {
   return apiFetch<RuntimeConnectivityResponse>("/api/v1/settings/runtime/check");
+}
+
+export async function updateModelSettings(
+  payload: ModelSettingsPayload,
+): Promise<ModelSettingsResponse> {
+  return apiFetch<ModelSettingsResponse>("/api/v1/settings/model", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export const runtimeSettingsService: RuntimeSettingsServiceContract = {

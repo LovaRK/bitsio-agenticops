@@ -6,6 +6,7 @@ from decision_tracing.models import ApprovalEvent, ApprovalRequest, DecisionTrac
 
 
 class InMemoryDecisionTraceStore:
+    """Sync in-memory store. Also exposes async wrappers for interface compatibility."""
     def __init__(self) -> None:
         self._traces: dict[str, DecisionTrace] = {}
         self._approvals: dict[str, list[ApprovalEvent]] = {}
@@ -47,3 +48,19 @@ class InMemoryDecisionTraceStore:
 
     def list_approvals(self, workflow_id: str) -> list[ApprovalEvent]:
         return self._approvals.get(workflow_id, [])
+
+    # ── Async wrappers (interface parity with PostgresDecisionTraceStore) ──────
+
+    async def aget(self, workflow_id: str) -> DecisionTrace | None:
+        return self.get(workflow_id)
+
+    async def aupsert(
+        self, trace: DecisionTrace, *, force_merge: bool = False
+    ) -> tuple[DecisionTrace, bool]:
+        return self.upsert(trace, force_merge=force_merge)
+
+    async def aadd_approval(self, workflow_id: str, request: ApprovalRequest) -> ApprovalEvent:
+        return self.add_approval(workflow_id, request)
+
+    async def alist_approvals(self, workflow_id: str) -> list[ApprovalEvent]:
+        return self.list_approvals(workflow_id)
