@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Optional, Tuple
 
@@ -53,7 +53,7 @@ class ModelMetadata(BaseModel):
     mode: str  # "local" or "cloud"
     user_opt_in: bool
     runtime_mode: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     def dict(self, **kwargs):
         """Override to ensure timestamp is ISO format (deprecated, use model_dump)."""

@@ -1,5 +1,6 @@
 import { getSettingsSnapshot } from "@/lib/api";
 import { RuntimeConfigPanel } from "@/components/RuntimeConfigPanel";
+import { ModelSettingsPanel } from "@/components/ModelSettingsPanel";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default async function SettingsPage() {
@@ -74,6 +75,8 @@ export default async function SettingsPage() {
         </article>
 
         <RuntimeConfigPanel settings={settings} />
+
+        <ModelSettingsPanel settings={settings} />
 
         {sections.map((section) => (
           <article
