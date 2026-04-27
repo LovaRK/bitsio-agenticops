@@ -45,6 +45,7 @@ pythonpath = [
   "packages/decision-tracing/src"
 ]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.black]
 line-length = 100

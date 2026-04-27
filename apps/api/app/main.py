@@ -14,11 +14,15 @@ from apps.api.app.middleware.otel import instrument_fastapi
 from apps.api.app.middleware.rate_limit import install_rate_limit_middleware
 from apps.api.app.routers import (
     approvals,
+    conversations,
     dashboard,
     decision_traces,
+    feedback,
     fraud,
+    fraud_batch,
     incident_context,
     incidents,
+    incidents_batch,
     monitoring,
     settings,
     support,
@@ -69,6 +73,44 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     app.state.redis = redis_client
 
+    # ── Conversation store ────────────────────────────────────────────────────
+    from apps.api.app.services.conversation_service import (
+        InMemoryConversationStore,
+        PostgresConversationStore,
+    )
+
+    conv_store: object
+    try:
+        if hasattr(store, "_pool") and store._pool is not None:  # type: ignore[union-attr]
+            conv_store = PostgresConversationStore(pool=store._pool)  # type: ignore[union-attr]
+            log.info("lifespan: using PostgresConversationStore")
+        else:
+            raise RuntimeError("no pg pool")
+    except Exception as exc:  # noqa: BLE001
+        log.warning("lifespan: conversation store falling back to in-memory (%s)", exc)
+        conv_store = InMemoryConversationStore()
+
+    app.state.conversation_store = conv_store
+
+    # ── Feedback store ────────────────────────────────────────────────────────
+    from apps.api.app.services.feedback_service import (
+        InMemoryFeedbackStore,
+        PostgresFeedbackStore,
+    )
+
+    fb_store: object
+    try:
+        if hasattr(store, "_pool") and store._pool is not None:  # type: ignore[union-attr]
+            fb_store = PostgresFeedbackStore(pool=store._pool)  # type: ignore[union-attr]
+            log.info("lifespan: using PostgresFeedbackStore")
+        else:
+            raise RuntimeError("no pg pool")
+    except Exception as exc:  # noqa: BLE001
+        log.warning("lifespan: feedback store falling back to in-memory (%s)", exc)
+        fb_store = InMemoryFeedbackStore()
+
+    app.state.feedback_store = fb_store
+
     yield
 
     # ── Shutdown ──────────────────────────────────────────────────────────────
@@ -112,6 +154,10 @@ def create_app() -> FastAPI:
     app.include_router(settings.router)
     app.include_router(support.router)
     app.include_router(waste.router)
+    app.include_router(conversations.router)
+    app.include_router(feedback.router)
+    app.include_router(fraud_batch.router)
+    app.include_router(incidents_batch.router)
 
     @app.get("/health")
     async def health() -> dict:

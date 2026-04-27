@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { ConversationPanel } from "@/components/ConversationPanel";
+import { FeedbackButtons } from "@/components/FeedbackButtons";
 import { MotionCard } from "@/components/ui/MotionCard";
 import { getFraudOverview } from "@/lib/services/fraud";
 import { formatDateTimeUTC } from "@/lib/datetime";
@@ -372,6 +374,23 @@ export default async function FraudRiskPage() {
           Recommended hold amount based on current rules: <strong className="text-on-surface">{formatUsd(data.summary.recommended_hold_amount_usd)}</strong>.
           All actions remain propose-only until an approver accepts through the approval gate.
         </p>
+        <div className="mt-3">
+          <FeedbackButtons
+            targetType="fraud_analysis"
+            targetId={data.generated_at}
+            artifactType="fraud"
+            artifactId="overview"
+          />
+        </div>
+      </div>
+
+      {/* Follow-up conversation panel */}
+      <div className="mt-6">
+        <ConversationPanel
+          artifactType="fraud"
+          artifactId="overview"
+          title="Fraud Risk Analysis"
+        />
       </div>
     </section>
   );

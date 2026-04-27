@@ -12,6 +12,8 @@ from agent_core.services.baseline_service import SplunkBaselineService, StubBase
 from agent_core.services.embedding_service import PgvectorEmbeddingService, StubEmbeddingService
 from agent_core.services.metadata_service import PostgresMetadataService, StubMetadataService
 from apps.api.app.services.contracts import IncidentServiceProtocol
+from apps.api.app.services.conversation_service import ConversationStore, InMemoryConversationStore
+from apps.api.app.services.feedback_service import FeedbackStore, InMemoryFeedbackStore
 from apps.api.app.services.splunk_live import SplunkIncidentService
 from decision_tracing.store import InMemoryDecisionTraceStore
 from packages.shared.config.settings import get_settings
@@ -28,14 +30,28 @@ LOGGER = logging.getLogger(__name__)
 
 SplunkWorkload = Literal["configured", "deterministic", "agentic"]
 
-# Fallback singleton used when app.state is not initialized (tests without lifespan).
+# Fallback singletons used when app.state is not initialized (tests without lifespan).
 _fallback_store = InMemoryDecisionTraceStore()
+_fallback_conv_store = InMemoryConversationStore()
+_fallback_fb_store = InMemoryFeedbackStore()
 
 
 def get_trace_store(request: Request) -> object:
     """Return the active trace store from app.state, or fallback to in-memory."""
     store = getattr(request.app.state, "trace_store", None)
     return store if store is not None else _fallback_store
+
+
+def get_conversation_store(request: Request) -> ConversationStore:
+    """Return the active conversation store from app.state, or fallback to in-memory."""
+    store = getattr(request.app.state, "conversation_store", None)
+    return store if store is not None else _fallback_conv_store
+
+
+def get_feedback_store(request: Request) -> FeedbackStore:
+    """Return the active feedback store from app.state, or fallback to in-memory."""
+    store = getattr(request.app.state, "feedback_store", None)
+    return store if store is not None else _fallback_fb_store
 
 
 def _resolve_splunk_mode(

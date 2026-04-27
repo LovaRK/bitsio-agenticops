@@ -1,5 +1,6 @@
 import { ApprovalPanel } from "@/components/ApprovalPanel";
 import { ConfidencePanel } from "@/components/ConfidencePanel";
+import { ConversationPanel } from "@/components/ConversationPanel";
 import { ContextPanel } from "@/components/ContextPanel";
 import { ReasoningTimeline } from "@/components/ReasoningTimeline";
 import { getIncidentDetail } from "@/lib/api";
@@ -325,6 +326,18 @@ export default async function IncidentDetailsPage({ params }: { params: { id: st
             <ApprovalPanel workflowId={detail.workflow_id} />
           </section>
         )}
+
+        {/* Follow-up conversation panel */}
+        <section className="mt-6">
+          <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-widest mb-3">
+            Ask Follow-up Questions
+          </h3>
+          <ConversationPanel
+            artifactType="incident"
+            artifactId={params.id}
+            title={`Incident: ${detail.title}`}
+          />
+        </section>
       </div>
     </main>
   );

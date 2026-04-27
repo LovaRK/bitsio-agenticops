@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import uuid
 from collections import Counter
 from datetime import UTC, datetime
 from statistics import mean
@@ -12,11 +14,16 @@ from pydantic import BaseModel, Field
 
 from apps.api.app.dependencies import get_splunk_adapter_native_default
 from apps.api.app.services.model_selector import Complexity, TaskType, select_model
+from apps.api.app.services.token_cost import get_token_cost_service
+from decision_tracing.conversation_models import BatchItem, BatchResult, DebugMeta, TokenMeta
 from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 from splunk_mcp.adapter import SplunkAdapter
 
 router = APIRouter(prefix="/api/v1/fraud", tags=["fraud-risk"])
+
+BATCH_MAX_SIZE = 50
+BATCH_ITEM_TIMEOUT_S = 15
 
 
 class FraudCase(BaseModel):
