@@ -312,3 +312,46 @@ class TestBatchAnalysis:
             headers=_H,
         )
         assert resp.status_code == 422  # min_length=1 validator
+
+    def test_batch_analyze_waste(self, client: TestClient) -> None:
+        resp = client.post(
+            "/api/v1/waste/analyze/batch",
+            json={
+                "analyses": [
+                    {
+                        "raw_index_profiles": [
+                            {
+                                "source_type": "cisco:asa",
+                                "index": "netsec",
+                                "daily_ingest_gb": 2.0,
+                                "retention_days": 30,
+                            }
+                        ],
+                        "raw_search_activity": [
+                            {
+                                "source_type": "cisco:asa",
+                                "search_count_90d": 0,
+                                "dashboard_references": 0,
+                                "alert_references": 0,
+                            }
+                        ],
+                        "raw_field_stats": [
+                            {
+                                "source_type": "cisco:asa",
+                                "unused_fields": ["foo", "bar"],
+                                "used_fields": ["host"],
+                            }
+                        ],
+                        "tenant_id": "tenant_demo",
+                        "environment": "dev",
+                    }
+                ],
+                "debug": True,
+            },
+            headers=_H,
+        )
+        assert resp.status_code == 200, resp.text
+        data = resp.json()
+        assert data["total"] == 1
+        assert data["succeeded"] == 1
+        assert data["items"][0]["success"] is True

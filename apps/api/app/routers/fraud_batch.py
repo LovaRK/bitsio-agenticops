@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 
 from apps.api.app.services.token_cost import TokenCostResult, get_token_cost_service
@@ -16,6 +17,7 @@ from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 
 router = APIRouter(prefix="/api/v1/fraud", tags=["fraud-risk"])
+_TRACER = trace.get_tracer("api.routes")
 
 BATCH_MAX_SIZE = 50
 BATCH_ITEM_TIMEOUT_S = 15
@@ -47,13 +49,23 @@ async def batch_analyze_fraud(
     Returns per-item results, aggregate summary, and token/cost totals.
     Max batch size: 50 items.
     """
-    if len(body.case_ids) > BATCH_MAX_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Batch size {len(body.case_ids)} exceeds maximum {BATCH_MAX_SIZE}",
-        )
-
     cfg = get_settings()
+    with _TRACER.start_as_current_span("api.fraud.batch_analyze") as span:
+        span.set_attribute("service.name", "api")
+        span.set_attribute("graph.name", "fraud_risk_batch")
+        span.set_attribute("graph.version", "v1.0.0")
+        span.set_attribute("node.name", "fraud_batch_analyze")
+        span.set_attribute("workflow_id", f"wf_fraud_batch_{uuid.uuid4().hex[:8]}")
+        span.set_attribute("tenant.safe_id", cfg.tenant_safe_id)
+        span.set_attribute("env", cfg.environment)
+        span.set_attribute("model.provider", cfg.model_provider)
+
+        if len(body.case_ids) > BATCH_MAX_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Batch size {len(body.case_ids)} exceeds maximum {BATCH_MAX_SIZE}",
+            )
+
     provider = cfg.model_provider.strip().lower()
     model_name = cfg.model_name
     cost_svc = get_token_cost_service()

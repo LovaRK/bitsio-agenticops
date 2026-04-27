@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 
 from agent_core.models.adapter import resolve_model_adapter
@@ -27,6 +28,7 @@ from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 
 router = APIRouter(prefix="/api/v1/conversations", tags=["conversations"])
+_TRACER = trace.get_tracer("api.routes")
 
 MAX_CONTEXT_MESSAGES = 20  # messages fed to model as context
 
@@ -116,13 +118,23 @@ async def create_thread(
     _ctx: AuthContext = Depends(require_analyst),
 ) -> ConversationThread:
     """Create a new conversation thread scoped to an artifact."""
-    return await store.create_thread(
-        thread_type=body.thread_type,
-        artifact_type=body.artifact_type,
-        artifact_id=body.artifact_id,
-        title=body.title,
-        created_by=body.created_by,
-    )
+    cfg = get_settings()
+    with _TRACER.start_as_current_span("api.conversations.create_thread") as span:
+        span.set_attribute("service.name", "api")
+        span.set_attribute("graph.name", "conversations")
+        span.set_attribute("graph.version", "v1.0.0")
+        span.set_attribute("node.name", "create_thread")
+        span.set_attribute("workflow_id", f"wf_conv_create_{int(time.time() * 1000)}")
+        span.set_attribute("tenant.safe_id", cfg.tenant_safe_id)
+        span.set_attribute("env", cfg.environment)
+        span.set_attribute("model.provider", cfg.model_provider)
+        return await store.create_thread(
+            thread_type=body.thread_type,
+            artifact_type=body.artifact_type,
+            artifact_id=body.artifact_id,
+            title=body.title,
+            created_by=body.created_by,
+        )
 
 
 @router.get("", response_model=ThreadListResponse)
@@ -134,12 +146,22 @@ async def list_threads(
     _ctx: AuthContext = Depends(require_analyst),
 ) -> ThreadListResponse:
     """List conversation threads, optionally filtered by artifact."""
-    threads = await store.list_threads(
-        artifact_type=artifact_type,
-        artifact_id=artifact_id,
-        limit=limit,
-    )
-    return ThreadListResponse(threads=threads, total=len(threads))
+    cfg = get_settings()
+    with _TRACER.start_as_current_span("api.conversations.list_threads") as span:
+        span.set_attribute("service.name", "api")
+        span.set_attribute("graph.name", "conversations")
+        span.set_attribute("graph.version", "v1.0.0")
+        span.set_attribute("node.name", "list_threads")
+        span.set_attribute("workflow_id", f"wf_conv_list_{int(time.time() * 1000)}")
+        span.set_attribute("tenant.safe_id", cfg.tenant_safe_id)
+        span.set_attribute("env", cfg.environment)
+        span.set_attribute("model.provider", cfg.model_provider)
+        threads = await store.list_threads(
+            artifact_type=artifact_type,
+            artifact_id=artifact_id,
+            limit=limit,
+        )
+        return ThreadListResponse(threads=threads, total=len(threads))
 
 
 @router.get("/{thread_id}", response_model=ConversationThread_WithMessages)
@@ -149,10 +171,20 @@ async def get_thread(
     _ctx: AuthContext = Depends(require_analyst),
 ) -> ConversationThread_WithMessages:
     """Retrieve a thread with all messages and aggregate token totals."""
-    thread = await store.get_thread_with_messages(thread_id)
-    if not thread:
-        raise HTTPException(status_code=404, detail=f"Thread {thread_id} not found")
-    return thread
+    cfg = get_settings()
+    with _TRACER.start_as_current_span("api.conversations.get_thread") as span:
+        span.set_attribute("service.name", "api")
+        span.set_attribute("graph.name", "conversations")
+        span.set_attribute("graph.version", "v1.0.0")
+        span.set_attribute("node.name", "get_thread")
+        span.set_attribute("workflow_id", f"wf_conv_get_{thread_id}")
+        span.set_attribute("tenant.safe_id", cfg.tenant_safe_id)
+        span.set_attribute("env", cfg.environment)
+        span.set_attribute("model.provider", cfg.model_provider)
+        thread = await store.get_thread_with_messages(thread_id)
+        if not thread:
+            raise HTTPException(status_code=404, detail=f"Thread {thread_id} not found")
+        return thread
 
 
 @router.post("/{thread_id}/messages", response_model=MessageResponse)
@@ -169,6 +201,16 @@ async def add_message(
     When role=assistant the message is stored as-is (relay mode).
     """
     cfg = get_settings()
+    with _TRACER.start_as_current_span("api.conversations.add_message") as span:
+        span.set_attribute("service.name", "api")
+        span.set_attribute("graph.name", "conversations")
+        span.set_attribute("graph.version", "v1.0.0")
+        span.set_attribute("node.name", "add_message")
+        span.set_attribute("workflow_id", f"wf_conv_msg_{thread_id}")
+        span.set_attribute("tenant.safe_id", cfg.tenant_safe_id)
+        span.set_attribute("env", cfg.environment)
+        span.set_attribute("model.provider", cfg.model_provider)
+
     provider = cfg.model_provider.strip().lower()
     model_name = cfg.model_name
     runtime_mode = "cloud" if provider == "anthropic" else "local"

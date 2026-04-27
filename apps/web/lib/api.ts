@@ -33,3 +33,12 @@ export { getSettingsSnapshot, updateRuntimeConfig, checkRuntimeConnections, upda
 export { getSupportResources } from "@/lib/services/support";
 export { getWasteDemo, getWasteDemoLocal, getWasteLive } from "@/lib/services/waste";
 export { getFraudOverview, getFraudDemo } from "@/lib/services/fraud";
+export {
+  createConversationThread,
+  listConversationThreads,
+  getConversationThread,
+  addConversationMessage,
+  submitAIFeedback,
+  batchAnalyzeIncidents,
+  batchAnalyzeFraud,
+} from "@/lib/services/conversations";

@@ -16,14 +16,17 @@ GET  /api/v1/waste/demo
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 from unittest.mock import MagicMock
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 
 from agent_core.graphs.telemetry_waste_agent import TelemetryWasteAgentGraph
@@ -39,10 +42,13 @@ from apps.api.app.dependencies import (
     resolve_splunk_mode_for_workload,
 )
 from apps.api.app.services.model_selector import Complexity, TaskType, select_model
+from apps.api.app.services.token_cost import TokenCostResult, get_token_cost_service
+from decision_tracing.conversation_models import BatchItem, BatchResult, DebugMeta, TokenMeta
 from packages.shared.auth import AuthContext, require_analyst
 from packages.shared.config.settings import get_settings
 
 router = APIRouter(prefix="/api/v1/waste", tags=["waste"])
+_TRACER = trace.get_tracer("api.routes")
 
 _DEMO_FIXTURE = (
     Path(__file__).parent.parent.parent.parent.parent
@@ -63,6 +69,8 @@ _WASTE_INGEST_MIN_THRESHOLD_GB = 0.001
 _WASTE_SEARCH_MAX_THRESHOLD = 5
 _WASTE_DASHBOARD_MAX_THRESHOLD = 0
 _WASTE_ALERT_MAX_THRESHOLD = 0
+_WASTE_BATCH_MAX_SIZE = 50
+_WASTE_BATCH_ITEM_TIMEOUT_S = 20
 
 
 def _derive_metrics_governance(
@@ -525,6 +533,7 @@ class WasteAnalysisRequest(BaseModel):
     )
     tenant_id: str = Field(default="tenant_demo")
     environment: str = Field(default="dev")
+    debug: bool = False
 
 
 @router.post("/analyze", summary="Run waste detection on provided index profiles")
@@ -572,6 +581,148 @@ def analyze_waste(
         "calculation_assumptions": _CALCULATION_ASSUMPTIONS,
         **result.final_output.model_dump(),
     }
+
+
+class WasteBatchAnalyzeRequest(BaseModel):
+    analyses: list[WasteAnalysisRequest] = Field(..., min_length=1, max_length=_WASTE_BATCH_MAX_SIZE)
+    debug: bool = False
+
+
+@router.post("/analyze/batch", response_model=BatchResult, summary="Run waste detection in batch mode")
+async def analyze_waste_batch(
+    body: WasteBatchAnalyzeRequest,
+    _ctx: AuthContext = Depends(require_analyst),
+) -> BatchResult:
+    """Run telemetry waste detection for multiple input profile sets."""
+    settings = get_settings()
+    with _TRACER.start_as_current_span("api.waste.batch_analyze") as span:
+        span.set_attribute("service.name", "api")
+        span.set_attribute("graph.name", "telemetry_waste_batch")
+        span.set_attribute("graph.version", "v1.0.0")
+        span.set_attribute("node.name", "waste_batch_analyze")
+        span.set_attribute("workflow_id", f"wf_waste_batch_{uuid.uuid4().hex[:8]}")
+        span.set_attribute("tenant.safe_id", settings.tenant_safe_id)
+        span.set_attribute("env", settings.environment)
+        span.set_attribute("model.provider", settings.model_provider)
+
+        if len(body.analyses) > _WASTE_BATCH_MAX_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Batch size {len(body.analyses)} exceeds maximum {_WASTE_BATCH_MAX_SIZE}",
+            )
+
+    provider = settings.model_provider.strip().lower()
+    model_name = settings.model_name
+    cost_svc = get_token_cost_service()
+    batch_id = str(uuid.uuid4())
+
+    cost_results: list[TokenCostResult] = []
+
+    async def _run_one(item: WasteAnalysisRequest, idx: int) -> BatchItem:
+        def _compute() -> dict[str, Any]:
+            splunk = get_splunk_adapter_native_default()
+            model = _get_model_adapter()
+            graph = TelemetryWasteAgentGraph(
+                splunk_adapter=splunk,
+                model_adapter=model,
+                fetch_from_splunk=False,
+            )
+            workflow_id = f"wf_waste_batch_{idx}_{uuid.uuid4().hex[:8]}"
+            state = TelemetryWasteAgentState(
+                workflow_id=workflow_id,
+                tenant_id=item.tenant_id,
+                raw_index_profiles=item.raw_index_profiles,
+                raw_search_activity=item.raw_search_activity,
+                raw_field_stats=item.raw_field_stats,
+            )
+            result = graph.run(state, environment=item.environment, action_type="read")
+            if result.final_output is None:
+                return _provisional_output_from_state(
+                    workflow_id=workflow_id,
+                    tenant_id=item.tenant_id,
+                    state=result,
+                    environment=item.environment,
+                )
+            return {
+                "workflow_id": workflow_id,
+                "approval_required": False,
+                "calculation_assumptions": _CALCULATION_ASSUMPTIONS,
+                **result.final_output.model_dump(),
+            }
+
+        try:
+            result_payload = await asyncio.wait_for(
+                asyncio.get_event_loop().run_in_executor(None, _compute),
+                timeout=_WASTE_BATCH_ITEM_TIMEOUT_S,
+            )
+            content_len = len(json.dumps(result_payload))
+            cr = cost_svc.estimate_cost(
+                provider=provider,
+                model=model_name,
+                input_tokens=250,
+                output_tokens=max(1, content_len // 4),
+            )
+            cost_results.append(cr)
+            token_meta = TokenMeta(
+                input_tokens=cr.input_tokens,
+                output_tokens=cr.output_tokens,
+                total_tokens=cr.total_tokens,
+                estimated_cost_usd=cr.estimated_cost_usd,
+                cost_source=cr.cost_source,
+                provider=provider,
+                model=model_name,
+            )
+            return BatchItem(
+                item_id=result_payload.get("workflow_id", f"waste_item_{idx}"),
+                success=True,
+                result=result_payload,
+                token_meta=token_meta,
+            )
+        except TimeoutError:
+            return BatchItem(item_id=f"waste_item_{idx}", success=False, error="Analysis timed out")
+        except Exception as exc:  # noqa: BLE001
+            return BatchItem(item_id=f"waste_item_{idx}", success=False, error=str(exc))
+
+    items = list(await asyncio.gather(*[_run_one(item, i) for i, item in enumerate(body.analyses)]))
+    succeeded = sum(1 for i in items if i.success)
+    failed = len(items) - succeeded
+    agg = cost_svc.aggregate(cost_results)
+
+    token_summary = TokenMeta(
+        input_tokens=agg.input_tokens,
+        output_tokens=agg.output_tokens,
+        total_tokens=agg.total_tokens,
+        estimated_cost_usd=agg.estimated_cost_usd,
+        cost_source=agg.cost_source,
+        provider=provider,
+        model=model_name,
+    )
+    debug_summary: DebugMeta | None = None
+    if body.debug:
+        debug_summary = DebugMeta(
+            model_provider=provider,
+            model_name=model_name,
+            runtime_mode="cloud" if provider == "anthropic" else "local",
+            prompt_template="waste:batch_analysis",
+            fallback_used=False,
+            tools_selected=["waste_ingest", "waste_detection", "waste_cost_score"],
+        )
+
+    return BatchResult(
+        batch_id=batch_id,
+        total=len(items),
+        succeeded=succeeded,
+        failed=failed,
+        items=items,
+        aggregate_summary=(
+            f"{succeeded}/{len(items)} waste analyses completed. "
+            f"Tokens: {agg.total_tokens}."
+            + (f" Cost: ${agg.estimated_cost_usd:.6f}" if agg.estimated_cost_usd else "")
+        ),
+        token_summary=token_summary,
+        debug_summary=debug_summary,
+        created_at=datetime.now(tz=UTC),
+    )
 
 
 # ── Live Splunk analysis ──────────────────────────────────────────────────────

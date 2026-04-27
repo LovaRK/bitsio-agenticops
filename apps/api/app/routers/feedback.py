@@ -6,14 +6,17 @@ from datetime import datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, status
+from opentelemetry import trace
 from pydantic import BaseModel, Field
 
 from apps.api.app.dependencies import get_feedback_store
 from apps.api.app.services.feedback_service import FeedbackStore
 from decision_tracing.conversation_models import AIFeedback
 from packages.shared.auth import AuthContext, require_analyst
+from packages.shared.config.settings import get_settings
 
 router = APIRouter(prefix="/api/v1/feedback", tags=["feedback"])
+_TRACER = trace.get_tracer("api.routes")
 
 
 # ── Request/Response schemas ──────────────────────────────────────────────────
@@ -60,26 +63,36 @@ async def submit_feedback(
     _ctx: AuthContext = Depends(require_analyst),
 ) -> FeedbackResponse:
     """Submit a thumbs-up/down rating on an AI-generated output."""
-    fb = await store.save_feedback(
-        target_type=body.target_type,
-        target_id=body.target_id,
-        rating=body.rating,
-        thread_id=body.thread_id,
-        user_id=body.user_id,
-        category=body.category,
-        comment=body.comment,
-        model_provider=body.model_provider,
-        model_name=body.model_name,
-        artifact_type=body.artifact_type,
-        artifact_id=body.artifact_id,
-    )
-    return FeedbackResponse(
-        feedback_id=fb.feedback_id,
-        target_type=fb.target_type,
-        target_id=fb.target_id,
-        rating=fb.rating,
-        created_at=fb.created_at,
-    )
+    settings = get_settings()
+    with _TRACER.start_as_current_span("api.feedback.submit") as span:
+        span.set_attribute("service.name", "api")
+        span.set_attribute("graph.name", "feedback")
+        span.set_attribute("graph.version", "v1.0.0")
+        span.set_attribute("node.name", "submit_feedback")
+        span.set_attribute("workflow_id", f"wf_feedback_{body.target_id}")
+        span.set_attribute("tenant.safe_id", settings.tenant_safe_id)
+        span.set_attribute("env", settings.environment)
+        span.set_attribute("model.provider", body.model_provider or "unknown")
+        fb = await store.save_feedback(
+            target_type=body.target_type,
+            target_id=body.target_id,
+            rating=body.rating,
+            thread_id=body.thread_id,
+            user_id=body.user_id,
+            category=body.category,
+            comment=body.comment,
+            model_provider=body.model_provider,
+            model_name=body.model_name,
+            artifact_type=body.artifact_type,
+            artifact_id=body.artifact_id,
+        )
+        return FeedbackResponse(
+            feedback_id=fb.feedback_id,
+            target_type=fb.target_type,
+            target_id=fb.target_id,
+            rating=fb.rating,
+            created_at=fb.created_at,
+        )
 
 
 @router.get("", response_model=FeedbackListResponse)
@@ -91,9 +104,19 @@ async def list_feedback(
     _ctx: AuthContext = Depends(require_analyst),
 ) -> FeedbackListResponse:
     """List feedback items, optionally filtered by target."""
-    items = await store.list_feedback(
-        target_type=target_type,
-        target_id=target_id,
-        limit=limit,
-    )
-    return FeedbackListResponse(items=items, total=len(items))
+    settings = get_settings()
+    with _TRACER.start_as_current_span("api.feedback.list") as span:
+        span.set_attribute("service.name", "api")
+        span.set_attribute("graph.name", "feedback")
+        span.set_attribute("graph.version", "v1.0.0")
+        span.set_attribute("node.name", "list_feedback")
+        span.set_attribute("workflow_id", "wf_feedback_list")
+        span.set_attribute("tenant.safe_id", settings.tenant_safe_id)
+        span.set_attribute("env", settings.environment)
+        span.set_attribute("model.provider", "n/a")
+        items = await store.list_feedback(
+            target_type=target_type,
+            target_id=target_id,
+            limit=limit,
+        )
+        return FeedbackListResponse(items=items, total=len(items))
