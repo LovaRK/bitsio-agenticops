@@ -184,7 +184,16 @@ def get_incident_context_graph() -> IncidentContextAgentGraph:
 
     if create_engine is not None and settings.database_url:
         try:
-            engine = create_engine(settings.database_url)
+            # Use sync psycopg driver for SQLAlchemy ORM — asyncpg is for the asyncpg pool only
+            sync_url = (
+                settings.database_url
+                .replace("postgresql+asyncpg://", "postgresql+psycopg://")
+                .replace("postgresql://", "postgresql+psycopg://")
+            )
+            engine = create_engine(sync_url, pool_pre_ping=True)
+            # Eagerly test connectivity so we fall back to stubs in CI/test
+            with engine.connect() as _probe:
+                pass
             if Session is not None:
                 session = Session(engine)
                 metadata_service = PostgresMetadataService(session)
