@@ -89,3 +89,13 @@ export async function batchAnalyzeFraud(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+export async function batchAnalyzeWaste(payload: {
+  analyses: Array<{ raw_index_profiles: Record<string, unknown>[] }>;
+  debug?: boolean;
+}): Promise<BatchResult> {
+  return apiFetch<BatchResult>("/api/v1/waste/analyze/batch", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

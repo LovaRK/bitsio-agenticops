@@ -41,4 +41,18 @@ export {
   submitAIFeedback,
   batchAnalyzeIncidents,
   batchAnalyzeFraud,
+  batchAnalyzeWaste,
 } from "@/lib/services/conversations";
+
+// Re-export conversation + feedback types
+export type {
+  TokenMeta,
+  DebugMeta,
+  ConversationThread,
+  ConversationMessage,
+  ConversationThreadWithMessages,
+  ThreadListResponse,
+  AIFeedback,
+  BatchItem,
+  BatchResult,
+} from "@/types/conversations";
