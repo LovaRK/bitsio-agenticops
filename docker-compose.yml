@@ -33,6 +33,8 @@ services:
       - postgres
       - redis
       - mock-mcp
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   worker:
     build:
@@ -42,6 +44,8 @@ services:
     depends_on:
       - postgres
       - redis
+    extra_hosts:
+      - "host.containers.internal:host-gateway"
 
   web:
     build:
