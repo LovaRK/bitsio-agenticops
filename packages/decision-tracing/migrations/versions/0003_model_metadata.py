@@ -1,8 +1,8 @@
-"""add model mode and user opt-in fields to decision traces
+"""model metadata for decision traces
 
 Revision ID: 0003_model_metadata
 Revises: 0002_incident_embeddings
-Create Date: 2026-04-24
+Create Date: 2026-04-20
 """
 
 from __future__ import annotations
@@ -17,16 +17,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "decision_traces",
-        sa.Column("model_mode", sa.String(16), nullable=False, server_default="local"),
-    )
-    op.add_column(
-        "decision_traces",
-        sa.Column("user_opt_in", sa.Boolean(), nullable=False, server_default=sa.false()),
-    )
+    op.add_column("decision_traces", sa.Column("model_provider", sa.Text(), nullable=True))
+    op.add_column("decision_traces", sa.Column("model_name", sa.Text(), nullable=True))
+    op.add_column("decision_traces", sa.Column("latency_ms", sa.Integer(), nullable=True))
+
+    # Update existing rows with defaults if needed
+    op.execute("UPDATE decision_traces SET model_provider = 'unknown' WHERE model_provider IS NULL")
+    op.execute("UPDATE decision_traces SET model_name = 'unknown' WHERE model_name IS NULL")
 
 
 def downgrade() -> None:
-    op.drop_column("decision_traces", "user_opt_in")
-    op.drop_column("decision_traces", "model_mode")
+    op.drop_column("decision_traces", "latency_ms")
+    op.drop_column("decision_traces", "model_name")
+    op.drop_column("decision_traces", "model_provider")
