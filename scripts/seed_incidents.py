@@ -25,6 +25,10 @@ ON CONFLICT (id) DO NOTHING;
 
 def main() -> None:
     dsn = os.getenv("DATABASE_URL", "postgresql://bitsio:bitsio@localhost:5432/bitsio_agenticops")
+    if "://" in dsn:
+        scheme, rest = dsn.split("://", 1)
+        if "+" in scheme:
+            dsn = f"postgresql://{rest}"
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
             cur.execute(SEED_SQL)
