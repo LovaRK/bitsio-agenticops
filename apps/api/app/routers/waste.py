@@ -1088,12 +1088,75 @@ def get_telemetry_metrics(ctx: AuthContext = Depends(require_analyst)) -> dict[s
                 _TELEMETRY_METRICS_CACHE[cache_key] = (now, payload)
                 return payload
         except Exception as exc:
-            # Fallback to static metrics below if live derivation fails.
-            fallback_reason = f"{type(exc).__name__}: {exc}"
+            # When live mode is enabled but fails, return error instead of fallback.
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Live telemetry metrics unavailable: {type(exc).__name__}: {exc}",
+            ) from exc
         else:
             fallback_reason = ""
-    else:
-        fallback_reason = "Live mode disabled by runtime settings."
+
+    # Live mode disabled — return empty response instead of mock data.
+    if not settings.splunk_live_mode:
+        return {
+            "summary": {
+                "total_annual_spend_usd": 0,
+                "total_potential_savings_usd": 0,
+                "avg_utilization_score": 0,
+                "security_gap_count": 0,
+                "recommendation_complexity": "Low",
+            },
+            "sources": [],
+            "security_findings": [],
+            "savings_projection": [],
+            "governance": {
+                "policy_id": "telemetry-waste-policy",
+                "policy_version": "v1.0.0",
+                "rule_triggered": "deny",
+                "approval_reason": "Live mode disabled.",
+                "approval_status": "rejected",
+                "data_owner": "Unknown",
+                "last_reviewed": datetime.now(UTC).isoformat(),
+                "source": "derived",
+            },
+            "security": {
+                "data_classification": "unknown",
+                "compliance_frameworks": [],
+                "encryption_required": "in-transit + at-rest",
+                "risk_level": "unknown",
+                "security_confidence": 0,
+                "source": "derived",
+            },
+            "conflicts": [],
+            "actions": [],
+            "trust": _derive_metrics_trust(
+                data_source="none",
+                fallback_used=False,
+                adapter_mode=settings.splunk_adapter_mode,
+                backend="unknown",
+                latency_ms=int(round((time.perf_counter() - request_started) * 1000)),
+                confidence=0.0,
+                coverage_pct=0,
+                freshness="unavailable",
+            ),
+            "realized_savings": {
+                "estimated_annual_savings_usd": 0.0,
+                "realized_to_date_usd": 0.0,
+                "realization_pct": 0,
+                "next_milestone": "N/A",
+                "next_milestone_target_usd": 0.0,
+            },
+            "model_meta": model_meta,
+            "query_plan": query_plan,
+            "executed_steps": [step | {"status": "skipped"} for step in query_plan],
+            "query_context": {
+                "adapter_mode": settings.splunk_adapter_mode,
+                "backend": "unknown",
+                "live_mode": settings.splunk_live_mode,
+                "used_live_data": False,
+                "fallback_reason": "Live mode disabled by configuration.",
+            },
+        }
 
     # Static fallback when live mode is disabled or live derivation fails.
     static_sources: list[dict[str, Any]] = [
