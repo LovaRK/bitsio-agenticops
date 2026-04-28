@@ -366,7 +366,7 @@ export function ConversationPanel({ artifactType, artifactId, title, showDebug =
           </div>
 
           {/* Token totals strip */}
-          {tokenTotals && tokenTotals.total_tokens > 0 && (
+          {tokenTotals && (tokenTotals.total_tokens ?? 0) > 0 && (
             <div className="border-t border-outline-variant/10 px-4 py-1.5 bg-surface-container-lowest">
               <TokenCostBadge tokenMeta={tokenTotals} compact />
             </div>

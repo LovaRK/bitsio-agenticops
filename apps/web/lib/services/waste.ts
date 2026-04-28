@@ -5,7 +5,7 @@ import { apiFetch, withTimeout } from "@/lib/http";
 import telemetryValueStory from "@/lib/mocks/telemetry_value_story.json";
 import { fetchWithFallback } from "@/lib/services/serviceFetch";
 
-const demoFallback: WasteDemoResponse = telemetryValueStory as WasteDemoResponse;
+const demoFallback: WasteDemoResponse = telemetryValueStory as unknown as WasteDemoResponse;
 
 export function getWasteDemoLocal(): WasteDemoResponse {
   return demoFallback;
@@ -439,22 +439,22 @@ function createEmptyTelemetryMetrics(): TelemetryMetricsResponse {
       policy_version: "v1.0.0",
       rule_triggered: "deny",
       approval_reason: "No live data available.",
-      approval_status: "rejected",
+      approval_status: "requires_review",
       data_owner: "Unknown",
       last_reviewed: new Date().toISOString(),
       source: "derived",
     },
     security: {
-      data_classification: "unknown",
+      data_classification: "internal",
       compliance_frameworks: [],
       encryption_required: "in-transit + at-rest",
-      risk_level: "unknown",
+      risk_level: "low",
       security_confidence: 0,
       source: "derived",
     },
     conflicts: [],
     trust: {
-      data_source: "none",
+      data_source: "fallback",
       fallback_used: false,
       adapter_mode: "auto",
       backend: "splunk-auto",

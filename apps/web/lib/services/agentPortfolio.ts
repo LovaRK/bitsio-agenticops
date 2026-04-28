@@ -118,6 +118,6 @@ export function getAgentPortfolioData(): {
   return {
     customerHealth: customerHealthData as Record<string, CustomerHealthAccount>,
     recovery: recoveryData as RecoveryOverview,
-    migration: migrationData as MigrationOverview,
+    migration: migrationData as unknown as MigrationOverview,
   };
 }
