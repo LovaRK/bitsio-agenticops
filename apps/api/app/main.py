@@ -202,6 +202,7 @@ def create_app() -> FastAPI:
                 r = httpx.get(
                     f"{_cfg.splunk_mcp_base_url.rstrip('/')}/health",
                     timeout=2.0,
+                    verify=_cfg.splunk_mcp_ssl_verify,
                 )
                 checks["splunk"] = "ok" if r.status_code < 500 else "error"
             except Exception:
