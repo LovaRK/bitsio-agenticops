@@ -1,4 +1,5 @@
-import { getTelemetryMetrics } from "@/lib/services/waste";
+import { getTelemetryMetrics, type TelemetryMetricsOptions } from "@/lib/services/waste";
+import { getSettingsSnapshot } from "@/lib/api";
 import { SourceUtilizationCard } from "@/components/SourceUtilizationCard";
 import { SourceValueMatrix } from "@/components/SourceValueMatrix";
 import { ROIBreakdown } from "@/components/ROIBreakdown";
@@ -37,7 +38,12 @@ function riskTone(level: "low" | "medium" | "high") {
 export default async function WastePage() {
   let metrics: Awaited<ReturnType<typeof getTelemetryMetrics>>;
   try {
-    metrics = await getTelemetryMetrics();
+    const settings = await getSettingsSnapshot();
+    const telemetryOptions: TelemetryMetricsOptions = {
+      isLocalModel: settings.model.runtime === "local",
+      isLiveMode: settings.splunk.live_mode,
+    };
+    metrics = await getTelemetryMetrics(telemetryOptions);
   } catch {
     return (
       <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8 sm:pt-6 lg:pb-12" data-testid="waste-page">
