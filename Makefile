@@ -143,6 +143,11 @@ local-status:
 	@$(MAKE) ollama-status
 	@$(MAKE) tunnel-status
 
+e2e-live:
+	E2E_BASE_URL=http://144.202.48.85:3000 \
+	E2E_INCIDENT_ID=inc_20260408_42 \
+	pnpm --filter web exec playwright test
+
 # Free public share URL for quick demos.
 # Requires cloudflared installed: brew install cloudflared
 share-web:
