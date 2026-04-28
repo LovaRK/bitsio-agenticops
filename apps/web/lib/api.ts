@@ -24,6 +24,7 @@ export type {
 } from "@/types/api";
 
 export type { EnrichedIncidentResponse } from "@/lib/services/enrichment";
+export type { TelemetryMetricsOptions } from "@/lib/services/waste";
 
 // Re-export service functions
 export { listIncidents, getIncidentDetail } from "@/lib/services/incidents";

@@ -413,12 +413,79 @@ function createMockTelemetryMetrics(): TelemetryMetricsResponse {
   };
 }
 
-export async function getTelemetryMetrics(): Promise<TelemetryMetricsResponse> {
+function createEmptyTelemetryMetrics(): TelemetryMetricsResponse {
+  return {
+    summary: {
+      total_annual_spend_usd: 0,
+      total_potential_savings_usd: 0,
+      avg_utilization_score: 0,
+      security_gap_count: 0,
+      recommendation_complexity: "Low" as const,
+    },
+    sources: [],
+    security_findings: [],
+    savings_projection: [],
+    query_plan: [],
+    executed_steps: [],
+    query_context: {
+      adapter_mode: "auto",
+      backend: "splunk-auto",
+      live_mode: false,
+      used_live_data: false,
+      fallback_reason: "Live data mode: API call failed, showing zero instead of mock data.",
+    },
+    governance: {
+      policy_id: "telemetry-waste-policy",
+      policy_version: "v1.0.0",
+      rule_triggered: "deny",
+      approval_reason: "No live data available.",
+      approval_status: "rejected",
+      data_owner: "Unknown",
+      last_reviewed: new Date().toISOString(),
+      source: "derived",
+    },
+    security: {
+      data_classification: "unknown",
+      compliance_frameworks: [],
+      encryption_required: "in-transit + at-rest",
+      risk_level: "unknown",
+      security_confidence: 0,
+      source: "derived",
+    },
+    conflicts: [],
+    trust: {
+      data_source: "none",
+      fallback_used: false,
+      adapter_mode: "auto",
+      backend: "splunk-auto",
+      latency_ms: 0,
+      confidence: 0,
+      freshness: "unavailable",
+      coverage_pct: 0,
+      source: "derived",
+    },
+    actions: [],
+  };
+}
+
+export interface TelemetryMetricsOptions {
+  isLocalModel?: boolean;
+  isLiveMode?: boolean;
+}
+
+export async function getTelemetryMetrics(
+  options?: TelemetryMetricsOptions,
+): Promise<TelemetryMetricsResponse> {
+  const isLocalModelLiveMode = options?.isLocalModel && options?.isLiveMode;
+  const shouldDisallowFallback = isLocalModelLiveMode;
+
   return fetchWithFallback<TelemetryMetricsResponse>({
     path: "/api/v1/waste/telemetry/metrics",
-    fallbackFactory: createMockTelemetryMetrics,
-    warningMessage: "[api] Could not fetch telemetry metrics, using mock data.",
-    allowFallback: MAIN_TABS_ALLOW_FALLBACK,
+    fallbackFactory: shouldDisallowFallback ? createEmptyTelemetryMetrics : createMockTelemetryMetrics,
+    warningMessage: shouldDisallowFallback
+      ? "[api] Could not fetch live telemetry metrics, showing zero (local model mode requires real data only)."
+      : "[api] Could not fetch telemetry metrics, using mock data.",
+    allowFallback: shouldDisallowFallback ? false : MAIN_TABS_ALLOW_FALLBACK,
     timeoutMs: TELEMETRY_METRICS_TIMEOUT_MS,
     timeoutLabel: "telemetry-metrics",
   });

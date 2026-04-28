@@ -4,7 +4,7 @@ import { ActionDock } from "@/components/ActionDock";
 import { MotionCard } from "@/components/ui/MotionCard";
 import { getDashboardSummary, getSettingsSnapshot } from "@/lib/api";
 import { formatDateTimeUTC } from "@/lib/datetime";
-import { getTelemetryMetrics } from "@/lib/services/waste";
+import { getTelemetryMetrics, type TelemetryMetricsOptions } from "@/lib/services/waste";
 import { TOOLTIP } from "@/lib/uiTooltips";
 
 function formatCompactUsd(value: number): string {
@@ -29,25 +29,10 @@ function getSeverityStyles(severity: string) {
 }
 
 export default async function DashboardPage() {
-  const [summaryResult, settingsResult, telemetryResult] = await Promise.allSettled([
+  const [summaryResult, settingsResult] = await Promise.allSettled([
     getDashboardSummary(),
     getSettingsSnapshot(),
-    getTelemetryMetrics(),
   ]);
-
-  const summary =
-    summaryResult.status === "fulfilled"
-      ? summaryResult.value
-      : {
-          stats: {
-            active_incidents: 0,
-            pending_approvals: 0,
-            avg_confidence: 0,
-            source_indexes: [],
-            last_updated: new Date().toISOString(),
-          },
-          items: [],
-        };
 
   const settings =
     settingsResult.status === "fulfilled"
@@ -79,6 +64,29 @@ export default async function DashboardPage() {
             rate_limit_per_minute: 100,
             oidc_boundary: true,
           },
+        };
+
+  const telemetryOptions: TelemetryMetricsOptions = {
+    isLocalModel: settings.model.runtime === "local",
+    isLiveMode: settings.splunk.live_mode,
+  };
+
+  const telemetryResult = await Promise.allSettled([
+    getTelemetryMetrics(telemetryOptions),
+  ]).then((results) => results[0]);
+
+  const summary =
+    summaryResult.status === "fulfilled"
+      ? summaryResult.value
+      : {
+          stats: {
+            active_incidents: 0,
+            pending_approvals: 0,
+            avg_confidence: 0,
+            source_indexes: [],
+            last_updated: new Date().toISOString(),
+          },
+          items: [],
         };
 
   const telemetryMetrics =
