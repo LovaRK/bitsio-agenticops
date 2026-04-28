@@ -14,7 +14,8 @@ Code source of truth:
 ## Runtime behavior
 - Default runtime mode: `LOCAL_INTEGRATION` (local model + live Splunk).
 - If live data query succeeds, response is computed from live Splunk-derived source profiles.
-- If live mode is off or live query fails, static fallback payload is returned by backend.
+- In strict live modes (`LOCAL_INTEGRATION`, `CLOUD_LIVE`), no mock/static business payload is rendered.
+- If live mode is off, or live query fails/returns empty, API and UI use explicit live states (`live-error`, `live-empty`) instead of fallback business data.
 
 ## Query execution model
 Backend builds a query plan with 3 deterministic searches:
@@ -26,6 +27,7 @@ The response includes:
 - `query_plan` (planned steps),
 - `executed_steps` (executed/fallback),
 - `query_context` (`adapter_mode`, `resolved_adapter_mode`, `backend`, `used_live_data`, `fallback_reason`).
+- `trust` (`data_source`, `fallback_used`, `backend`, `adapter_mode`, `confidence`, `coverage_pct`).
 
 ## Constants and thresholds
 From backend constants:
@@ -131,13 +133,14 @@ Source Value Matrix chart:
 - bubble size: annual cost (`annual_spend_usd`)
 - bubble color: recommendation (`Keep`/`Optimize`/`Remove`)
 
-## Missing-data and fallback behavior
+## Missing-data and live-state behavior
 When live mode is enabled:
 - If live query succeeds and returns profiles: live computed payload is returned.
-- If live query fails: backend returns static fallback payload and sets `query_context.fallback_reason`.
+- If live query fails: API returns explicit live error semantics (no mock payload for strict live modes).
+- If live query succeeds with no usable profiles: API returns explicit live-empty semantics.
 
 When live mode is disabled:
-- Backend returns static fallback payload with fallback reason indicating live mode disabled.
+- API can return non-live empty payload semantics, not live business fallback.
 
 ## QA checklist
 1. Call API and store response:
@@ -159,5 +162,9 @@ When live mode is disabled:
 - Compare API payload values to rendered values on `/telemetry-value`.
 
 ## Notes for testers
-- If results appear unexpectedly low/high, first inspect `query_context.used_live_data` and `query_context.fallback_reason`.
+- Validate live provenance first:
+  - `trust.data_source == "live"`
+  - `trust.fallback_used == false`
+  - `query_context.used_live_data == true`
+- If results appear unexpectedly low/high, inspect `query_context` and `trust` fields before evaluating formulas.
 - Live mode quality depends on actual Splunk source profile richness and search activity in window.

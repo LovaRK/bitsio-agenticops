@@ -44,6 +44,12 @@ Adapter modes:
 - `SPLUNK_ADAPTER_MODE=native` for native Splunk REST (`/services/search/jobs/export`)
 - `SPLUNK_ADAPTER_MODE=auto` to infer from base URL (default)
 
+Strict live expectation for `LOCAL_INTEGRATION` and `CLOUD_LIVE`:
+- no mock business payload on core tabs
+- telemetry must show live provenance:
+  - `trust.data_source = live`
+  - `trust.fallback_used = false`
+
 ### 2. Start tunnel (Terminal A)
 
 ```bash
@@ -73,6 +79,7 @@ make live-seed
 
 ```bash
 make live-verify
+curl -sS -H 'x-api-key: dev-analyst' 'http://127.0.0.1:8001/api/v1/waste/telemetry/metrics' | jq '{data_source:.trust.data_source,fallback_used:.trust.fallback_used,backend:.trust.backend,adapter_mode:.trust.adapter_mode,used_live_data:.query_context.used_live_data}'
 ```
 
 API: `http://localhost:8001`

@@ -38,11 +38,20 @@ function riskTone(level: "low" | "medium" | "high") {
 export default async function WastePage() {
   let metrics: Awaited<ReturnType<typeof getTelemetryMetrics>>;
   try {
-    const settings = await getSettingsSnapshot();
-    const telemetryOptions: TelemetryMetricsOptions = {
-      isLocalModel: settings.model.runtime === "local",
-      isLiveMode: settings.splunk.live_mode,
+    let telemetryOptions: TelemetryMetricsOptions = {
+      // Default to strict local+live posture when settings cannot be fetched.
+      isLocalModel: true,
+      isLiveMode: true,
     };
+    try {
+      const settings = await getSettingsSnapshot();
+      telemetryOptions = {
+        isLocalModel: settings.model.runtime === "local",
+        isLiveMode: settings.splunk.live_mode,
+      };
+    } catch {
+      // Continue with conservative defaults so telemetry page can still attempt live query.
+    }
     metrics = await getTelemetryMetrics(telemetryOptions);
   } catch {
     return (

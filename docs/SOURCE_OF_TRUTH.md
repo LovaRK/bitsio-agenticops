@@ -1,6 +1,6 @@
 # BitsIO AgenticOps — Single Source of Truth
 
-Last updated: 2026-04-24 (morning)
+Last updated: 2026-04-28
 Owner: Core Engineering (Codex-led)
 Status: Canonical
 
@@ -61,18 +61,25 @@ Core tabs are now configured live-first:
 By default these routes do **not** silently fallback to mock payloads.
 If live data is unavailable, the UI shows an explicit live-data error panel and recovery actions.
 
-Current live behavior (verified 2026-04-22):
+Current live behavior (verified 2026-04-28):
 - live connectivity can be healthy while specific feature datasets are empty (query/time-window mismatch)
 - dashboard/incidents return empty-state payloads with explicit `degraded_reason` when no matching live incidents exist
 - fraud live route returns explicit `"degraded_reason":"No matching live fraud telemetry found in current search window."` when no matching fraud signals exist
+- telemetry route returns strict live provenance fields and does not use business fallback payload in live modes
+- telemetry loading may take longer on large live windows; page now retries once on timeout before rendering unavailable state
 
-Optional development override:
+Optional development override (local-only):
 - `NEXT_PUBLIC_MAIN_TABS_ALLOW_FALLBACK=true`
 - only use this for local sandbox debugging, never for production-like demos
 
 Expected indicators:
 - `mode: live` and `degraded_reason: null` => true live data
 - `mode: seed` or non-null degraded_reason => fallback data
+- telemetry live validation indicators:
+  - `trust.data_source = "live"`
+  - `trust.fallback_used = false`
+  - `query_context.used_live_data = true`
+  - `query_context.backend = "splunk-native"` when adapter is native
 
 ## 4. Local Runbook (Authoritative)
 
@@ -100,7 +107,8 @@ make local
 Current Splunk target profile:
 - host: `45.76.167.6`
 - API mode used by runtime: `native`
-- `SPLUNK_MCP_BASE_URL` still required for adapter base config
+- endpoint: `https://45.76.167.6:8089/services/mcp`
+- auth scheme: `Bearer` (MCP token)
 
 Health checks:
 
@@ -111,6 +119,7 @@ curl http://127.0.0.1:8001/api/v1/settings/runtime/check -H 'x-api-key: dev-anal
 curl http://127.0.0.1:8001/api/v1/dashboard/summary -H 'x-api-key: dev-analyst'
 curl http://127.0.0.1:8001/api/v1/incidents -H 'x-api-key: dev-analyst'
 curl 'http://127.0.0.1:8001/api/v1/fraud/overview?mode=auto' -H 'x-api-key: dev-analyst'
+curl 'http://127.0.0.1:8001/api/v1/waste/telemetry/metrics' -H 'x-api-key: dev-analyst'
 ```
 
 If web chunk/cache errors appear:
@@ -258,6 +267,7 @@ Module boundary rules:
 ## 13. Current Known Priorities
 
 1. Keep live Splunk connectivity stable for demo scenarios (tunnel + mode sync)
+2. Keep telemetry in strict live mode for `LOCAL_INTEGRATION` and `CLOUD_LIVE` (no mock business fallback)
 2. Expand live-query coverage for incidents/fraud so empty datasets are less likely on valid Splunk environments
 3. Maintain this document as the source all coding agents read first
 
