@@ -28,7 +28,10 @@ def get_url():
     cmd_line_url = config.get_main_option("sqlalchemy.url")
     if cmd_line_url and cmd_line_url != "DATABASE_URL":
         return cmd_line_url
-    return settings.database_url
+    url = settings.database_url
+    if "asyncpg" in url:
+        url = url.replace("asyncpg", "psycopg")
+    return url
 
 
 def run_migrations_offline() -> None:
