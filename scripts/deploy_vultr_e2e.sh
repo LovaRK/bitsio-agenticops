@@ -110,6 +110,8 @@ SPLUNK_LIVE_MODE=${SPLUNK_LIVE_MODE:-true}
 NEXT_PUBLIC_USE_MOCK=false
 NEXT_PUBLIC_REQUIRE_LIVE_API=true
 POSTGRES_HOST_PORT=${POSTGRES_HOST_PORT:-55432}
+DATABASE_URL=postgresql+asyncpg://bitsio:bitsio@postgres:5432/bitsio_agenticops
+REDIS_URL=redis://redis:6379/0
 ENVEOF
 
 TMP_ENV_B64="$(base64 < "$TMP_ENV" | tr -d '\n')"
