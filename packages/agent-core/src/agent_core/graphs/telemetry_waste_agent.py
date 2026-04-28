@@ -45,7 +45,7 @@ _PROMPT_PATH = Path("packages/prompts/graph-nodes/waste_reasoning.txt")
 
 # Splunk queries for waste analysis (run against live or mock Splunk)
 _SEARCH_FIELD_STATS = (
-    "search index=* earliest=-90d latest=now "
+    "search index=* "
     "| eval event_bytes=len(_raw) "
     "| stats count AS total_events sum(event_bytes) AS total_bytes min(_time) AS first_seen max(_time) AS last_seen BY index, sourcetype "
     "| eval observed_days=if(last_seen>first_seen, max(1, round((last_seen-first_seen)/86400,2)), 1) "
@@ -54,13 +54,13 @@ _SEARCH_FIELD_STATS = (
     "| fields index, source_type, daily_ingest_gb, total_events, total_bytes, observed_days"
 )
 _SEARCH_USAGE_ACTIVITY = (
-    "index=_audit action=search earliest=-90d latest=now "
+    "index=_audit action=search "
     '| rex field=search "sourcetype=(?<source_type>[^\\s|]+)" '
     "| stats count AS search_count_90d BY source_type "
     "| where isnotnull(source_type)"
 )
 _SEARCH_USAGE_BY_INDEX = (
-    "index=_audit action=search earliest=-90d latest=now "
+    "index=_audit action=search "
     '| rex field=search "index=(?<index_name>[^\\s|]+)" '
     "| stats count AS search_count_90d BY index_name "
     "| where isnotnull(index_name)"

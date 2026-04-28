@@ -473,42 +473,29 @@ export interface TelemetryMetricsOptions {
   isLiveMode?: boolean;
 }
 
-function isTimeoutError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  return (
-    error.name === "TimeoutError" ||
-    error.message.includes("timeout") ||
-    error.message.includes("timed out") ||
-    error.message.includes("AbortError")
-  );
-}
+const STRICT_LIVE_TELEMETRY_TIMEOUT_MS = 120000;
 
 export async function getTelemetryMetrics(
   options?: TelemetryMetricsOptions,
 ): Promise<TelemetryMetricsResponse> {
-  const isLocalModelLiveMode = options?.isLocalModel && options?.isLiveMode;
-  const shouldDisallowFallback = isLocalModelLiveMode;
+  const isStrictLiveMode = Boolean(options?.isLiveMode);
+  const shouldDisallowFallback = isStrictLiveMode;
+  const timeoutMs = isStrictLiveMode
+    ? Math.max(TELEMETRY_METRICS_TIMEOUT_MS, STRICT_LIVE_TELEMETRY_TIMEOUT_MS)
+    : TELEMETRY_METRICS_TIMEOUT_MS;
   const requestLiveMetrics = (timeoutMs: number) =>
     fetchWithFallback<TelemetryMetricsResponse>({
       path: "/api/v1/waste/telemetry/metrics",
       fallbackFactory: shouldDisallowFallback ? createEmptyTelemetryMetrics : createMockTelemetryMetrics,
       warningMessage: shouldDisallowFallback
-        ? "[api] Could not fetch live telemetry metrics, showing zero (local model mode requires real data only)."
+        ? "[api] Could not fetch live telemetry metrics in strict live mode."
         : "[api] Could not fetch telemetry metrics, using mock data.",
       allowFallback: shouldDisallowFallback ? false : MAIN_TABS_ALLOW_FALLBACK,
       timeoutMs,
       timeoutLabel: "telemetry-metrics",
     });
 
-  try {
-    return await requestLiveMetrics(TELEMETRY_METRICS_TIMEOUT_MS);
-  } catch (error) {
-    if (!shouldDisallowFallback || !isTimeoutError(error)) {
-      throw error;
-    }
-    // Live mode can be slow with large Splunk windows; retry once with a larger timeout.
-    return requestLiveMetrics(Math.max(TELEMETRY_METRICS_TIMEOUT_MS + 20000, 55000));
-  }
+  return requestLiveMetrics(timeoutMs);
 }
 
 export const telemetryValueService: TelemetryValueServiceContract = {
