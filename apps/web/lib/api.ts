@@ -23,6 +23,8 @@ export type {
   FraudOverviewResponse,
 } from "@/types/api";
 
+export type { EnrichedIncidentResponse } from "@/lib/services/enrichment";
+
 // Re-export service functions
 export { listIncidents, getIncidentDetail } from "@/lib/services/incidents";
 export { getDashboardSummary } from "@/lib/services/dashboard";
@@ -33,6 +35,7 @@ export { getSettingsSnapshot, updateRuntimeConfig, checkRuntimeConnections, upda
 export { getSupportResources } from "@/lib/services/support";
 export { getWasteDemo, getWasteDemoLocal, getWasteLive } from "@/lib/services/waste";
 export { getFraudOverview, getFraudDemo } from "@/lib/services/fraud";
+export { fetchEnrichment } from "@/lib/services/enrichment";
 export {
   createConversationThread,
   listConversationThreads,
