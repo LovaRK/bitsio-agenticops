@@ -149,8 +149,8 @@ export interface ScoringConfig {
 }
 
 export interface TrustMeta {
-  data_source: "live" | "seed";
-  fallback_used: boolean;
+  data_source: "live";  // ALWAYS live, never seed
+  fetched_at: string;   // ISO 8601 timestamp when data was pulled from Splunk
   latency_ms: number;
   confidence: number;
 }

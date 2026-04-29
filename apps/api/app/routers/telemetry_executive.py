@@ -486,7 +486,7 @@ def _build_response(
     det_weight: float,
     qual_weight: float,
     data_source: str,
-    fallback_used: bool,
+    fetched_at: str,
     latency_ms: int,
 ) -> dict[str, Any]:
     engine = CostEngine(cost_per_gb_year=cost_per_gb_year)
@@ -511,7 +511,7 @@ def _build_response(
     res_conf = engine.resolution_confidence(scores)
     profiles = engine.score_profiles_by_tier(scores)
 
-    confidence = 0.95 if not fallback_used else 0.82
+    confidence = 0.95  # Live Splunk data is always high confidence
 
     return {
         "executive_kpis": {
@@ -542,7 +542,7 @@ def _build_response(
         },
         "trust": {
             "data_source": data_source,
-            "fallback_used": fallback_used,
+            "fetched_at": fetched_at,
             "latency_ms": latency_ms,
             "confidence": confidence,
         },
@@ -561,13 +561,22 @@ def executive_summary(
     """
     Return a full datasensAI v3 executive telemetry summary.
 
-    When SPLUNK_LIVE_MODE=true, runs SPL queries against the connected Splunk instance
-    to build real SourcetypeRawData. Otherwise returns a high-fidelity seed dataset
-    representative of a mid-size enterprise Splunk deployment.
+    Runs 5 SPL queries against Splunk MCP to fetch real data.
+    NO fallback, NO seed data, NO mock data - LIVE SPLUNK ONLY.
     """
     settings = get_settings()
+
+    # Enforce: SPLUNK_LIVE_MODE must be true for this endpoint
+    if not settings.splunk_live_mode:
+        return {
+            "error": "SPLUNK_LIVE_MODE must be enabled for telemetry executive summary",
+            "status": "configuration_error",
+            "message": "Set SPLUNK_LIVE_MODE=true in .env and restart API",
+        }
+
     workflow_id = f"wf_exec_{uuid.uuid4().hex[:12]}"
     start_ms = time.perf_counter()
+    fetched_at = time._get_clock_source()  # Get current timestamp
 
     with _TRACER.start_as_current_span("api.telemetry.executive_summary") as span:
         span.set_attribute("service.name", "api")
@@ -586,29 +595,21 @@ def executive_summary(
             cost_per_gb_year=cost_per_gb,
         )
 
-        scores: list[SourcetypeScore] = []
-        data_source = "seed"
-        fallback_used = False
-
-        if settings.splunk_live_mode:
-            # Production: must use live data, fail loudly if unavailable
-            splunk = get_splunk_adapter_native_default()
-            scores = _run_live_scoring(splunk, scorer, window_days=window_days)
-            data_source = "live"
-        else:
-            # Development/test mode: use seed dataset (safe fallback)
-            scores = _build_seed_scores(cost_per_gb_year=cost_per_gb)
-            data_source = "seed"
+        # LIVE SPLUNK ONLY - no alternatives
+        splunk = get_splunk_adapter_native_default()
+        scores = _run_live_scoring(splunk, scorer, window_days=window_days)
 
         latency_ms = int(round((time.perf_counter() - start_ms) * 1000))
+        from datetime import datetime, timezone
+
         return _build_response(
             scores,
             cost_per_gb_year=cost_per_gb,
             util_weight=scorer.util_weight,
             det_weight=scorer.det_weight,
             qual_weight=scorer.qual_weight,
-            data_source=data_source,
-            fallback_used=False,
+            data_source="live",
+            fetched_at=datetime.now(timezone.utc).isoformat(),
             latency_ms=latency_ms,
         )
 

@@ -113,15 +113,10 @@ export default function TelemetryValuePage() {
           </p>
           {data && (
             <div className="mt-2 flex items-center gap-3 text-xs text-on-surface-variant">
-              <span
-                className={`rounded-full px-2 py-0.5 font-semibold border ${
-                  data.trust.data_source === "live"
-                    ? "border-secondary/40 text-secondary bg-secondary/10"
-                    : "border-outline-variant/40 text-on-surface-variant bg-surface-container"
-                }`}
-              >
-                {data.trust.data_source === "live" ? "Live Splunk data" : "Seed dataset"}
+              <span className="rounded-full px-2 py-0.5 font-semibold border border-secondary/40 text-secondary bg-secondary/10">
+                🔴 Live Splunk data
               </span>
+              <span>Fetched: {new Date(data.trust.fetched_at).toLocaleString()}</span>
               <span>Latency: {data.trust.latency_ms}ms</span>
               <span>Confidence: {Math.round(data.trust.confidence * 100)}%</span>
             </div>
