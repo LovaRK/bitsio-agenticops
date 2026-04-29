@@ -70,7 +70,12 @@ export default function TelemetryValuePage() {
   if (error) {
     return (
       <section className="pt-4 pb-10 px-4 sm:px-6 lg:px-8" data-testid="telemetry-executive-page">
-        <FilterBar config={config} onChange={handleConfigChange} />
+        <FilterBar
+          config={config}
+          onChange={handleConfigChange}
+          onRefresh={() => void fetchData(config)}
+          isLoading={loading}
+        />
         <div className="mt-6 rounded-xl border border-error/25 bg-error/10 p-6">
           <h2 className="text-xl font-semibold text-on-surface">
             Executive telemetry data unavailable
@@ -96,7 +101,12 @@ export default function TelemetryValuePage() {
       data-testid="telemetry-executive-page"
     >
       {/* Section 0: Filter bar (sticky) */}
-      <FilterBar config={config} onChange={handleConfigChange} />
+      <FilterBar
+        config={config}
+        onChange={handleConfigChange}
+        onRefresh={() => void fetchData(config)}
+        isLoading={loading && !!data}
+      />
 
       <div className="pt-6">
         {/* Page header */}

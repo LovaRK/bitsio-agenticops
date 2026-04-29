@@ -6,9 +6,11 @@ import type { ScoringConfig } from "@/types/telemetry-executive";
 interface FilterBarProps {
   config: Partial<ScoringConfig>;
   onChange: (config: Partial<ScoringConfig>) => void;
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
-export function FilterBar({ config, onChange }: FilterBarProps) {
+export function FilterBar({ config, onChange, onRefresh, isLoading = false }: FilterBarProps) {
   const [customer, setCustomer] = useState("Demo Customer");
   const [costPerGb, setCostPerGb] = useState(config.cost_per_gb_year ?? 10);
   const [storageGbMonth, setStorageGbMonth] = useState(135);
@@ -139,6 +141,24 @@ export function FilterBar({ config, onChange }: FilterBarProps) {
             </span>
           )}
         </div>
+
+        {/* Refresh button */}
+        <button
+          onClick={onRefresh}
+          disabled={isLoading}
+          className="flex items-center gap-2 rounded-lg bg-primary/20 border border-primary/30 text-primary px-4 py-2 text-sm font-semibold hover:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? (
+            <>
+              <span className="inline-block animate-spin">⟳</span>
+              Refreshing…
+            </>
+          ) : (
+            <>
+              🔄 Refresh Data
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
