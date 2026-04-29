@@ -102,7 +102,7 @@ export default function TelemetryValuePage() {
         {/* Page header */}
         <div className="mb-8">
           <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight mb-2">
-            datasensAI v3 Executive Dashboard
+            AI-Powered Telemetry Cost Optimization Platform
           </h2>
           <p className="text-base font-semibold text-secondary mb-2">
             Composite Telemetry Value Scoring
