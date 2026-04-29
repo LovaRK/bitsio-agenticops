@@ -4,6 +4,23 @@ AI-powered observability platform for Splunk with explainable reasoning timeline
 
 ## Quickstart
 
+### Local Development (Port 3000)
+```bash
+bash scripts/run-local.sh
+# Opens http://localhost:3000
+```
+
+### Production Deployment (Safe)
+```bash
+# Edit scripts/vultr.deploy.env and add SSH_PASSWORD
+nano scripts/vultr.deploy.env
+
+# Deploy with validation + health checks
+bash scripts/deploy-safe.sh main
+# Opens http://144.202.48.85:3000
+```
+
+### Classic Makefile Commands
 ```bash
 cp .env.example .env
 make bootstrap
@@ -159,6 +176,36 @@ curl -X POST http://localhost:8001/api/v1/incidents/inc_20260408_42/enrich \
   -d '{"force_refresh":true}'
 ```
 
+## Telemetry Value Dashboard (NEW)
+
+AI-Powered Telemetry Cost Optimization Platform with live Splunk data.
+
+**Features:**
+- ✅ [🔄 Refresh Data] button for user-triggered data refresh
+- ✅ Live Splunk data only (no mock fallback)
+- ✅ Composite scoring (Utilization 35%, Detection 40%, Quality 25%)
+- ✅ Cost optimization with 5-stage staircase
+- ✅ Security gaps and quick wins analysis
+
+**Access:**
+- Local: `http://localhost:3000/telemetry-value`
+- Production: `http://144.202.48.85:3000/telemetry-value`
+
+**Data Sources:**
+- Volume by sourcetype (Splunk index metadata)
+- Alert references (alert search count)
+- Detection coverage (MITRE + Lantern)
+- Data quality (parsing errors, timestamp errors)
+
+**Configuration (Filter Bar):**
+- Customer name
+- Cost/GB/Year (default: $10)
+- Utilization weight (default: 35%)
+- Detection weight (default: 40%)
+- Quality weight (default: 25%)
+
+---
+
 ## Make Commands
 
 - `make bootstrap`: install Python and JS dependencies
@@ -173,6 +220,50 @@ curl -X POST http://localhost:8001/api/v1/incidents/inc_20260408_42/enrich \
 - `make live-seed`: inject demo events into Splunk `tutorial` index
 - `make live-verify`: verify incidents + trace + approve/reject via API
 - `make tunnel-start|stop|status`: manage SSH tunnel to Vultr Splunk
+
+## Deployment Scripts (NEW)
+
+Safe, validated deployment with health checks.
+
+### Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `run-local.sh` | Start locally on port 3000 | `bash scripts/run-local.sh` |
+| `validate-deployment.sh` | Pre-deployment SSH check | `bash scripts/validate-deployment.sh` |
+| `deploy-safe.sh` | Deploy to production with validation | `bash scripts/deploy-safe.sh main` |
+| `check-status.sh` | Verify server health | `bash scripts/check-status.sh` |
+
+### Workflow
+
+```bash
+# 1. Make changes locally
+git commit -m "feat: description"
+
+# 2. Setup SSH password (one-time)
+nano scripts/vultr.deploy.env
+# Set: SSH_PASSWORD="your-password"
+
+# 3. Validate SSH connection
+bash scripts/validate-deployment.sh
+
+# 4. Deploy (with automatic health check)
+bash scripts/deploy-safe.sh main
+
+# 5. Verify production is running
+bash scripts/check-status.sh
+```
+
+### Production URLs (After Deployment)
+
+| Component | URL |
+|-----------|-----|
+| Web UI | http://144.202.48.85:3000 |
+| API | http://144.202.48.85:8001 |
+| Telemetry | http://144.202.48.85:3000/telemetry-value |
+| Health | http://144.202.48.85:8001/health |
+
+---
 
 `make api-smoke` uses auto mode:
 - tries network checks against `http://localhost:8001`
