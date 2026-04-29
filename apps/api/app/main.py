@@ -26,6 +26,7 @@ from apps.api.app.routers import (
     monitoring,
     settings,
     support,
+    telemetry_executive,
     waste,
 )
 from packages.shared.config.settings import get_settings
@@ -158,6 +159,7 @@ def create_app() -> FastAPI:
     app.include_router(feedback.router)
     app.include_router(fraud_batch.router)
     app.include_router(incidents_batch.router)
+    app.include_router(telemetry_executive.router)
 
     @app.get("/health")
     async def health() -> dict:
