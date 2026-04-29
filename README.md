@@ -15,6 +15,18 @@ make dev
 - `docs/SOURCE_OF_TRUTH.md`
 - `docs/runbooks/AGENT_GUARDRAILS_HARDENING_PLAN.md`
 
+## Agent Workflow (Graphify-First)
+
+For all non-trivial implementation/debugging tasks:
+
+1. Read `graphify-out/GRAPH_REPORT.md`
+2. Use graph traversal before broad grep:
+   - `graphify query "<question>"`
+   - `graphify path "<A>" "<B>"`
+   - `graphify explain "<concept>"`
+3. After code changes: `graphify update .`
+4. If behavior/architecture changed: update `docs/SOURCE_OF_TRUTH.md`
+
 ## Documentation Policy (From Now)
 
 - Single source of truth: `docs/SOURCE_OF_TRUTH.md`
@@ -49,6 +61,7 @@ Strict live expectation for `LOCAL_INTEGRATION` and `CLOUD_LIVE`:
 - telemetry must show live provenance:
   - `trust.data_source = live`
   - `trust.fallback_used = false`
+  - `query_context.used_live_data = true`
 
 ### 2. Start tunnel (Terminal A)
 

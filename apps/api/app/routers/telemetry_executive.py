@@ -588,21 +588,17 @@ def executive_summary(
 
         scores: list[SourcetypeScore] = []
         data_source = "seed"
-        fallback_used = True
+        fallback_used = False
 
         if settings.splunk_live_mode:
-            try:
-                splunk = get_splunk_adapter_native_default()
-                scores = _run_live_scoring(splunk, scorer, window_days=window_days)
-                data_source = "live"
-                fallback_used = False
-            except Exception:
-                # Fall through to seed data
-                scores = _build_seed_scores(cost_per_gb_year=cost_per_gb)
-                data_source = "seed"
-                fallback_used = True
+            # Production: must use live data, fail loudly if unavailable
+            splunk = get_splunk_adapter_native_default()
+            scores = _run_live_scoring(splunk, scorer, window_days=window_days)
+            data_source = "live"
         else:
+            # Development/test mode: use seed dataset (safe fallback)
             scores = _build_seed_scores(cost_per_gb_year=cost_per_gb)
+            data_source = "seed"
 
         latency_ms = int(round((time.perf_counter() - start_ms) * 1000))
         return _build_response(
@@ -612,7 +608,7 @@ def executive_summary(
             det_weight=scorer.det_weight,
             qual_weight=scorer.qual_weight,
             data_source=data_source,
-            fallback_used=fallback_used,
+            fallback_used=False,
             latency_ms=latency_ms,
         )
 

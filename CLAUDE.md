@@ -148,3 +148,5 @@ Rules:
 - If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
 - For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
 - After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
+- Do not skip graphify on architecture-impacting tasks; it is mandatory pre-check for agent workflows in this repo
+- Any behavior/runtime contract change must include a `docs/SOURCE_OF_TRUTH.md` update in the same patch set

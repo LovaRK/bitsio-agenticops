@@ -1,6 +1,6 @@
 # BitsIO AgenticOps — Single Source of Truth
 
-Last updated: 2026-04-28
+Last updated: 2026-04-29
 Owner: Core Engineering (Codex-led)
 Status: Canonical
 
@@ -122,6 +122,12 @@ curl 'http://127.0.0.1:8001/api/v1/fraud/overview?mode=auto' -H 'x-api-key: dev-
 curl 'http://127.0.0.1:8001/api/v1/waste/telemetry/metrics' -H 'x-api-key: dev-analyst'
 ```
 
+Local telemetry performance defaults (current):
+- `TELEMETRY_METRICS_SEARCH_WINDOW_DAYS=7`
+- `TELEMETRY_METRICS_CACHE_TTL_SECONDS=120`
+- browser should call API directly on `:8001` in local live mode to avoid Next.js proxy timeout behavior on long telemetry queries
+- `NEXT_PUBLIC_DIRECT_API_PORT=8001`
+
 If web chunk/cache errors appear:
 
 ```bash
@@ -228,6 +234,7 @@ Policy from now:
 - new operational/architecture/process updates go into this file
 - legacy docs remain under `docs/archive/` for reference only
 - avoid creating parallel docs unless explicitly requested
+- agent workflow and repo exploration must follow Graphify-first policy (see section 13)
 
 ## 11. Refactor Principles (Enforced)
 
@@ -257,6 +264,42 @@ apps/
       services/                 # route-independent data services
         serviceFetch.ts         # shared fallback + timeout fetch helper
 ```
+
+## 13. Graphify-First Agent Workflow (Mandatory)
+
+All coding agents (Codex, Claude, Antigravity, CloudCode) must use this flow before non-trivial changes:
+
+1. Read `graphify-out/GRAPH_REPORT.md` first for module/community context.
+2. Use graph commands for architecture tracing before broad grep:
+   - `graphify query "<question>"`
+   - `graphify path "<A>" "<B>"`
+   - `graphify explain "<concept>"`
+3. Use code grep/file reads only after graph traversal narrows scope.
+4. After changing code, run:
+   - `graphify update .`
+5. If docs or architecture behavior changed, update this file in the same change set.
+
+Rationale:
+- reduces context drift between agents
+- keeps cross-module reasoning consistent
+- improves token efficiency and implementation accuracy
+
+## 14. Production Deployment Snapshot (Current)
+
+Latest verified deployment:
+- commit: `52cadd3a`
+- branch: `develop`
+- app URL: `http://144.202.48.85:3000`
+- API URL: `http://144.202.48.85:8001`
+- health: `db=ok`, `redis=ok`, `splunk=ok`
+
+Live telemetry verification contract (strict modes):
+- modes: `LOCAL_INTEGRATION`, `CLOUD_LIVE`
+- no mock/fallback business payloads
+- telemetry must expose live provenance fields:
+  - `trust.data_source = "live"`
+  - `trust.fallback_used = false`
+  - `query_context.used_live_data = true`
 
 Module boundary rules:
 - `routers/*` should be thin (validation + orchestration only).
