@@ -9,6 +9,14 @@ function resolvePublicApiBaseUrl(): string {
 
   if (typeof window === "undefined") return configured;
 
+  // When configured as a relative proxy path ("/api"), browser calls flow through
+  // Next.js rewrites, which can timeout on long-running live Splunk queries.
+  // Prefer direct API host:port in browser to avoid rewrite proxy timeout.
+  if (configured.startsWith("/")) {
+    const directApiPort = process.env.NEXT_PUBLIC_DIRECT_API_PORT?.trim() || "8001";
+    return `${window.location.protocol}//${window.location.hostname}:${directApiPort}`;
+  }
+
   try {
     const parsed = new URL(configured);
     const browserHost = window.location.hostname;
