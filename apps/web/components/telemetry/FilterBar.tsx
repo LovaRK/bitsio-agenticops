@@ -10,7 +10,7 @@ interface FilterBarProps {
 
 export function FilterBar({ config, onChange }: FilterBarProps) {
   const [customer, setCustomer] = useState("Demo Customer");
-  const [costPerGb, setCostPerGb] = useState(config.cost_per_gb_year ?? 150);
+  const [costPerGb, setCostPerGb] = useState(config.cost_per_gb_year ?? 10);
   const [storageGbMonth, setStorageGbMonth] = useState(135);
   const [utilW, setUtilW] = useState(config.util_weight ?? 0.35);
   const [detW, setDetW] = useState(config.det_weight ?? 0.40);

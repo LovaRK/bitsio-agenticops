@@ -21,7 +21,7 @@ import { AverageScoreGauges } from "@/components/telemetry/AverageScoreGauges";
 import { FullScoringTable } from "@/components/telemetry/FullScoringTable";
 
 const DEFAULT_CONFIG: Partial<ScoringConfig> = {
-  cost_per_gb_year: 150,
+  cost_per_gb_year: 10,
   util_weight: 0.35,
   det_weight: 0.40,
   qual_weight: 0.25,
