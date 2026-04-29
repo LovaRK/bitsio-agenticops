@@ -77,7 +77,7 @@ export default function TelemetryValuePage() {
           </h2>
           <p className="mt-2 text-sm text-on-surface-variant">{error}</p>
           <p className="mt-2 text-xs text-on-surface-variant">
-            Connect Splunk/API in Settings and retry. Using fallback data where possible.
+            Verify Splunk SSH tunnel is active and API is running, then retry. LIVE SPLUNK MODE: no fallback data.
           </p>
           <button
             className="mt-4 rounded-lg bg-primary/20 border border-primary/30 text-primary px-4 py-2 text-sm font-semibold hover:bg-primary/30 transition-colors"

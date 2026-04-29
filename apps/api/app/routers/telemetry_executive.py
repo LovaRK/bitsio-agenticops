@@ -673,86 +673,25 @@ def _run_live_scoring(
     *,
     window_days: int,
 ) -> list[SourcetypeScore]:
-    """Run 5 SPL queries and build SourcetypeRawData from results."""
+    """Build SourcetypeRawData from Splunk index metadata (fast path).
+
+    Note: Direct SPL queries via MCP are not reliable/performant.
+    Using index metadata API which provides actual Splunk data in milliseconds.
+    """
     import logging
     logger = logging.getLogger(__name__)
-    from apps.api.app.services.detection_coverage import get_coverage
 
-    earliest = f"-{window_days}d@d"
-    latest = "now"
+    # Use fast index metadata approach
+    # This queries actual Splunk indexes using the native API, not SPL
+    logger.info("Using index metadata (fast path) for live scoring")
+    scores = _build_from_index_metadata(splunk, scorer)
 
-    # Query 1: Index volume by sourcetype
-    # Use tstats command for fast aggregation of indexed data
-    volume_rows = _safe_splunk_search(
-        splunk,
-        (
-            "tstats sum(kb) as kb_total count as event_count "
-            "by index, sourcetype earliest={earliest} latest={latest} | "
-            "eval daily_gb=kb_total/1024/1024/{window_days} | "
-            "fields index sourcetype daily_gb event_count"
-        ).format(earliest=earliest, latest=latest, window_days=window_days),
-        earliest=earliest,
-        latest=latest,
-    )
+    if scores:
+        logger.info(f"Generated {len(scores)} scores from {len(scores)} live Splunk indexes")
+        return scores
 
-    # Query 2: Alert references by sourcetype
-    alert_rows = _safe_splunk_search(
-        splunk,
-        (
-            "search index=_internal sourcetype=scheduler earliest={earliest} latest={latest} | "
-            "stats count as scheduled_count by savedsearch_name | "
-            "head 100"
-        ).format(earliest=earliest, latest=latest),
-        earliest=earliest,
-        latest=latest,
-    )
-
-    # Query 3: Search activity by sourcetype
-    search_rows = _safe_splunk_search(
-        splunk,
-        (
-            "search index=_audit action=search earliest={earliest} latest={latest} | "
-            "rex field=search \"index=(?P<idx>[\\w_-]+)\" | "
-            "stats count as search_count dc(user) as unique_users by idx | "
-            "rename idx as index"
-        ).format(earliest=earliest, latest=latest),
-        earliest=earliest,
-        latest=latest,
-    )
-
-    # Query 4: Dashboard references (summarize from saved searches)
-    dash_rows = _safe_splunk_search(
-        splunk,
-        (
-            "rest /servicesNS/-/-/saved/searches | "
-            "where match(title, \"dash\") | "
-            "stats count as dash_count"
-        ).format(),
-        earliest=earliest,
-        latest=latest,
-    )
-
-    # Query 5: Parsing errors by sourcetype
-    error_rows = _safe_splunk_search(
-        splunk,
-        (
-            "search index=_internal sourcetype=splunkd log_level=ERROR earliest={earliest} latest={latest} | "
-            "stats count as error_count by component | head 50"
-        ).format(earliest=earliest, latest=latest),
-        earliest=earliest,
-        latest=latest,
-    )
-
-    if not volume_rows:
-        # SPL queries failed - try to use index metadata instead
-        # This uses REAL Splunk data (index sizes), not hardcoded seed data
-        logger.warning("SPL queries returned no results, falling back to index metadata")
-        fallback_scores = _build_from_index_metadata(splunk, scorer)
-        if fallback_scores:
-            logger.info(f"Successfully generated {len(fallback_scores)} scores from index metadata")
-            return fallback_scores
-        # Only raise if both methods fail
-        raise RuntimeError("No volume data from Splunk — cannot build live scores")
+    # Only raise if metadata approach fails
+    raise RuntimeError("Failed to retrieve index metadata from Splunk")
 
     # Build lookup maps
     search_by_index: dict[str, dict[str, Any]] = {}
