@@ -1,0 +1,2 @@
+"use client";
+export function StatusPill({label,tone}:{label:string;tone:"ok"|"warn"|"risk"|"info"}){const cls=tone=="ok"?"bg-green-500/15 text-green-300 border-green-400/30":tone=="warn"?"bg-amber-500/15 text-amber-300 border-amber-400/30":tone=="risk"?"bg-red-500/15 text-red-300 border-red-400/30":"bg-blue-500/15 text-blue-300 border-blue-400/30";return <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${cls}`}>{label}</span>;}

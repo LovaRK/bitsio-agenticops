@@ -1,0 +1,3 @@
+"use client";
+import type { DriftSignal } from '@/types/agent';
+export function DriftDetectionPanel({signals}:{signals:DriftSignal[]}){return <section className="rounded-xl border border-white/10 bg-white/5 p-4"><h3 className="text-sm font-semibold text-white">Drift Detection Panel</h3>{signals.length===0?<p className="mt-2 text-sm text-white/70">No drift signals currently.</p>:signals.map(s=><div key={s.id} className="mt-2 rounded-lg border border-white/10 bg-slate-900/40 p-2 text-sm text-white/80"><p>{s.explanation}</p><p className="mt-1 text-xs text-white/60">{s.severity} · {s.previousState} → {s.currentState}</p><p className="mt-1 text-xs text-amber-200">Review: {s.recommendedReviewAction}</p></div>)}</section>;}

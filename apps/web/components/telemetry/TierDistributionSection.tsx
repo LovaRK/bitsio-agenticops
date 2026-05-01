@@ -112,7 +112,7 @@ export function TierDistributionSection({
                 ))}
               </Pie>
               <Tooltip
-                formatter={(val: number, name: string) => [`${val} sources`, name]}
+                formatter={(val, name) => [`${Number(val ?? 0)} sources`, String(name ?? "")]}
                 contentStyle={{
                   background: "#1e2130",
                   border: "1px solid rgba(255,255,255,0.1)",
@@ -156,7 +156,7 @@ export function TierDistributionSection({
                 width={100}
               />
               <Tooltip
-                formatter={(val: number) => [`${val.toFixed(2)} GB/day`, "Volume"]}
+                formatter={(val) => [`${Number(val ?? 0).toFixed(2)} GB/day`, "Volume"]}
                 contentStyle={{
                   background: "#1e2130",
                   border: "1px solid rgba(255,255,255,0.1)",

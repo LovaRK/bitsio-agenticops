@@ -81,7 +81,7 @@ export function SecurityGapsPanel({ gaps, totalSourcetypes }: SecurityGapsPanelP
                 ))}
               </Pie>
               <Tooltip
-                formatter={(val: number, name: string) => [`${val} sources`, name]}
+                formatter={(val, name) => [`${Number(val ?? 0)} sources`, String(name ?? "")]}
                 contentStyle={{
                   background: "#1e2130",
                   border: "1px solid rgba(255,255,255,0.1)",

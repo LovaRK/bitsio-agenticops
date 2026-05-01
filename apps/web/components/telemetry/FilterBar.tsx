@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ScoringConfig } from "@/types/telemetry-executive";
+import type { ScoringConfig, TrustMeta } from "@/types/telemetry-executive";
 
 interface FilterBarProps {
   config: Partial<ScoringConfig>;
   onChange: (config: Partial<ScoringConfig>) => void;
   onRefresh?: () => void;
   isLoading?: boolean;
+  trust?: TrustMeta;
+  isLive?: boolean;
 }
 
-export function FilterBar({ config, onChange, onRefresh, isLoading = false }: FilterBarProps) {
+export function FilterBar({ config, onChange, onRefresh, isLoading = false, trust, isLive }: FilterBarProps) {
   const [customer, setCustomer] = useState("Demo Customer");
   const [costPerGb, setCostPerGb] = useState(config.cost_per_gb_year ?? 10);
   const [storageGbMonth, setStorageGbMonth] = useState(135);
@@ -160,6 +162,25 @@ export function FilterBar({ config, onChange, onRefresh, isLoading = false }: Fi
           )}
         </button>
       </div>
+      {trust && (
+        <div className="mt-3 space-y-2">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {(isLive || trust.data_source === "live") && (
+              <span className="rounded-full border border-secondary/40 bg-secondary/10 px-2 py-0.5 font-semibold text-secondary">
+                Live Splunk Data
+              </span>
+            )}
+            {trust.fallback_used && (
+              <span className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1 font-semibold text-amber-300">
+                Using cached data - Splunk unavailable
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-on-surface-variant">
+            Fetched: {trust.fetched_at ? new Date(trust.fetched_at).toUTCString() : "n/a"} · Latency: {trust.latency_ms}ms · Confidence: {Math.round(trust.confidence * 100)}%
+          </p>
+        </div>
+      )}
     </div>
   );
 }

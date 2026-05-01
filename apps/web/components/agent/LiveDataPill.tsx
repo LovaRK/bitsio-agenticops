@@ -1,0 +1,2 @@
+"use client";
+export function LiveDataPill({live,fallbackReason}:{live:boolean;fallbackReason?:string}){if(live)return <span className="inline-flex rounded-full border border-green-400/30 bg-green-500/10 px-2 py-0.5 text-xs font-semibold text-green-200">Live Splunk</span>;return <span className="inline-flex rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-200" title={fallbackReason||'fallback'}>Fallback</span>;}

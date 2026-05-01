@@ -12,9 +12,11 @@ import type { DataValueSplit } from "@/types/telemetry-executive";
 
 interface DataValueSplitChartsProps {
   split: DataValueSplit;
+  selectedSegment?: "utilized" | "underutilized" | null;
+  onFilterChange?: (tier: "utilized" | "underutilized" | null) => void;
 }
 
-export function DataValueSplitCharts({ split }: DataValueSplitChartsProps) {
+export function DataValueSplitCharts({ split, selectedSegment = null, onFilterChange }: DataValueSplitChartsProps) {
   const volumeData = [
     { name: "Utilized GB", value: split.volume.utilized_gb, color: "#4caf50" },
     { name: "Underutilized GB", value: split.volume.underutilized_gb, color: "#f44336" },
@@ -51,13 +53,24 @@ export function DataValueSplitCharts({ split }: DataValueSplitChartsProps) {
                 innerRadius={50}
                 outerRadius={80}
                 dataKey="value"
+                onClick={(_, i) => {
+                  const seg = i === 0 ? "utilized" : "underutilized";
+                  onFilterChange?.(selectedSegment === seg ? null : seg);
+                }}
               >
-                {volumeData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
+                {volumeData.map((entry, idx) => {
+                  const seg = idx === 0 ? "utilized" : "underutilized";
+                  const active = selectedSegment === seg;
+                  return (
+                    <Cell key={entry.name} fill={entry.color} stroke={active ? "#ffffff" : "transparent"} strokeWidth={active ? 3 : 0} />
+                  );
+                })}
               </Pie>
               <Tooltip
-                formatter={(val: number) => [`${val.toFixed(2)} GB`, ""]}
+                formatter={(val) => {
+                  const n = Number(val ?? 0);
+                  return [`${n.toFixed(2)} GB`, ""];
+                }}
                 contentStyle={{
                   background: "#1e2130",
                   border: "1px solid rgba(255,255,255,0.1)",
@@ -67,7 +80,9 @@ export function DataValueSplitCharts({ split }: DataValueSplitChartsProps) {
               />
               <Legend
                 formatter={(value) => (
-                  <span style={{ color: "#b0b0b0", fontSize: 11 }}>{value}</span>
+                  <span style={{ color: "#b0b0b0", fontSize: 11 }}>
+                    {value === "Underutilized GB" && selectedSegment === "underutilized" ? `${value} (filtered)` : value}
+                  </span>
                 )}
               />
             </PieChart>
@@ -94,7 +109,10 @@ export function DataValueSplitCharts({ split }: DataValueSplitChartsProps) {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(val: number) => [`${val} sourcetypes`, ""]}
+                formatter={(val) => {
+                  const n = Number(val ?? 0);
+                  return [`${n} sourcetypes`, ""];
+                }}
                 contentStyle={{
                   background: "#1e2130",
                   border: "1px solid rgba(255,255,255,0.1)",

@@ -1,0 +1,2 @@
+"use client";
+export function ActionControls({onApprove,onReject,onModify}:{onApprove:()=>void;onReject:()=>void;onModify:()=>void}){return <div className="flex flex-wrap gap-2"><button className="rounded border border-green-400/30 px-3 py-1 text-xs text-green-300" onClick={onApprove}>Approve</button><button className="rounded border border-red-400/30 px-3 py-1 text-xs text-red-300" onClick={onReject}>Reject</button><button className="rounded border border-white/20 px-3 py-1 text-xs text-white" onClick={onModify}>Modify</button></div>;}

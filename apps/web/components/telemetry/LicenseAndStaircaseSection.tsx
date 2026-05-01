@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -53,7 +54,13 @@ export function LicenseAndStaircaseSection({
   }));
 
   return (
-    <div className="rounded-xl border border-outline-variant/10 bg-surface-container p-5 mb-6">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="rounded-xl border border-outline-variant/10 bg-surface-container p-5 mb-6"
+    >
       <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold mb-4">
         License Spend & Optimization Staircase
       </p>
@@ -65,6 +72,7 @@ export function LicenseAndStaircaseSection({
             Critical and Important tiers justify their spend. Nice-to-Have and Wasteful are targets
             for optimization.
           </p>
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.08 }}>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={licenseData} layout="vertical" margin={{ left: 0, right: 40 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -80,7 +88,7 @@ export function LicenseAndStaircaseSection({
                 width={90}
               />
               <Tooltip
-                formatter={(val: number) => [fmtM(val), "Annual Cost"]}
+                formatter={(val) => [fmtM(Number(val ?? 0)), "Annual Cost"]}
                 contentStyle={{
                   background: "#1e2130",
                   border: "1px solid rgba(255,255,255,0.1)",
@@ -94,6 +102,7 @@ export function LicenseAndStaircaseSection({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          </motion.div>
         </div>
 
         {/* 5-stage staircase */}
@@ -103,6 +112,7 @@ export function LicenseAndStaircaseSection({
             Each bar shows the projected annual cost after applying the corresponding optimization
             stage.
           </p>
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ duration: 0.4, delay: 0.18 }}>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={staircaseData} margin={{ left: 0, right: 40, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
@@ -115,22 +125,24 @@ export function LicenseAndStaircaseSection({
               />
               <YAxis tick={{ fontSize: 9, fill: "#9e9e9e" }} tickFormatter={fmtM} />
               <Tooltip
-                formatter={(val: number) => [fmtM(val), "Annual Cost"]}
+                formatter={(val) => [fmtM(Number(val ?? 0)), "Annual Cost"]}
                 contentStyle={{
                   background: "#1e2130",
                   border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 8,
                 }}
-                labelFormatter={(label: string) => {
-                  const entry = staircaseData.find((s) => s.name === label);
-                  return entry?.description ?? label;
+                labelFormatter={(label) => {
+                  const key = String(label ?? "");
+                  const entry = staircaseData.find((s) => s.name === key);
+                  return entry?.description ?? key;
                 }}
               />
               <Bar dataKey="cost" fill="#f44336" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

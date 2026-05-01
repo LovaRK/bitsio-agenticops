@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useState, useMemo } from "react";
 import { ScoreBreakdownTooltip } from "./ScoreBreakdownTooltip";
 import type { SourcetypeScore, TierName } from "@/types/telemetry-executive";
@@ -16,6 +17,7 @@ const PAGE_SIZE = 20;
 
 interface FullScoringTableProps {
   scores: SourcetypeScore[];
+  segmentFilter?: "utilized" | "underutilized" | null;
 }
 
 type SortKey = "composite" | "utilization" | "detection" | "quality" | "gb_per_day" | "annual_cost_usd" | "sourcetype";
@@ -26,15 +28,22 @@ function fmtUsd(v: number): string {
   return `$${v.toFixed(0)}`;
 }
 
-export function FullScoringTable({ scores }: FullScoringTableProps) {
+function FullScoringTableBase({ scores, segmentFilter = null }: FullScoringTableProps) {
   const [search, setSearch] = useState("");
   const [tierFilter, setTierFilter] = useState<TierName | "All">("All");
   const [sortKey, setSortKey] = useState<SortKey>("composite");
   const [sortAsc, setSortAsc] = useState(false);
   const [page, setPage] = useState(0);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     let result = scores;
+    if (segmentFilter === "utilized") {
+      result = result.filter((s) => s.tier === "Critical" || s.tier === "Important");
+    }
+    if (segmentFilter === "underutilized") {
+      result = result.filter((s) => s.tier === "Nice-to-Have" || s.tier === "Wasteful");
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -45,7 +54,7 @@ export function FullScoringTable({ scores }: FullScoringTableProps) {
       result = result.filter((s) => s.tier === tierFilter);
     }
     return result;
-  }, [scores, search, tierFilter]);
+  }, [scores, search, tierFilter, segmentFilter]);
 
   const sorted = useMemo(
     () =>
@@ -129,14 +138,13 @@ export function FullScoringTable({ scores }: FullScoringTableProps) {
                   <SortHeader col="gb_per_day" label="GB/Day" />
                   <SortHeader col="annual_cost_usd" label="Annual Cost" />
                   <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Det. Gap</th>
+                  <th className="text-left pb-2 text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Explain</th>
                 </tr>
               </thead>
               <tbody>
                 {paged.map((s) => (
-                  <tr
-                    key={s.sourcetype}
-                    className="border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors"
-                  >
+                  <React.Fragment key={s.sourcetype}>
+                  <tr className="border-b border-outline-variant/10 hover:bg-surface-container-high transition-colors">
                     <td className="py-2.5 pr-3 font-mono text-xs text-on-surface max-w-[160px] truncate">
                       {s.sourcetype}
                       <span className="block text-[10px] text-on-surface-variant">{s.index}</span>
@@ -187,7 +195,37 @@ export function FullScoringTable({ scores }: FullScoringTableProps) {
                         <span className="text-[10px] text-on-surface-variant">—</span>
                       )}
                     </td>
+                    <td className="py-2.5">
+                      <button
+                        className="rounded-md border border-outline-variant/30 px-2 py-1 text-[10px] font-semibold text-on-surface hover:bg-surface-container-high"
+                        onClick={() => setExpanded(expanded === s.sourcetype ? null : s.sourcetype)}
+                      >
+                        Explain Score
+                      </button>
+                    </td>
                   </tr>
+                  {expanded === s.sourcetype && (
+                    <tr className="border-b border-outline-variant/10 bg-surface-container-low">
+                      <td colSpan={10} className="px-3 py-3">
+                        <ScoreBreakdownTooltip
+                          label={s.sourcetype}
+                          value={s.composite}
+                          formula="Composite = U×0.35 + D×0.40 + Q×0.25"
+                          inputs={[
+                            { label: "Utilization", value: s.utilization, weight: 0.35, color: "#4caf50" },
+                            { label: "Detection", value: s.detection, weight: 0.40, color: "#2196f3" },
+                            { label: "Quality", value: s.quality, weight: 0.25, color: "#ff9800" },
+                          ]}
+                          source="composite scorer"
+                        >
+                          <div className="text-xs text-on-surface-variant">
+                            Persistent breakdown view: hover score chip for full formula detail.
+                          </div>
+                        </ScoreBreakdownTooltip>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
@@ -220,3 +258,5 @@ export function FullScoringTable({ scores }: FullScoringTableProps) {
     </div>
   );
 }
+
+export const FullScoringTable = React.memo(FullScoringTableBase);
