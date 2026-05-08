@@ -1,0 +1,17 @@
+.env
+.env.local
+.env.*.local
+secrets/
+*.key
+*.pem
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+.next/
+.vscode/
+.idea/
+*.swp
+*.log

@@ -1,0 +1,81 @@
+═════════════════════════════════════════════════════════════════════════════
+                    BitsIO OpenCode — Quick Reference
+═════════════════════════════════════════════════════════════════════════════
+
+WORKSPACE: /Users/ramakrishna/Documents/WorkSpace
+
+API KEY SETUP:
+  export OPENROUTER_API_KEY=sk-or-YOUR_KEY_HERE
+  (Get free at https://openrouter.ai)
+
+START OPENCODE:
+  opencode
+
+─────────────────────────────────────────────────────────────────────────────
+
+THE 7 SLASH COMMANDS:
+
+  /spec <description>        Define what to build
+  /plan                      Break spec into slices
+  /build slice 1             Implement one slice (code + tests + docs)
+  /test                      Run validation
+  /review                    Staff-engineer review (manual, premium)
+  /code-simplify <path>      Refactor code
+  /ship                      Pre-launch checklist
+
+─────────────────────────────────────────────────────────────────────────────
+
+TYPICAL WORKFLOW:
+
+  opencode
+  /spec phase-1 monorepo skeleton with Docker Compose, Postgres, Redis, Ollama
+  /plan
+  (press Tab to switch to Build mode)
+  /build slice 1
+  /test
+  /ship
+
+─────────────────────────────────────────────────────────────────────────────
+
+THE 4 ARCHITECTURAL LAWS:
+
+  1. LLMs never query Splunk directly
+  2. LLMs never see raw logs
+  3. Every recommendation is explainable
+  4. No autonomous writes (human approval required)
+
+─────────────────────────────────────────────────────────────────────────────
+
+THE 10 RULES:
+
+  1. One bounded slice per turn
+  2. Every file testable without live network
+  3. Zero hardcoded secrets
+  4. Pydantic / TypeScript types across boundaries
+  5. Every LangGraph node has fixture-based tests
+  6. PRs include scope, what changed, tests, risks, rollback
+  7. Prompts in files, not embedded in code
+  8. Produce only what is asked
+  9. Zero fallbacks — real errors only
+  10. Local-first inference by default; cloud only on explicit opt-in
+
+─────────────────────────────────────────────────────────────────────────────
+
+KEY FACTS:
+
+  ✓ AGENTS.md is law — 10 rules, 4 laws
+  ✓ Skills auto-load based on your work
+  ✓ Every /build = one git commit
+  ✓ Zero fallbacks, real errors only
+  ✓ Local-first by default (Ollama + Gemma 4)
+
+─────────────────────────────────────────────────────────────────────────────
+
+NEXT STEPS:
+
+  1. cat START_HERE.md
+  2. export OPENROUTER_API_KEY=sk-or-YOUR_KEY_HERE
+  3. opencode
+  4. /spec phase-1 monorepo skeleton
+
+═════════════════════════════════════════════════════════════════════════════

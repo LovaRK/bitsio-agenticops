@@ -1,0 +1,18 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "permission": {
+    "edit": {
+      "**/.env*": "deny",
+      "**/secrets/**": "deny",
+      "**": "allow"
+    },
+    "bash": {
+      "rm -rf *": "deny",
+      "git push --force*": "deny",
+      "**": "allow"
+    }
+  }
+}
