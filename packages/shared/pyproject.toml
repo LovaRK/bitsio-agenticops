@@ -1,0 +1,16 @@
+[project]
+name = "bitsio-shared"
+version = "0.1.0"
+description = "BitsIO Shared - Common utilities and schemas"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.5.0",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "asyncpg>=0.29.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]

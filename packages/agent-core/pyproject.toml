@@ -1,0 +1,16 @@
+[project]
+name = "bitsio-agent-core"
+version = "0.1.0"
+description = "BitsIO Agent Core - LangGraph orchestration"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    "pydantic>=2.5.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]

@@ -1,0 +1,14 @@
+[project]
+name = "bitsio-telemetry-engine"
+version = "0.1.0"
+description = "BitsIO Telemetry Engine - Processing and normalization"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.5.0",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]

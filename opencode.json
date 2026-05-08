@@ -14,5 +14,9 @@
       "git push --force*": "deny",
       "**": "allow"
     }
+  },
+  "skills": {
+    "autoLoad": true,
+    "paths": [".opencode/skills"]
   }
 }

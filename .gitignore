@@ -1,17 +1,49 @@
-.env
-.env.local
-.env.*.local
-secrets/
-*.key
-*.pem
+# Dependencies
 node_modules/
 __pycache__/
 *.pyc
 .venv/
+venv/
+.env
+.env.local
+.env.*.local
+
+# Build outputs
 dist/
 build/
 .next/
+*.egg-info/
+*.egg
+
+# IDE
 .vscode/
 .idea/
 *.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
+logs/
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Docker
+*.dockerignore
+docker/data/
+
+# OpenCode
+.opencode/cache/
+
+# PostgreSQL data
+postgres_data/
+redis_data/
+
+# Ollama models
+ollama_data/
