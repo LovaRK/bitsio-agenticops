@@ -1,0 +1,81 @@
+name: Release Gate
+
+on:
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install uv
+      - run: uv sync --all-groups
+      - name: Run unit tests
+        run: make test
+      - name: Run eval harness
+        run: make eval
+
+  schema-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install uv
+      - run: uv sync --all-groups
+      - name: Validate JSON schemas
+        run: uv run python infra/scripts/validate_schemas.py
+
+  api-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install uv
+      - run: uv sync --all-groups
+      - name: Run API smoke tests
+        run: make api-smoke
+
+  web-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pip install uv
+      - run: uv sync --all-groups
+      - run: pnpm install
+      - name: Run web E2E tests
+        run: pnpm --filter web test:e2e
+
+  release-gate-status:
+    name: Release Gate Status
+    runs-on: ubuntu-latest
+    needs: [unit-tests, schema-validation, api-smoke, web-e2e]
+    if: always()
+    steps:
+      - name: Check job statuses
+        run: |
+          if [[ "${{ needs.unit-tests.result }}" == "failure" || \
+                "${{ needs.schema-validation.result }}" == "failure" || \
+                "${{ needs.api-smoke.result }}" == "failure" || \
+                "${{ needs.web-e2e.result }}" == "failure" ]]; then
+            echo "❌ Release gate failed: one or more checks did not pass"
+            exit 1
+          fi
+          echo "✅ All release gate checks passed"

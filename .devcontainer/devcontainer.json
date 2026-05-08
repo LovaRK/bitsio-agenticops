@@ -1,0 +1,23 @@
+{
+  "name": "bitsio-agenticops",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "api",
+  "workspaceFolder": "/app",
+  "runServices": [
+    "postgres",
+    "redis",
+    "mock-mcp",
+    "api"
+  ],
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

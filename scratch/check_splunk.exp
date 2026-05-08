@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set timeout 10
+set password {M)9fN4g@jF$$pvGo}
+spawn ssh -o StrictHostKeyChecking=no root@144.202.48.85
+expect "password:"
+send "$password\r"
+expect "#"
+send "curl -k -u admin:admin123 https://localhost:8089/services/apps/local?output_mode=json | grep -i mcp\r"
+expect "#"
+send "exit\r"

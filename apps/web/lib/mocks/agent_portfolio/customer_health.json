@@ -1,0 +1,374 @@
+{
+  "acme-corp": {
+    "workflow_id": "wf_ch_a1b2c3d4e5f6",
+    "final_output": {
+      "account_id": "acme-corp",
+      "account_name": "Acme Corp",
+      "account_tier": "tier-0",
+      "composite_health": 0.327,
+      "churn_risk_band": "red",
+      "trend": "degrading",
+      "dimension_scores": {
+        "usage": 0.22,
+        "support": 0.65,
+        "reliability": 0.2,
+        "commercial": 0.18
+      },
+      "top_signals": [
+        {
+          "evidence_id": "ev_ch001",
+          "source": "commercial",
+          "description": "Exec sponsor inactive 45 days + CRM contact marked inactive",
+          "severity": "red",
+          "result_count": 1
+        },
+        {
+          "evidence_id": "ev_ch002",
+          "source": "usage",
+          "description": "DAU down 41% over 14 days (380\u2192224). Features narrowed from 12 to 4.",
+          "severity": "red",
+          "result_count": 90
+        },
+        {
+          "evidence_id": "ev_ch003",
+          "source": "reliability",
+          "description": "/export/reports endpoint 5xx: 340+ errors in 3 weeks, zero tickets filed",
+          "severity": "red",
+          "result_count": 47
+        },
+        {
+          "evidence_id": "ev_ch004",
+          "source": "commercial",
+          "description": "Renewal in 47 days. No expansion signals. Prior discount: 5%.",
+          "severity": "amber",
+          "result_count": 1
+        }
+      ],
+      "recommended_play": "EXECUTIVE_OUTREACH \u2014 exec-to-exec call within 48h with talking points",
+      "evidence_refs": [
+        "ev_ch001",
+        "ev_ch002",
+        "ev_ch003",
+        "ev_ch004",
+        "ev_ch005"
+      ],
+      "missing_evidence": [],
+      "confidence": 0.92,
+      "guardrail_notes": [],
+      "approval_required": true
+    },
+    "node_runs": [
+      {
+        "node_name": "account_ingest",
+        "started_at": "2026-04-20T14:00:01Z",
+        "completed_at": "2026-04-20T14:00:01Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "signal_retrieval",
+        "started_at": "2026-04-20T14:00:01Z",
+        "completed_at": "2026-04-20T14:00:04Z",
+        "status": "success",
+        "note": "5 Splunk MCP searches completed"
+      },
+      {
+        "node_name": "usage_scoring",
+        "started_at": "2026-04-20T14:00:04Z",
+        "completed_at": "2026-04-20T14:00:05Z",
+        "status": "success",
+        "note": "score=0.22 \u2014 DAU declined 41%"
+      },
+      {
+        "node_name": "support_scoring",
+        "started_at": "2026-04-20T14:00:05Z",
+        "completed_at": "2026-04-20T14:00:05Z",
+        "status": "success",
+        "note": "score=0.65 p1=2 reopened=1"
+      },
+      {
+        "node_name": "reliability_scoring",
+        "started_at": "2026-04-20T14:00:05Z",
+        "completed_at": "2026-04-20T14:00:06Z",
+        "status": "success",
+        "note": "score=0.20 hot_windows=47"
+      },
+      {
+        "node_name": "commercial_scoring",
+        "started_at": "2026-04-20T14:00:06Z",
+        "completed_at": "2026-04-20T14:00:06Z",
+        "status": "success",
+        "note": "score=0.18 exec_active=False stale_admins=1 renewal_days=47"
+      },
+      {
+        "node_name": "composite_health_score",
+        "started_at": "2026-04-20T14:00:06Z",
+        "completed_at": "2026-04-20T14:00:06Z",
+        "status": "success",
+        "note": "composite=0.327"
+      },
+      {
+        "node_name": "churn_risk_classifier",
+        "started_at": "2026-04-20T14:00:06Z",
+        "completed_at": "2026-04-20T14:00:07Z",
+        "status": "success",
+        "note": "band=red trend=degrading"
+      },
+      {
+        "node_name": "recommended_play",
+        "started_at": "2026-04-20T14:00:07Z",
+        "completed_at": "2026-04-20T14:00:07Z",
+        "status": "success",
+        "note": "EXECUTIVE_OUTREACH"
+      },
+      {
+        "node_name": "approval_check",
+        "started_at": "2026-04-20T14:00:07Z",
+        "completed_at": "2026-04-20T14:00:07Z",
+        "status": "success",
+        "note": "approval_required=True"
+      },
+      {
+        "node_name": "final_response",
+        "started_at": "2026-04-20T14:00:07Z",
+        "completed_at": "2026-04-20T14:00:07Z",
+        "status": "success",
+        "note": "assembled"
+      }
+    ]
+  },
+  "globex-inc": {
+    "workflow_id": "wf_ch_g1h2i3j4k5l6",
+    "final_output": {
+      "account_id": "globex-inc",
+      "account_name": "Globex Inc",
+      "account_tier": "tier-1",
+      "composite_health": 0.682,
+      "churn_risk_band": "amber",
+      "trend": "stable",
+      "dimension_scores": {
+        "usage": 0.62,
+        "support": 0.78,
+        "reliability": 0.85,
+        "commercial": 0.52
+      },
+      "top_signals": [
+        {
+          "evidence_id": "ev_gl01",
+          "source": "usage",
+          "description": "DAU soft decline -12% over 30d (145\u2192128)",
+          "severity": "amber",
+          "result_count": 90
+        },
+        {
+          "evidence_id": "ev_gl02",
+          "source": "commercial",
+          "description": "Renewal in 118 days. No expansion signals.",
+          "severity": "amber",
+          "result_count": 1
+        }
+      ],
+      "recommended_play": "PROACTIVE_QBR \u2014 schedule QBR with tailored health report",
+      "evidence_refs": [
+        "ev_gl01",
+        "ev_gl02"
+      ],
+      "missing_evidence": [],
+      "confidence": 0.87,
+      "guardrail_notes": [],
+      "approval_required": false
+    },
+    "node_runs": [
+      {
+        "node_name": "account_ingest",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "signal_retrieval",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "usage_scoring",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "support_scoring",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "reliability_scoring",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "commercial_scoring",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "composite_health_score",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "churn_risk_classifier",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "recommended_play",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "approval_check",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "final_response",
+        "started_at": "2026-04-20T14:00:10Z",
+        "completed_at": "2026-04-20T14:00:10Z",
+        "status": "success",
+        "note": ""
+      }
+    ]
+  },
+  "wayne-enterprises": {
+    "workflow_id": "wf_ch_w1x2y3z4a5b6",
+    "final_output": {
+      "account_id": "wayne-enterprises",
+      "account_name": "Wayne Enterprises",
+      "account_tier": "tier-0",
+      "composite_health": 0.912,
+      "churn_risk_band": "green",
+      "trend": "improving",
+      "dimension_scores": {
+        "usage": 0.94,
+        "support": 0.92,
+        "reliability": 0.95,
+        "commercial": 0.88
+      },
+      "top_signals": [
+        {
+          "evidence_id": "ev_we01",
+          "source": "usage",
+          "description": "DAU growing +8% over 90d (612\u2192661). All 12 features active.",
+          "severity": "info",
+          "result_count": 90
+        }
+      ],
+      "recommended_play": "EXPAND_CONVERSATION \u2014 explore upsell opportunities",
+      "evidence_refs": [
+        "ev_we01"
+      ],
+      "missing_evidence": [],
+      "confidence": 0.95,
+      "guardrail_notes": [],
+      "approval_required": false
+    },
+    "node_runs": [
+      {
+        "node_name": "account_ingest",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "signal_retrieval",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "usage_scoring",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "support_scoring",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "reliability_scoring",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "commercial_scoring",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "composite_health_score",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "churn_risk_classifier",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "recommended_play",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "approval_check",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      },
+      {
+        "node_name": "final_response",
+        "started_at": "2026-04-20T14:00:20Z",
+        "completed_at": "2026-04-20T14:00:20Z",
+        "status": "success",
+        "note": ""
+      }
+    ]
+  }
+}

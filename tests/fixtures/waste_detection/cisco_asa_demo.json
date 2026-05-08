@@ -1,0 +1,139 @@
+{
+  "description": "Demo fixture — Cisco ASA 28GB/day zero-search incident (matches Teja meeting scenario)",
+  "workflow_id": "wf_waste_asa_demo_001",
+  "tenant_id": "acme_corp_001",
+  "raw_index_profiles": [
+    {
+      "source_type": "cisco:asa",
+      "index": "firewall",
+      "daily_ingest_gb": 28.0,
+      "retention_days": 90
+    },
+    {
+      "source_type": "cisco:ios",
+      "index": "network",
+      "daily_ingest_gb": 4.2,
+      "retention_days": 90
+    },
+    {
+      "source_type": "ms365:activity",
+      "index": "o365",
+      "daily_ingest_gb": 3.8,
+      "retention_days": 90
+    },
+    {
+      "source_type": "cisco:ise",
+      "index": "network",
+      "daily_ingest_gb": 2.1,
+      "retention_days": 90
+    },
+    {
+      "source_type": "linux:syslog",
+      "index": "os",
+      "daily_ingest_gb": 1.5,
+      "retention_days": 30
+    },
+    {
+      "source_type": "windows:security",
+      "index": "windows",
+      "daily_ingest_gb": 12.0,
+      "retention_days": 365
+    },
+    {
+      "source_type": "aws:cloudtrail",
+      "index": "cloud",
+      "daily_ingest_gb": 5.5,
+      "retention_days": 90
+    }
+  ],
+  "raw_search_activity": [
+    {
+      "source_type": "cisco:asa",
+      "search_count_90d": 0,
+      "dashboard_references": 0,
+      "alert_references": 0
+    },
+    {
+      "source_type": "cisco:ios",
+      "search_count_90d": 2,
+      "dashboard_references": 0,
+      "alert_references": 0
+    },
+    {
+      "source_type": "ms365:activity",
+      "search_count_90d": 1,
+      "dashboard_references": 0,
+      "alert_references": 0
+    },
+    {
+      "source_type": "cisco:ise",
+      "search_count_90d": 3,
+      "dashboard_references": 0,
+      "alert_references": 0
+    },
+    {
+      "source_type": "linux:syslog",
+      "search_count_90d": 45,
+      "dashboard_references": 3,
+      "alert_references": 2
+    },
+    {
+      "source_type": "windows:security",
+      "search_count_90d": 210,
+      "dashboard_references": 8,
+      "alert_references": 5
+    },
+    {
+      "source_type": "aws:cloudtrail",
+      "search_count_90d": 0,
+      "dashboard_references": 0,
+      "alert_references": 0
+    }
+  ],
+  "raw_field_stats": [
+    {
+      "source_type": "cisco:asa",
+      "unused_fields": ["src_port", "dst_port", "device_version", "session_id", "connection_id", "nat_xlate_src", "nat_xlate_dst"],
+      "used_fields": ["src_ip", "dst_ip", "action", "protocol"]
+    },
+    {
+      "source_type": "cisco:ios",
+      "unused_fields": ["module_id", "sub_facility", "stack_trace"],
+      "used_fields": ["host", "severity", "message"]
+    },
+    {
+      "source_type": "ms365:activity",
+      "unused_fields": ["correlation_id", "browser_user_agent", "extended_properties", "parameters"],
+      "used_fields": ["user", "operation", "timestamp"]
+    },
+    {
+      "source_type": "cisco:ise",
+      "unused_fields": ["nas_port_type", "framed_mtu", "service_type"],
+      "used_fields": ["user", "auth_result", "endpoint_mac"]
+    },
+    {
+      "source_type": "linux:syslog",
+      "unused_fields": [],
+      "used_fields": ["host", "program", "pid", "message", "severity"]
+    },
+    {
+      "source_type": "windows:security",
+      "unused_fields": [],
+      "used_fields": ["EventCode", "Account_Name", "Logon_Type", "Source_Network_Address"]
+    },
+    {
+      "source_type": "aws:cloudtrail",
+      "unused_fields": ["requestParameters", "responseElements", "additionalEventData", "tlsDetails"],
+      "used_fields": ["eventName", "userIdentity", "sourceIPAddress"]
+    }
+  ],
+  "expected_output": {
+    "total_wasteful_sources": 4,
+    "wasteful_source_types": ["cisco:asa", "cisco:ios", "ms365:activity", "cisco:ise"],
+    "note_active_sources": ["linux:syslog", "windows:security"],
+    "note_aws_cloudtrail": "aws:cloudtrail has 0 searches but is included as wasteful",
+    "top_offender": "cisco:asa",
+    "top_offender_daily_gb": 28.0,
+    "estimated_annual_savings_usd_min": 90000
+  }
+}

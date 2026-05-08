@@ -1,0 +1,98 @@
+{
+  "workflow_id": "wf_waste_story_local_001",
+  "scenario": "Enterprise mixed telemetry (network, cloud, identity, app logs)",
+  "tenant_id": "tenant_demo",
+  "summary": "Telemetry Value Agent detected 5 low-usage high-ingest source types with high annual cost reduction potential.",
+  "total_wasteful_sources": 5,
+  "total_daily_ingest_gb": 84.6,
+  "total_daily_wasted_gb": 52.4,
+  "estimated_annual_savings_usd": 137420,
+  "waste_pct": 0.619,
+  "confidence": 0.86,
+  "approval_required": false,
+  "guardrail_notes": [],
+  "calculation_assumptions": [
+    "License rate assumption: $150 per GB/year",
+    "Search activity window: rolling 90 days",
+    "Savings model includes field filtering + retention optimization + storage tiering"
+  ],
+  "top_offenders": [
+    {
+      "source_type": "cisco:asa",
+      "index": "network_sec",
+      "daily_ingest_gb": 28.0,
+      "search_count_90d": 0,
+      "retention_days": 90,
+      "unused_fields": ["session_id", "nat_xlate_src", "nat_xlate_dst", "device_version", "src_port", "dst_port"],
+      "used_fields": ["src_ip", "dst_ip", "action", "protocol"]
+    },
+    {
+      "source_type": "ms365:activity",
+      "index": "identity_audit",
+      "daily_ingest_gb": 9.6,
+      "search_count_90d": 2,
+      "retention_days": 120,
+      "unused_fields": ["correlation_id", "extended_properties", "browser_user_agent", "requestParameters"],
+      "used_fields": ["user_id", "operation", "result_status"]
+    },
+    {
+      "source_type": "cisco:ise",
+      "index": "network_auth",
+      "daily_ingest_gb": 6.4,
+      "search_count_90d": 1,
+      "retention_days": 60,
+      "unused_fields": ["framed_mtu", "service_type", "nas_port_type"],
+      "used_fields": ["username", "result", "policy_name"]
+    },
+    {
+      "source_type": "aws:cloudtrail",
+      "index": "cloud_audit",
+      "daily_ingest_gb": 5.2,
+      "search_count_90d": 4,
+      "retention_days": 180,
+      "unused_fields": ["tlsDetails", "responseElements", "additionalEventData"],
+      "used_fields": ["eventName", "eventSource", "userIdentity"]
+    },
+    {
+      "source_type": "proxy:access",
+      "index": "edge_proxy",
+      "daily_ingest_gb": 3.2,
+      "search_count_90d": 0,
+      "retention_days": 90,
+      "unused_fields": ["user_agent_raw", "forwarded_chain", "cache_debug"],
+      "used_fields": ["status", "path", "method", "latency_ms"]
+    }
+  ],
+  "recommendations": [
+    {
+      "source_type": "cisco:asa",
+      "action": "route_to_cold_storage + filter_fields + reduce_retention",
+      "current_retention_days": 90,
+      "recommended_retention_days": 14,
+      "field_savings_pct": 0.60,
+      "estimated_daily_gb_saved": 16.8,
+      "estimated_annual_savings_usd": 97440,
+      "rationale": "No search usage in 90 days and high unused-field ratio."
+    },
+    {
+      "source_type": "ms365:activity",
+      "action": "filter_fields + reduce_retention",
+      "current_retention_days": 120,
+      "recommended_retention_days": 30,
+      "field_savings_pct": 0.57,
+      "estimated_daily_gb_saved": 5.5,
+      "estimated_annual_savings_usd": 28125,
+      "rationale": "Very low usage frequency and broad schema underutilization."
+    },
+    {
+      "source_type": "aws:cloudtrail",
+      "action": "filter_fields + route_to_cold_storage",
+      "current_retention_days": 180,
+      "recommended_retention_days": 45,
+      "field_savings_pct": 0.50,
+      "estimated_daily_gb_saved": 2.6,
+      "estimated_annual_savings_usd": 11855,
+      "rationale": "Low query frequency and long retention window."
+    }
+  ]
+}

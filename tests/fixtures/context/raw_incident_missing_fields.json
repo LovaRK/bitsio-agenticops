@@ -1,0 +1,7 @@
+{
+  "incident_id": "inc_ctx_002",
+  "tenant_safe_id": "tenant_demo",
+  "service_name": "payments-api",
+  "severity": "high",
+  "timestamp": "2026-04-08T10:05:00Z"
+}

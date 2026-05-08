@@ -1,0 +1,7 @@
+{
+  "incident_id": "inc_20260408_42",
+  "title": "Payments latency spike",
+  "severity": "high",
+  "timestamp": "2026-04-08T10:00:00Z",
+  "source_index": "tutorial"
+}

@@ -1,0 +1,89 @@
+{
+  "workflow_id": "wf_20260408_0002",
+  "incident_id": "inc_20260408_43",
+  "title": "Checkout retry storm",
+  "severity": "medium",
+  "timestamp": "2026-04-08T10:08:00Z",
+  "source_index": "tutorial",
+  "status": "resolved",
+  "graph_version": "v1.0.0",
+  "assigned_agent": "telemetry_value_agent",
+  "summary": "Retry amplification was traced to transient gateway saturation and self-recovered.",
+  "probable_cause": "gateway saturation during cache warmup window",
+  "confidence": 0.91,
+  "approval_required": false,
+  "evidence_refs": [
+    "https://splunk.local/app/search/search?q=gateway_latency",
+    "https://splunk.local/app/search/search?q=retry_rate"
+  ],
+  "missing_evidence": [],
+  "node_runs": [
+    {
+      "node_name": "incident_ingest",
+      "status": "success",
+      "started_at": "2026-04-08T00:08:34Z",
+      "duration_ms": 40,
+      "tool_calls": [],
+      "policy_checks": []
+    },
+    {
+      "node_name": "evidence_retrieval",
+      "status": "success",
+      "started_at": "2026-04-08T00:08:35Z",
+      "duration_ms": 180,
+      "tool_calls": [
+        {
+          "tool_name": "run_search",
+          "status": "success",
+          "tool_type": "retrieval",
+          "metric_source": {
+            "token_usage": "not_applicable",
+            "latency": "derived",
+            "confidence_impact": "derived"
+          },
+          "token_usage": { "prompt": 0, "completion": 0, "total": 0, "source": "not_applicable" },
+          "latency_ms": 104,
+          "confidence_impact": 0.22,
+          "provider": "splunk",
+          "model_name": "n/a"
+        }
+      ],
+      "policy_checks": []
+    },
+    {
+      "node_name": "reasoning_draft",
+      "status": "success",
+      "started_at": "2026-04-08T00:08:45Z",
+      "duration_ms": 130,
+      "tool_calls": [
+        {
+          "tool_name": "llm_call",
+          "status": "success",
+          "tool_type": "llm",
+          "metric_source": { "token_usage": "derived", "latency": "derived", "confidence_impact": "derived" },
+          "token_usage": { "prompt": 300, "completion": 110, "total": 410, "source": "derived" },
+          "latency_ms": 130,
+          "confidence_impact": 0.16,
+          "provider": "ollama/local",
+          "model_name": "qwen2.5:14b"
+        }
+      ],
+      "policy_checks": []
+    },
+    {
+      "node_name": "approval_check",
+      "status": "success",
+      "started_at": "2026-04-08T00:08:58Z",
+      "duration_ms": 20,
+      "tool_calls": [],
+      "policy_checks": [{ "rule_id": "env-prod-approval", "matched": false, "action": "continue" }]
+    }
+  ],
+  "run_metadata": {
+    "model_provider": "ollama",
+    "model_name": "qwen2.5:14b",
+    "runtime_mode": "local",
+    "splunk_mode": "mcp",
+    "run_time_ms": 490
+  }
+}

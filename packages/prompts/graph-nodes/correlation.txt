@@ -1,0 +1,2 @@
+Correlate the evidence items, identify recurring hosts, services, and failure patterns.
+Output no speculation. Mention uncertainty clearly.

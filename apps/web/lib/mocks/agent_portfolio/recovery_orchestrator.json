@@ -1,0 +1,199 @@
+{
+  "replica_lag": {
+    "workflow_id": "wf_rec_r1s2t3u4v5w6",
+    "incident_id": "INC-20260420-08a7",
+    "final_output": {
+      "workflow_id": "wf_rec_r1s2t3u4v5w6",
+      "incident_id": "INC-20260420-08a7",
+      "final_assessment": "recovery_executed_success",
+      "selected_option": {
+        "name": "Failover to pg-replica-01",
+        "description": "Promote pg-replica-01 (warm standby, lag 4s) to primary. pg-replica-02 at 847s lag is unusable.",
+        "pros": [
+          "Fast recovery (~45s cutover)",
+          "Warm standby already streaming",
+          "Known-good procedure from last drill"
+        ],
+        "cons": [
+          "12 downstream services briefly disrupted",
+          "Requires connection pool refresh"
+        ],
+        "blast_radius": {
+          "resources_affected": 12,
+          "users_affected_estimate": 3400,
+          "expected_downtime_seconds": 45
+        },
+        "confidence": 0.89
+      },
+      "approval_required": true,
+      "approver_user_id": "sre-oncall-jane.doe@bitsio.example",
+      "confidence": 0.89,
+      "evidence_refs": [
+        "ev_rec01",
+        "ev_rec02",
+        "ev_post01"
+      ],
+      "guardrail_notes": []
+    },
+    "guarded_plan": {
+      "option_name": "Failover to pg-replica-01",
+      "steps": [
+        {
+          "step_id": "s1",
+          "title": "Verify standby health",
+          "command_or_action": "SELECT pg_is_in_recovery();",
+          "expected_duration_seconds": 5,
+          "rollback": "N/A"
+        },
+        {
+          "step_id": "s2",
+          "title": "Drain active connections",
+          "command_or_action": "SET maxconnections=0 on primary",
+          "expected_duration_seconds": 15,
+          "rollback": "RESET maxconnections"
+        },
+        {
+          "step_id": "s3",
+          "title": "Promote standby",
+          "command_or_action": "pg_ctl promote -D /var/lib/postgresql/data",
+          "expected_duration_seconds": 10,
+          "rollback": "Demote promoted replica"
+        },
+        {
+          "step_id": "s4",
+          "title": "Update connection pool",
+          "command_or_action": "pgbouncer reload with new primary",
+          "expected_duration_seconds": 5,
+          "rollback": "Revert pgbouncer config"
+        },
+        {
+          "step_id": "s5",
+          "title": "Verify application connectivity",
+          "command_or_action": "Health check all 12 downstream services",
+          "expected_duration_seconds": 10,
+          "rollback": "N/A"
+        }
+      ],
+      "rollback_steps": [
+        {
+          "step_id": "rb_s4",
+          "title": "Rollback: Update connection pool",
+          "command_or_action": "Revert pgbouncer config",
+          "expected_duration_seconds": 5
+        },
+        {
+          "step_id": "rb_s3",
+          "title": "Rollback: Promote standby",
+          "command_or_action": "Demote promoted replica",
+          "expected_duration_seconds": 10
+        },
+        {
+          "step_id": "rb_s2",
+          "title": "Rollback: Drain connections",
+          "command_or_action": "RESET maxconnections",
+          "expected_duration_seconds": 15
+        }
+      ],
+      "dry_run_preview": "Execute 'Failover to pg-replica-01': 5 steps, 45s total, 3 rollback steps ready",
+      "expected_duration_seconds": 45,
+      "blast_radius": {
+        "resources_affected": 12,
+        "users_affected_estimate": 3400,
+        "expected_downtime_seconds": 45
+      },
+      "requires_approval": true,
+      "approval_tier": "dual"
+    },
+    "candidate_options": [
+      {
+        "name": "Failover to pg-replica-01",
+        "description": "Promote warm standby",
+        "pros": [
+          "Fast ~45s"
+        ],
+        "cons": [
+          "12 services disrupted"
+        ],
+        "blast_radius": {
+          "resources_affected": 12,
+          "users_affected_estimate": 3400,
+          "expected_downtime_seconds": 45
+        },
+        "confidence": 0.89
+      },
+      {
+        "name": "Scale IOPS on lagging replica",
+        "description": "Increase EBS IOPS",
+        "pros": [
+          "Zero downtime"
+        ],
+        "cons": [
+          "15min recovery"
+        ],
+        "blast_radius": {
+          "resources_affected": 1,
+          "users_affected_estimate": 0,
+          "expected_downtime_seconds": 0
+        },
+        "confidence": 0.72
+      }
+    ],
+    "node_runs": [
+      {
+        "node_name": "failure_signal_ingest",
+        "status": "success",
+        "note": "replica_lag scenario"
+      },
+      {
+        "node_name": "impact_radius_assessment",
+        "status": "success",
+        "note": "pg-replica-02 at 847s"
+      },
+      {
+        "node_name": "runbook_retrieval",
+        "status": "success",
+        "note": "2 runbooks matched"
+      },
+      {
+        "node_name": "recovery_option_generation",
+        "status": "success",
+        "note": "2 options generated"
+      },
+      {
+        "node_name": "blast_radius_scoring",
+        "status": "success",
+        "note": "12 resources"
+      },
+      {
+        "node_name": "pre_execution_safety_checks",
+        "status": "success",
+        "note": "all passed"
+      },
+      {
+        "node_name": "guarded_plan_assembly",
+        "status": "success",
+        "note": "5 steps, dual approval"
+      },
+      {
+        "node_name": "approval_check",
+        "status": "success",
+        "note": "APPROVED by jane.doe"
+      },
+      {
+        "node_name": "execution_dispatch",
+        "status": "success",
+        "note": "all steps executed"
+      },
+      {
+        "node_name": "post_action_verification",
+        "status": "success",
+        "note": "verified OK"
+      },
+      {
+        "node_name": "final_response",
+        "status": "success",
+        "note": "recovery_executed_success"
+      }
+    ]
+  }
+}

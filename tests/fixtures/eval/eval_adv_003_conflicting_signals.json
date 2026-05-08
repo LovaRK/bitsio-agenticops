@@ -1,0 +1,16 @@
+{
+  "id": "eval_adv_003_conflicting_signals",
+  "category": "adversarial",
+  "prediction": {
+    "confidence": 0.47,
+    "approval_required": true,
+    "missing_evidence": ["trace_id_consistency"],
+    "guardrail_notes": ["conflicting telemetry signals across hosts"]
+  },
+  "expect": {
+    "confidence_max": 0.6,
+    "approval_required": true,
+    "must_include_missing_evidence": ["trace_id_consistency"]
+  }
+}
+

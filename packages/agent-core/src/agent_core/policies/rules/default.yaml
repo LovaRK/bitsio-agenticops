@@ -1,0 +1,14 @@
+rules:
+  - id: env-prod-approval
+    description: Require approval in production environment
+    condition: environment_is_prod
+    action: require_approval
+  - id: low-confidence-approval
+    description: Require approval when confidence is below threshold
+    condition: confidence_below
+    threshold: 0.7
+    action: require_approval
+  - id: write-action-approval
+    description: Require approval for write actions
+    condition: write_action
+    action: require_approval

@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set timeout 15
+set password {M)9fN4g@jF$$pvGo}
+spawn ssh -o StrictHostKeyChecking=no root@144.202.48.85
+expect "password:"
+send "$password\r"
+expect "#"
+send "curl -k -u admin:admin123 -X POST https://localhost:8089/services/authorization/tokens?output_mode=json -d name=admin -d audience=mcp\r"
+expect "#"
+send "exit\r"

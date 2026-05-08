@@ -1,0 +1,90 @@
+{
+  "workflow_id": "wf_20260408_0001",
+  "incident_id": "inc_20260408_42",
+  "title": "Payments latency spike",
+  "severity": "high",
+  "timestamp": "2026-04-08T10:00:00Z",
+  "source_index": "tutorial",
+  "status": "pending_approval",
+  "graph_version": "v1.0.0",
+  "assigned_agent": "telemetry_value_agent",
+  "summary": "Multiple timeout events were detected in payments-api hosts with retry amplification.",
+  "probable_cause": "host=payments-api-1 events=2",
+  "confidence": 0.82,
+  "approval_required": true,
+  "evidence_refs": [
+    "https://splunk.local/app/search/search?q=trace_id%3Dtrc_001",
+    "https://splunk.local/app/search/search?q=trace_id%3Dtrc_002"
+  ],
+  "missing_evidence": ["deployment_version", "upstream_gateway_latency"],
+  "node_runs": [
+    {
+      "node_name": "incident_ingest",
+      "status": "success",
+      "started_at": "2026-04-08T00:12:34Z",
+      "duration_ms": 45,
+      "tool_calls": [],
+      "policy_checks": []
+    },
+    {
+      "node_name": "evidence_retrieval",
+      "status": "success",
+      "started_at": "2026-04-08T00:12:35Z",
+      "duration_ms": 215,
+      "tool_calls": [
+        {
+          "tool_name": "run_search",
+          "status": "success",
+          "tool_type": "retrieval",
+          "metric_source": {
+            "token_usage": "not_applicable",
+            "latency": "derived",
+            "confidence_impact": "derived"
+          },
+          "token_usage": { "prompt": 0, "completion": 0, "total": 0, "source": "not_applicable" },
+          "latency_ms": 118,
+          "confidence_impact": 0.26,
+          "provider": "splunk",
+          "model_name": "n/a",
+          "explainability_notes": ["No token accounting for retrieval tools."]
+        }
+      ],
+      "policy_checks": []
+    },
+    {
+      "node_name": "reasoning_draft",
+      "status": "success",
+      "started_at": "2026-04-08T00:12:45Z",
+      "duration_ms": 150,
+      "tool_calls": [
+        {
+          "tool_name": "llm_call",
+          "status": "success",
+          "tool_type": "llm",
+          "metric_source": { "token_usage": "derived", "latency": "derived", "confidence_impact": "derived" },
+          "token_usage": { "prompt": 420, "completion": 185, "total": 605, "source": "derived" },
+          "latency_ms": 150,
+          "confidence_impact": 0.18,
+          "provider": "ollama/local",
+          "model_name": "qwen2.5:14b"
+        }
+      ],
+      "policy_checks": []
+    },
+    {
+      "node_name": "approval_check",
+      "status": "pending",
+      "started_at": "2026-04-08T00:12:58Z",
+      "duration_ms": 25,
+      "tool_calls": [],
+      "policy_checks": [{ "rule_id": "env-prod-approval", "matched": true, "action": "require_approval" }]
+    }
+  ],
+  "run_metadata": {
+    "model_provider": "ollama",
+    "model_name": "qwen2.5:14b",
+    "runtime_mode": "local",
+    "splunk_mode": "mcp",
+    "run_time_ms": 560
+  }
+}

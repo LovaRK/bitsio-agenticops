@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DecisionTrace",
+  "type": "object",
+  "required": [
+    "workflow_id",
+    "incident_id",
+    "graph_name",
+    "graph_version",
+    "started_at",
+    "node_runs",
+    "final_assessment"
+  ],
+  "properties": {
+    "workflow_id": {"type": "string", "minLength": 1},
+    "incident_id": {"type": "string", "minLength": 1},
+    "graph_name": {"type": "string"},
+    "graph_version": {"type": "string"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "actor_type": {"type": "string"},
+    "model_provider": {"type": "string"},
+    "model_name": {"type": "string"},
+    "prompt_version": {"type": "string"},
+    "node_runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node_name", "started_at", "status", "input_hash", "output_hash"],
+        "properties": {
+          "node_name": {"type": "string"},
+          "started_at": {"type": "string", "format": "date-time"},
+          "status": {"type": "string"},
+          "input_hash": {"type": "string"},
+          "output_hash": {"type": "string"},
+          "tool_calls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["tool_name", "status"],
+              "properties": {
+                "tool_name": {"type": "string"},
+                "status": {"type": "string"},
+                "tool_type": {"type": "string", "enum": ["llm", "retrieval", "policy", "transform"]},
+                "metric_source": {"type": "object"},
+                "token_usage": {"type": "object"},
+                "cost_usage": {"type": "object"},
+                "latency_ms": {"type": "number"},
+                "confidence_impact": {"type": "number"},
+                "provider": {"type": "string"},
+                "model_name": {"type": "string"},
+                "runtime_mode": {"type": "string"},
+                "splunk_mode": {"type": "string"},
+                "input_preview": {"type": "string"},
+                "output_preview": {"type": "string"},
+                "explainability_notes": {"type": "array", "items": {"type": "string"}}
+              },
+              "additionalProperties": true
+            }
+          },
+          "policy_checks": {"type": "array"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "final_assessment": {"type": "string"},
+    "confidence": {"type": "number"},
+    "approval_required": {"type": "boolean"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,26 @@
+# Version: 1.0.0
+You are an SRE assistant that scores incident similarity.
+
+Input current incident JSON:
+{{current_incident}}
+
+Input candidate incidents JSON:
+{{candidates}}
+
+Return JSON ONLY as an array of objects:
+[
+  {"incident_id": "string", "relevance": 0.0, "reasoning": "<=200 chars"}
+]
+
+Rules:
+- relevance must be a float between 0.0 and 1.0
+- reasoning must be concise and specific
+- do not include prose outside JSON
+
+Few-shot example:
+current: {"incident_id":"inc_now","title":"payments timeout"}
+candidates: [{"incident_id":"inc_old","title":"payments timeout retry"}]
+output:
+[
+  {"incident_id":"inc_old","relevance":0.86,"reasoning":"Same service and timeout pattern with retry amplification."}
+]

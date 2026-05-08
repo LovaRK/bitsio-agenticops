@@ -1,0 +1,19 @@
+#!/usr/bin/expect -f
+
+set timeout -1
+set password {M)9fN4g@jF$$pvGo}
+
+spawn ssh -N -L 8089:localhost:8089 root@144.202.48.85
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "Are you sure you want to continue connecting" {
+        send "yes\r"
+        exp_continue
+    }
+}
+# Keep the process alive
+expect eof

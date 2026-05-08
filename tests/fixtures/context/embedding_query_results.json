@@ -1,0 +1,5 @@
+[
+  {"incident_id": "inc_hist_001", "title": "Payments timeout burst", "raw_score": 0.91, "severity": "high"},
+  {"incident_id": "inc_hist_002", "title": "Checkout latency regression", "raw_score": 0.84, "severity": "medium"},
+  {"incident_id": "inc_hist_003", "title": "Auth cache churn", "raw_score": 0.68, "severity": "low"}
+]
